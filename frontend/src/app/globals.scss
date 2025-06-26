@@ -1,0 +1,15 @@
+/* === Подключение кастомных и Bootstrap-стилей === */
+@import '../styles/custom-bootstrap.scss';
+@import '../styles/demo.css';
+
+/* === Фикс базовых переменных, если нужно === */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Montserrat', sans-serif;
+}
