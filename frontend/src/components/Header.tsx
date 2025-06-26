@@ -1,9 +1,28 @@
-// frontend\src\components\Header.tsx
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import DarkMode from './Darkbtn'
+import Image from 'next/image'
+import {
+  MessageCircle,
+  Video,
+  Search,
+  Home,
+  Zap,
+  User,
+  ShoppingBag,
+  Bell,
+  Tv,
+  Award,
+  Globe,
+  Inbox,
+  MapPin,
+  Youtube,
+  Settings,
+  PieChart,
+  MessageSquare,
+  X,
+} from 'lucide-react'
 
 const Header: React.FC = () => {
   const [uiState, setUiState] = useState({
@@ -12,39 +31,48 @@ const Header: React.FC = () => {
     isNoti: false,
   })
 
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const toggleState = (key: keyof typeof uiState) => {
     setUiState((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const navClass = uiState.isOpen ? 'nav-active' : ''
-  const buttonClass = uiState.isOpen ? 'active' : ''
-  const searchClass = uiState.isActive ? 'show' : ''
-  const notiClass = uiState.isNoti ? 'show' : ''
+  if (!isMounted) return null
 
   return (
     <div className="nav-header bg-white shadow-xs border-0">
-      <div className="nav-top">
-        <Link href="/" className="d-flex align-items-center">
-          <i className="feather-zap text-success display2-size me-3 ms-0"></i>
-          <span className="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">
-            IPU
-          </span>
-        </Link>
-        <Link href="/defaultmessage" className="mob-menu ms-auto me-2 chat-active-btn">
-          <i className="feather-message-circle text-grey-900 font-sm btn-round-md bg-greylight"></i>
-        </Link>
-        <Link href="/defaultvideo" className="mob-menu me-2">
-          <i className="feather-video text-grey-900 font-sm btn-round-md bg-greylight"></i>
-        </Link>
-        <span onClick={() => toggleState('isActive')} className="me-2 menu-search-icon mob-menu">
-          <i className="feather-search text-grey-900 font-sm btn-round-md bg-greylight"></i>
+      <div className="nav-top d-flex justify-content-between align-items-center px-0">
+      {/* Лого слева */}
+      <Link href="/" className="d-flex align-items-center">
+        <Image
+          src="/assets/images/IPU/logo.png"
+          alt="IPU Logo"
+          width={157}
+          height={50}
+          className="me-3"
+        />
+      </Link>
+
+      {/* Кнопки справа */}
+      <div className="d-flex align-items-center">
+        <span onClick={() => toggleState('isActive')} className="me-2 cursor-pointer">
+          <Search className="w-5 h-5 text-grey-900 bg-greylight p-1 rounded-full btn-round-sm" />
         </span>
-        <button onClick={() => toggleState('isOpen')} className={`nav-menu me-0 ms-2 ${buttonClass}`}></button>
+        <button
+          onClick={() => toggleState('isOpen')}
+          className={`nav-menu ms-2 ${uiState.isOpen ? 'active' : ''}`}
+        ></button>
       </div>
+    </div>
+
 
       <form className="float-left header-search ms-3">
         <div className="form-group mb-0 icon-input">
-          <i className="feather-search font-sm text-grey-400"></i>
+          <Search className="w-4 h-4 text-grey-400 absolute top-3 left-3" />
           <input
             type="text"
             placeholder="Start typing to search.."
@@ -53,31 +81,30 @@ const Header: React.FC = () => {
         </div>
       </form>
 
-      {/* Navigation Icons */}
       {[
-        ['/', 'home'],
-        ['/defaultstorie', 'zap'],
-        ['/defaultvideo', 'video'],
-        ['/defaultgroup', 'user'],
-        ['/shop2', 'shopping-bag'],
-      ].map(([href, icon], i) => (
+        { href: '/', icon: Home },
+        { href: '/defaultstorie', icon: Zap },
+        { href: '/defaultvideo', icon: Video },
+        { href: '/defaultgroup', icon: User },
+        { href: '/shop2', icon: ShoppingBag },
+      ].map(({ href, icon: Icon }, i) => (
         <Link key={i} href={href} className="p-2 text-center ms-3 menu-icon center-menu-icon">
-          <i className={`feather-${icon} font-lg bg-greylight btn-round-lg theme-dark-bg text-grey-500`}></i>
+          <Icon className="w-5 h-5 text-grey-500 bg-greylight rounded-full p-1" />
         </Link>
       ))}
 
-      <span className={`p-2 pointer text-center ms-auto menu-icon ${notiClass}`} onClick={() => toggleState('isNoti')}>
+      <span className={`p-2 pointer text-center ms-auto menu-icon ${uiState.isNoti ? 'show' : ''}`} onClick={() => toggleState('isNoti')}>
         <span className="dot-count bg-warning"></span>
-        <i className="feather-bell font-xl text-current"></i>
+        <Bell className="w-6 h-6 text-current" />
       </span>
 
-      <div className={`dropdown-menu p-4 right-0 rounded-xxl border-0 shadow-lg ${notiClass}`}>
+      <div className={`dropdown-menu p-4 right-0 rounded-xxl border-0 shadow-lg ${uiState.isNoti ? 'show' : ''}`}>
         <h4 className="fw-700 font-xss mb-4">Notification</h4>
         {[1, 2, 3, 4].map((_, idx) => (
           <div key={idx} className="card bg-transparent-card w-100 border-0 ps-5 mb-3">
-            <img src="/assets/images/user.png" alt="user" className="w40 position-absolute left-0 rounded-pill" />
+            <Image src="/assets/images/user.png" alt="user" width={40} height={40} className="position-absolute left-0 rounded-pill" />
             <h5 className="font-xsss text-grey-900 mb-1 mt-0 fw-700 d-block">
-              User {idx + 1}{' '}
+              User {idx + 1}
               <span className="text-grey-400 font-xsssss fw-600 float-right mt-1">{idx + 1} min</span>
             </h5>
             <h6 className="text-grey-500 fw-500 font-xssss lh-4">This is a notification message.</h6>
@@ -86,14 +113,15 @@ const Header: React.FC = () => {
       </div>
 
       <Link href="/defaultmessage" className="p-2 text-center ms-3 menu-icon chat-active-btn">
-        <i className="feather-message-square font-xl text-current"></i>
-      </Link>
-      <DarkMode />
-      <Link href="/defaultsettings" className="p-0 ms-3 menu-icon">
-        <img src="/assets/images/user.png" alt="user" className="w40 mt--1 rounded-pill" />
+        <MessageSquare className="w-6 h-6 text-current" />
       </Link>
 
-      <nav className={`navigation scroll-bar ${navClass}`}>
+      <Link href="/defaultsettings" className="p-0 ms-3 menu-icon">
+        <Image src="/assets/images/user.png" alt="user" width={40} height={40} className="rounded-pill" />
+      </Link>
+
+      {/* nav menu */}
+      <nav className={`navigation scroll-bar ${uiState.isOpen ? 'nav-active' : ''}`}>
         <div className="container ps-0 pe-0">
           <div className="nav-content">
             <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2 mt-2">
@@ -103,38 +131,37 @@ const Header: React.FC = () => {
               <ul className="mb-1 top-content">
                 <li>
                   <Link href="/home" className="nav-content-bttn open-font">
-                    <i className="feather-tv btn-round-md bg-blue-gradiant me-3"></i>
+                    <Tv className="me-3 w-4 h-4" />
                     <span>Newsfeed</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultbadge" className="nav-content-bttn open-font">
-                    <i className="feather-award btn-round-md bg-red-gradiant me-3"></i>
+                    <Award className="me-3 w-4 h-4" />
                     <span>Badges</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultstorie" className="nav-content-bttn open-font">
-                    <i className="feather-globe btn-round-md bg-gold-gradiant me-3"></i>
+                    <Globe className="me-3 w-4 h-4" />
                     <span>Explore Stories</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultgroup" className="nav-content-bttn open-font">
-                    <i className="feather-zap btn-round-md bg-mini-gradiant me-3"></i>
+                    <Zap className="me-3 w-4 h-4" />
                     <span>Popular Groups</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/userpage" className="nav-content-bttn open-font">
-                    <i className="feather-user btn-round-md bg-primary-gradiant me-3"></i>
+                    <User className="me-3 w-4 h-4" />
                     <span>Author Profile</span>
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* More Pages */}
             <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2">
               <div className="nav-caption fw-600 font-xssss text-grey-500">
                 <span>More </span>Pages
@@ -142,51 +169,50 @@ const Header: React.FC = () => {
               <ul className="mb-3">
                 <li>
                   <Link href="/defaultemailbox" className="nav-content-bttn open-font">
-                    <i className="font-xl text-current feather-inbox me-3"></i>
+                    <Inbox className="me-3 w-5 h-5" />
                     <span>Email Box</span>
                     <span className="circle-count bg-warning mt-1">584</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaulthotel" className="nav-content-bttn open-font">
-                    <i className="font-xl text-current feather-home me-3"></i>
+                    <Home className="me-3 w-5 h-5" />
                     <span>Near Hotel</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultevent" className="nav-content-bttn open-font">
-                    <i className="font-xl text-current feather-map-pin me-3"></i>
+                    <MapPin className="me-3 w-5 h-5" />
                     <span>Latest Event</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultlive" className="nav-content-bttn open-font">
-                    <i className="font-xl text-current feather-youtube me-3"></i>
+                    <Youtube className="me-3 w-5 h-5" />
                     <span>Live Stream</span>
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Account */}
             <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1">
               <div className="nav-caption fw-600 font-xssss text-grey-500">Account</div>
               <ul className="mb-1">
                 <li>
                   <Link href="/defaultsettings" className="nav-content-bttn open-font h-auto pt-2 pb-2">
-                    <i className="font-sm feather-settings me-3 text-grey-500"></i>
+                    <Settings className="me-3 w-4 h-4 text-grey-500" />
                     <span>Settings</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultanalytics" className="nav-content-bttn open-font h-auto pt-2 pb-2">
-                    <i className="font-sm feather-pie-chart me-3 text-grey-500"></i>
+                    <PieChart className="me-3 w-4 h-4 text-grey-500" />
                     <span>Analytics</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/defaultmessage" className="nav-content-bttn open-font h-auto pt-2 pb-2">
-                    <i className="font-sm feather-message-square me-3 text-grey-500"></i>
+                    <MessageSquare className="me-3 w-4 h-4 text-grey-500" />
                     <span>Chat</span>
                     <span className="circle-count bg-warning mt-0">23</span>
                   </Link>
@@ -197,13 +223,13 @@ const Header: React.FC = () => {
         </div>
       </nav>
 
-      {/* Search Overlay */}
-      <div className={`app-header-search ${searchClass}`}>
+      {/* Search bar overlay */}
+      <div className={`app-header-search ${uiState.isActive ? 'show' : ''}`}>
         <form className="search-form">
           <div className="form-group searchbox mb-0 border-0 p-1">
             <input type="text" className="form-control border-0" placeholder="Search..." />
-            <span className="ms-1 mt-1 d-inline-block close searchbox-close">
-              <i className="ti-close font-xs" onClick={() => toggleState('isActive')}></i>
+            <span className="ms-1 mt-1 d-inline-block close searchbox-close cursor-pointer">
+              <X className="w-4 h-4" onClick={() => toggleState('isActive')} />
             </span>
           </div>
         </form>

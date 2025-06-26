@@ -1,40 +1,46 @@
-// frontend\src\app\page.tsx
 'use client'
 
-import { Fragment } from 'react'
-
+import { Fragment, useState } from 'react'
 import Header from '@/components/Header'
 import Leftnav from '@/components/Leftnav'
-import Rightchat from '@/components/Rightchat'
 import Appfooter from '@/components/Appfooter'
-import Popupchat from '@/components/Popupchat'
 import Postview from '@/components/Postview'
-import Events from '@/components/Events'
 import Createpost from '@/components/Createpost'
-import Load from '@/components/Load'
-import Profilephoto from '@/components/Profilephoto'
 import ProfilecardThree from '@/components/ProfilecardThree'
 import Profiledetail from '@/components/Profiledetail'
+import Load from '@/components/Load'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export default function Page() {
+  const [showProfileDetail, setShowProfileDetail] = useState(false)
+
   return (
     <Fragment>
       <Header />
       <Leftnav />
-      <Rightchat />
-
-      <div className="main-content right-chat-active">
+      <div className="main-content">
         <div className="middle-sidebar-bottom">
           <div className="middle-sidebar-left pe-0">
             <div className="row">
               <div className="col-xl-12 mb-3">
-                <ProfilecardThree />
+                <ProfilecardThree onToggleDetail={() => setShowProfileDetail(prev => !prev)} isOpen={showProfileDetail} />
               </div>
-              <div className="col-xl-4 col-xxl-3 col-lg-4 pe-0">
-                <Profiledetail />
-                <Profilephoto />
-                <Events />
+
+              <div className="col-xl-4 col-xxl-3 col-lg-4">
+                <AnimatePresence>
+                  {showProfileDetail && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 40 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 40 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                    >
+                      <Profiledetail />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <Createpost />
                 <Postview
@@ -70,8 +76,6 @@ export default function Page() {
           </div>
         </div>
       </div>
-
-      <Popupchat />
       <Appfooter />
     </Fragment>
   )
