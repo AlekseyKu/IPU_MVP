@@ -1,55 +1,20 @@
-'use client'
-
-import { useState } from 'react'
-import { CreateModalState, useCreateModal } from '@/hooks/useCreateModal'
-import { X } from 'lucide-react'
-
-interface Props {
-  onSubmit: (post: any) => void
-}
-
-const CreatepostModal = ({ onSubmit }: Props) => {
-  const isOpen = CreateModalState()
-  const { close } = useCreateModal()
-
-  const [title, setTitle] = useState('')
-
-  const handleSubmit = () => {
-    onSubmit({
-      id: String(Date.now()),
-      user: 'Current User',
-      time: 'Just now',
-      des: title,
-      avater: 'user.png',
-      postimage: 'post.png',
-      postvideo: '',
-    })
-    setTitle('')
-    close()
-  }
-
-  if (!isOpen) return null
-
+// frontend/src/app/test/page.tsx
+export default function TestPage() {
   return (
-    <div className="fixed top-0 left-0 w-full h-full bg-white z-50 p-4 overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold">Создать обещание</h2>
-        <button onClick={close}>
-          <X />
-        </button>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        Tailwind работает <span className="text-green-600 text-2xl">✅</span>
+      </h1>
+
+      <div className="flex gap-3 mb-6">
+        <button className="bg-gray-300 text-white px-4 py-2 rounded">Кнопка</button>
+        <button className="bg-green-500 text-white px-4 py-2 rounded">Зелёная</button>
+        <button className="bg-red-500 text-white px-4 py-2 rounded">Красная</button>
       </div>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Название обещания"
-        className="border p-2 rounded w-full mb-4"
-      />
-      <button onClick={handleSubmit} className="bg-blue-500 text-white px-4 py-2 rounded">
-        Создать
-      </button>
+
+      <p className="text-sm text-gray-700 text-center max-w-xs">
+        Если ты видишь цвета, градиенты и шрифты — Tailwind подключен правильно
+      </p>
     </div>
   )
 }
-
-export default CreatepostModal

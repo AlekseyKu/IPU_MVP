@@ -1,0 +1,21 @@
+/* @config: Global styles with Tailwind CSS v4 */
+@import 'tailwindcss/preflight';
+@import 'tailwindcss/utilities';
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Montserrat', sans-serif;
+}
+
+.nav-content-bttn,
+a {
+  text-decoration: none;
+}
