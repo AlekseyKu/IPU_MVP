@@ -51,19 +51,19 @@ const ProfilecardThree: React.FC<Props> = ({ onToggleDetail, isOpen = false }) =
         </div>
       </div>
 
-      <div className="card-body d-block w-100 shadow-none mb-0 p-0 border-top-xs">
-        <ul className="nav nav-tabs h55 d-flex product-info-tab border-bottom-0 ps-4 justify-content-between" id="pills-tab" role="tablist">
+      <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
+        <ul className="nav nav-tabs h55 d-flex product-info-tab ps-4 justify-content-between border-bottom-0" id="pills-tab" role="tablist">
           {tabs.map(({ id, label, count }, i) => (
             <li key={i} className="list-inline-item me-5 text-center">
-              <a
+              {/* <a
                 href={`#${id}`}
-                className={`fw-500 font-xssss text-dark pt-2 pb-2 ls-1 d-inline-block border-0 ${i === 0 ? 'active' : ''}`}
+                className={`fw-500 font-xssss text-dark pt-2 ls-1 d-inline-block border-0 border-bottom-0${i === 0 ? 'active' : ''}`}
                 data-toggle="tab"
                 style={{ textDecoration: 'none' }}
-              >
+              > */}
                 <div className="fw-400 font-xss mb-0">{count}</div>
                 <div className="fw-400 font-xssss text-dark">{label}</div>
-              </a>
+              {/* </a> */}
             </li>
           ))}
         </ul>

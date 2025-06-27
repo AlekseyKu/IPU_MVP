@@ -1,6 +1,8 @@
 'use client'
 
 import { Fragment, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+
 import Header from '@/components/Header'
 import Leftnav from '@/components/Leftnav'
 import Appfooter from '@/components/Appfooter'
@@ -9,7 +11,8 @@ import Createpost from '@/components/Createpost'
 import ProfilecardThree from '@/components/ProfilecardThree'
 import Profiledetail from '@/components/Profiledetail'
 import Load from '@/components/Load'
-import { AnimatePresence, motion } from 'framer-motion'
+import CreatepostModal from '@/components/modals/CreatepostModal'
+
 
 export default function Page() {
   const [showProfileDetail, setShowProfileDetail] = useState(false)

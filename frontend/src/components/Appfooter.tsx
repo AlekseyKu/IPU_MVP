@@ -1,3 +1,4 @@
+// frontend\src\components\Appfooter.tsx
 'use client'
 
 import Link from 'next/link'
@@ -7,6 +8,7 @@ import {
   User,
   CirclePlus,
   BarChart2,
+  List,
   ShoppingCart
 } from 'lucide-react'
 
@@ -14,10 +16,10 @@ const Appfooter: React.FC = () => {
   const pathname = usePathname()
 
   const links = [
-    { href: '/home', icon: Home },
     { href: '/', icon: User },
+    { href: '/list', icon: List },
     { href: '/create', icon: CirclePlus },
-    { href: '/analytics', icon: BarChart2 },
+    { href: '/leaders', icon: BarChart2 },
     { href: '/shop', icon: ShoppingCart },
   ]
 

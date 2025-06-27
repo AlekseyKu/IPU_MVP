@@ -1767,7 +1767,7 @@ sup {
 
 a {
   color: #1E74FD;
-  text-decoration: underline;
+  text-decoration: none;
 }
 a:hover {
   color: #185dca;
@@ -4871,7 +4871,7 @@ textarea.form-control-lg {
 .btn-link {
   font-weight: 400;
   color: #1E74FD;
-  text-decoration: underline;
+  /* text-decoration: underline; */
 }
 .btn-link:hover {
   color: #185dca;
@@ -5351,7 +5351,7 @@ textarea.form-control-lg {
 }
 
 .nav-tabs {
-  border-bottom: 1px solid #dee2e6;
+  /* border-bottom: 1px solid #dee2e6; */
 }
 .nav-tabs .nav-link {
   margin-bottom: -1px;
@@ -13706,7 +13706,7 @@ body:not(.theme-full) .main-content .middle-sidebar-bottom.header-padding {
   font-weight: 500;
   letter-spacing: 1px;
   display: block;
-  text-decoration: underline;
+  text-decoration: none;
   margin-top: 20px;
 }
 .footer-wrapper p {

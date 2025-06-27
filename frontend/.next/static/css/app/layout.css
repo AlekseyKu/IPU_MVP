@@ -14073,7 +14073,7 @@ strong,
 }
 
 .open-font {
-  font-family: "Open Sans", sans-serif;
+  font-family: "Montserrat", sans-serif;
 }
 
 .fredoka-font {
@@ -15169,7 +15169,7 @@ body:not(.theme-full) .main-content .middle-sidebar-bottom.header-padding {
   font-weight: 500;
   letter-spacing: 1px;
   display: block;
-  text-decoration: underline;
+  text-decoration: none;
   margin-top: 20px;
 }
 .footer-wrapper p {
@@ -16878,7 +16878,7 @@ select.sort {
   transition: all 0.4s ease;
 }
 .nav-tabs li a.active {
-  /* border-bottom: 2px #333 solid !important; */
+  border-bottom: 2px #333 solid !important;
   color: #000 !important;
 }
 
@@ -17781,6 +17781,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Montserrat", sans-serif;
+}
+
+.nav-content-bttn {
+  text-decoration: none !important;
+}
+
+a {
+  text-decoration: none !important;
 }
 /*!***********************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!./node_modules/bootstrap/dist/css/bootstrap.min.css ***!
