@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "target": "es6", // Обновлено с es5 для лучшей совместимости
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -21,9 +17,7 @@
     "jsx": "preserve",
     "baseUrl": "src",
     "paths": {
-      "@/*": [
-        "*"
-      ]
+      "@/*": ["*"]
     },
     "incremental": true,
     "plugins": [
@@ -32,14 +26,6 @@
       }
     ]
   },
-  "include": [
-    "src",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "src/components/old",
-    "src/components/template",
-    "src/old_page_files",
-  ]
+  "include": ["src", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files"]
 }

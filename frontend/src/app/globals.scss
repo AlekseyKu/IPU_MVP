@@ -1,8 +1,13 @@
-/* === Подключение кастомных и Bootstrap-стилей === */
-@import '../styles/custom-bootstrap.scss';
-@import '../styles/demo.css';
+/* === globals.scss === */
 
-/* === Фикс базовых переменных, если нужно === */
+/* === Подключение кастомных и Bootstrap-стилей === */
+@import '~bootstrap/scss/bootstrap'; /* Импорт Bootstrap напрямую */
+@import '../styles/custom-bootstrap.scss'; /* Относительный путь от src/app/ */
+// @import '~public/assets/css/style.css'; /* Заменил demo.css на style.css, так как это основной файл */
+// @import '~public/assets/css/demo.css'; /* Добавлен для совместимости */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -14,10 +19,7 @@ body {
   font-family: 'Montserrat', sans-serif;
 }
 
-.nav-content-bttn {
-  text-decoration: none !important;
-}
-
+.nav-content-bttn,
 a {
-  text-decoration: none !important;
+  text-decoration: none; /* Убрал !important для избежания конфликтов */
 }

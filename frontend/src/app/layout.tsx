@@ -1,6 +1,6 @@
 // frontend\src\app\layout.tsx
 import './globals.scss'
-import 'bootstrap/dist/css/bootstrap.min.css'
+// import 'bootstrap/dist/css/bootstrap.min.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
