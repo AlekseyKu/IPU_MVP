@@ -1,14 +1,23 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from app.routers import users
-from app.db import engine
-from app.models.user import Base
+from contextlib import asynccontextmanager
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up...")
+    await init_pool()  # Инициализация пула
+    yield
+    logger.info("Shutting down...")
+    await close_pool()  # Закрытие пула
+
+app.router.lifespan_context = lifespan  # Установка lifespan контекста
+
 app.include_router(users.router)
 
-@app.on_event("startup")
-async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+from app.db import init_pool, close_pool  # Импорт для использования в lifespan
