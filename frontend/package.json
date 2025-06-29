@@ -1,9 +1,10 @@
 {
   "name": "react-bootstrap",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "dependencies": {
     "@headlessui/react": "^2.2.2",
+    "@telegram-apps/sdk": "^2.11.3",
     "@types/node": "^20.14.10",
     "apexcharts": "^4.6.0",
     "bootstrap": "^5.3.3",
@@ -32,8 +33,16 @@
     "format": "prettier --write ."
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.17",

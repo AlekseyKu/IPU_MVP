@@ -1,9 +1,14 @@
 // next.config.mjs
 export default {
   sassOptions: {
-    includePaths: ['src/styles', 'public/assets/scss'], // Убедимся, что пути корректны
+    includePaths: ['src/styles', 'public/assets/scss'],
   },
   images: {
-    domains: ['fonts.googleapis.com', 'assets/images'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'fonts.googleapis.com',
+      },
+    ],
   },
-};
+}

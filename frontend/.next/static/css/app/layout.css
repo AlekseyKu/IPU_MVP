@@ -17121,9 +17121,6 @@ select.sort {
   .login-card {
     min-width: 320px;
   }
-  .product-info-tab li {
-    margin-right: 20px !important;
-  }
   .owl-carousel.category-card, .owl-carousel.category-card .owl-stage-outer {
     overflow: visible !important;
   }

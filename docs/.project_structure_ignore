@@ -1,0 +1,9 @@
+# Игнорировать все файлы и папки в корневом каталоге
+*
+
+# Но не игнорировать директорию frontend
+!frontend/
+
+# Игнорировать node_modules и .next внутри директории frontend
+frontend/node_modules/
+frontend/.next/

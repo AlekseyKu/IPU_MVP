@@ -1,0 +1,10 @@
+# .project_structure_filter
+# This file specifies which directories and files to include/exclude
+# when generating the project structure.
+
+# Include only the 'frontend' directory
+frontend/
+
+# Exclude 'node_modules' and '.next' directories within 'frontend'
+!frontend/node_modules/
+!frontend/.next/
