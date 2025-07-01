@@ -23,7 +23,7 @@ async def create_user(user: dict, db: asyncpg.Connection = Depends(get_db)):
             telegram_id
         )
         if existing_user:
-            return {"message": "Welcome back! You're already registered.", "telegram_id": telegram_id}
+            return {"message": "Welcome back! You're already registered.", "telegram_id": telegram_id, "username": username}
 
         await db.execute(
             "INSERT INTO users (telegram_id, username) VALUES ($1, $2)",

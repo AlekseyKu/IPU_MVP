@@ -19,6 +19,7 @@
     "paths": {
       "@/*": ["*"]
     },
+    "types": ["@supabase/supabase-js"],
     "incremental": true,
     "plugins": [
       {

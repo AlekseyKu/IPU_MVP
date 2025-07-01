@@ -1,8 +1,10 @@
 // frontend\src\app\page.tsx
 'use client'
 
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useSearchParams } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 
 import Header from '@/components/Header'
 import Leftnav from '@/components/Leftnav'
@@ -14,9 +16,49 @@ import Profiledetail from '@/components/Profiledetail'
 import Load from '@/components/Load'
 import CreatepostModal from '@/components/modals/CreatepostModal'
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function Page() {
   const [showProfileDetail, setShowProfileDetail] = useState(false)
+  const [userData, setUserData] = useState<{ username: string; email: string } | null>(null)
+  const searchParams = useSearchParams()
+  const telegramId = searchParams.get('telegram_id')
+  const tgWebAppStartParam = searchParams.get('tgWebAppStartParam')
+
+  useEffect(() => {
+    async function fetchUser() {
+      console.log('Received telegramId:', telegramId)
+      console.log('Received tgWebAppStartParam:', tgWebAppStartParam)
+
+      const idToUse = telegramId || tgWebAppStartParam
+      if (!idToUse) {
+        setUserData({ username: 'Guest', email: 'support@gmail.com' })
+        return
+      }
+
+      const id = parseInt(idToUse, 10)
+      const { data, error } = await supabase
+        .from('users')
+        .select('username')
+        .eq('telegram_id', id)
+        .single()
+
+      console.log('Supabase response:', { data, error })
+
+      if (error || !data) {
+        console.error('Error fetching user:', error)
+        setUserData({ username: 'Guest', email: 'support@gmail.com' })
+        return
+      }
+
+      setUserData({ username: data.username, email: 'support@gmail.com' }) // email остается дефолтным
+    }
+
+    fetchUser()
+  }, [telegramId, tgWebAppStartParam])
 
   return (
     <Fragment>
@@ -27,7 +69,12 @@ export default function Page() {
           <div className="middle-sidebar-left pe-0">
             <div className="row">
               <div className="col-xl-12 mb-3">
-                <ProfilecardThree onToggleDetail={() => setShowProfileDetail(prev => !prev)} isOpen={showProfileDetail} />
+                <ProfilecardThree
+                  onToggleDetail={() => setShowProfileDetail(prev => !prev)}
+                  isOpen={showProfileDetail}
+                  username={userData?.username}
+                  email={userData?.email}
+                />
               </div>
 
               <div className="col-xl-4 col-xxl-3 col-lg-4">

@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@headlessui/react": "^2.2.2",
+    "@supabase/supabase-js": "^2.50.2",
     "@telegram-apps/sdk": "^2.11.3",
     "@types/node": "^20.14.10",
     "apexcharts": "^4.6.0",

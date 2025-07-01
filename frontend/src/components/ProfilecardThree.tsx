@@ -1,16 +1,22 @@
 // frontend\src\components\ProfilecardThree.tsx
 'use client'
 
-// import Link from 'next/link'
 import React from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface Props {
   onToggleDetail?: () => void
   isOpen?: boolean
+  username?: string
+  email?: string
 }
 
-const ProfilecardThree: React.FC<Props> = ({ onToggleDetail, isOpen = false }) => {
+const ProfilecardThree: React.FC<Props> = ({
+  onToggleDetail,
+  isOpen = false,
+  username = 'Mohannad Zitoun',
+  email = 'support@gmail.com',
+}) => {
   const tabs = [
     { id: 'navtabs1', label: 'Подписчики', count: 128 },
     { id: 'navtabs2', label: 'Обещания', count: 34 },
@@ -35,8 +41,8 @@ const ProfilecardThree: React.FC<Props> = ({ onToggleDetail, isOpen = false }) =
 
         <div className="d-flex align-items-center justify-content-between pe-3">
           <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
-            Mohannad Zitoun
-            <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">support@gmail.com</span>
+            {username}
+            <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">{email}</span>
           </h4>
 
           {onToggleDetail && (
@@ -62,20 +68,12 @@ const ProfilecardThree: React.FC<Props> = ({ onToggleDetail, isOpen = false }) =
               key={i}
               className="flex-fill d-flex flex-column align-items-center justify-content-center text-center me-0"
             >
-              {/* <a
-                href={`#${id}`}
-                className={`fw-500 font-xssss text-dark pt-2 ls-1 d-inline-block border-0 border-bottom-0${i === 0 ? 'active' : ''}`}
-                data-toggle="tab"
-                style={{ textDecoration: 'none' }}
-              > */}
               <div className="fw-400 font-xss mb-0">{count}</div>
               <div className="fw-400 font-xssss text-dark">{label}</div>
-              {/* </a> */}
             </li>
           ))}
         </ul>
       </div>
-
     </div>
   )
 }
