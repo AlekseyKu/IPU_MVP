@@ -17,6 +17,16 @@ import Load from '@/components/Load';
 import CreatepostModal from '@/components/modals/CreatepostModal';
 import { AnimatePresence, motion } from 'framer-motion';
 
+// Тип данных из Supabase с новым полем nickname
+interface UserData {
+  telegram_id: number;
+  nickname: string | null;
+  subscribers?: number;
+  promises?: number;
+  promises_done?: number;
+  stars?: number;
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -26,7 +36,7 @@ export default function UserProfile() {
   const { telegramId: paramTelegramId } = useParams();
   const { telegramId: contextTelegramId, setTelegramId } = useUser();
   const [showProfileDetail, setShowProfileDetail] = useState(false);
-  const [userData, setUserData] = useState<{ login: string; telegramId: number } | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +44,7 @@ export default function UserProfile() {
       setIsLoading(true);
       const id = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
       if (!id) {
-        setUserData({ login: 'Guest', telegramId: 0 });
+        setUserData({ nickname: 'Guest', telegram_id: 0 });
         setIsLoading(false);
         return;
       }
@@ -45,7 +55,7 @@ export default function UserProfile() {
       console.time('Supabase query');
       const { data, error } = await supabase
         .from('users')
-        .select('telegram_id, username')
+        .select('telegram_id, username, subscribers, promises, promises_done, stars')
         .eq('telegram_id', id)
         .single();
 
@@ -54,9 +64,16 @@ export default function UserProfile() {
 
       if (error || !data) {
         console.error('Error fetching user from Supabase:', error?.message);
-        setUserData({ login: 'Guest', telegramId: id });
+        setUserData({ nickname: 'Guest', telegram_id: id });
       } else {
-        setUserData({ login: data.username || 'Guest', telegramId: data.telegram_id });
+        setUserData({
+          telegram_id: data.telegram_id,
+          nickname: data.username || 'Guest',
+          subscribers: data.subscribers || 0,
+          promises: data.promises || 0,
+          promises_done: data.promises_done || 0,
+          stars: data.stars || 0,
+        });
       }
       setIsLoading(false);
       console.timeEnd('Total fetch time');
@@ -81,8 +98,12 @@ export default function UserProfile() {
                 <ProfilecardThree
                   onToggleDetail={() => setShowProfileDetail((prev) => !prev)}
                   isOpen={showProfileDetail}
-                  login={userData?.login}
-                  telegramId={userData?.telegramId}
+                  nickname={userData?.nickname || 'Guest'}
+                  telegramId={userData?.telegram_id || 0}
+                  subscribers={userData?.subscribers || 0}
+                  promises={userData?.promises || 0}
+                  promisesDone={userData?.promises_done || 0}
+                  stars={userData?.stars || 0}
                 />
               </div>
 
@@ -95,7 +116,7 @@ export default function UserProfile() {
                       exit={{ opacity: 0, y: 40 }}
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
-                      <Profiledetail login={userData?.login} telegramId={userData?.telegramId} />
+                      <Profiledetail nickname={userData?.nickname || 'Guest'} telegramId={userData?.telegram_id || 0} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -105,11 +126,10 @@ export default function UserProfile() {
                 <Createpost />
                 <Postview
                   id="32"
-                //   postvideo="postvideo.mp4"
                   postvideo=""
                   postimage="post.png"
                   avater="user.png"
-                  user={userData?.login || 'Guest'}
+                  user={userData?.nickname || 'Guest'}
                   time="22 min ago"
                   des="Lorem ipsum dolor sit amet..."
                 />
@@ -118,7 +138,7 @@ export default function UserProfile() {
                   postvideo=""
                   postimage="post.png"
                   avater="user.png"
-                  user={userData?.login || 'Guest'}
+                  user={userData?.nickname || 'Guest'}
                   time="22 min ago"
                   des="Lorem ipsum dolor sit amet..."
                 />
@@ -127,11 +147,10 @@ export default function UserProfile() {
                   postvideo=""
                   postimage="post.png"
                   avater="user.png"
-                  user={userData?.login || 'Guest'}
+                  user={userData?.nickname || 'Guest'}
                   time="2 hour ago"
                   des="Lorem ipsum dolor sit amet..."
                 />
-                {/* <Load /> */}
               </div>
             </div>
           </div>

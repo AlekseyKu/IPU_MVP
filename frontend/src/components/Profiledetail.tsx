@@ -2,11 +2,11 @@
 import React from 'react'
 
 interface Props {
-  login?: string
+  nickname?: string
   telegramId?: number
 }
 
-const Profiledetail: React.FC<Props> = ({ login = 'Mohannad Zitoun', telegramId = 0 }) => {
+const Profiledetail: React.FC<Props> = ({ nickname = 'Mohannad Zitoun', telegramId = 0 }) => {
   return (
     <div className="card w-100 shadow-xss rounded-xxl border-0 mb-3">
       <div className="card-body d-block p-4">
@@ -15,31 +15,31 @@ const Profiledetail: React.FC<Props> = ({ login = 'Mohannad Zitoun', telegramId 
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi nulla dolor, ornare at commodo non, feugiat non nisi. Phasellus faucibus mollis pharetra. Proin blandit ac massa sed rhoncus
         </p>
       </div>
-      <div className="card-body border-top-xs d-flex">
+      {/* <div className="card-body border-top-xs d-flex">
         <i className="feather-lock text-grey-500 me-3 font-lg"></i>
         <h4 className="fw-700 text-grey-900 font-xssss mt-0">
           Private <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">What's up, how are you?</span>
         </h4>
-      </div>
+      </div> */}
 
-      <div className="card-body d-flex pt-0">
+      {/* <div className="card-body d-flex pt-0">
         <i className="feather-eye text-grey-500 me-3 font-lg"></i>
         <h4 className="fw-700 text-grey-900 font-xssss mt-0">
           Visible <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">Anyone can find you</span>
         </h4>
-      </div>
+      </div> */}
       <div className="card-body d-flex pt-0">
         <i className="feather-map-pin text-grey-500 me-3 font-lg"></i>
         <h4 className="fw-700 text-grey-900 font-xssss mt-1">Flodia, Austria</h4>
       </div>
-      <div className="card-body d-flex pt-0">
+      {/* <div className="card-body d-flex pt-0">
         <i className="feather-users text-grey-500 me-3 font-lg"></i>
         <h4 className="fw-700 text-grey-900 font-xssss mt-1">General Group</h4>
-      </div>
+      </div> */}
       <div className="card-body d-flex pt-0">
         <i className="feather-user text-grey-500 me-3 font-lg"></i>
         <h4 className="fw-700 text-grey-900 font-xssss mt-0">
-          Login: {login} <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">ID: {telegramId}</span>
+          Login: {nickname} <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">ID: {telegramId}</span>
         </h4>
       </div>
     </div>

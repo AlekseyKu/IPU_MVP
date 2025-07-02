@@ -7,21 +7,29 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 interface Props {
   onToggleDetail?: () => void
   isOpen?: boolean
-  login?: string
+  nickname?: string
   telegramId?: number
+  subscribers?: number
+  promises?: number
+  promisesDone?: number
+  stars?: number
 }
 
 const ProfilecardThree: React.FC<Props> = ({
   onToggleDetail,
   isOpen = false,
-  login = 'Mohannad Zitoun',
+  nickname = 'Mohannad Zitoun',
   telegramId = 0,
+  subscribers = 0,
+  promises = 0,
+  promisesDone = 0,
+  stars = 0,
 }) => {
   const tabs = [
-    { id: 'navtabs1', label: 'Подписчики', count: 128 },
-    { id: 'navtabs2', label: 'Обещания', count: 34 },
-    { id: 'navtabs3', label: 'Выполнено', count: 12 },
-    { id: 'navtabs4', label: 'Звезды', count: 5 },
+    { id: 'navtabs1', label: 'Подписчики', count: subscribers },
+    { id: 'navtabs2', label: 'Обещания', count: promises },
+    { id: 'navtabs3', label: 'Выполнено', count: promisesDone },
+    { id: 'navtabs4', label: 'Звезды', count: stars },
   ]
 
   return (
@@ -41,7 +49,7 @@ const ProfilecardThree: React.FC<Props> = ({
 
         <div className="d-flex align-items-center justify-content-between pe-3">
           <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
-            {login}
+            {nickname}
             <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">{telegramId}</span>
           </h4>
 

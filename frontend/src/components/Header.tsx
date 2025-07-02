@@ -136,25 +136,25 @@ const Header: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/home" className="nav-content-bttn open-font">
+                  <Link href="/list" className="nav-content-bttn open-font">
                     <List className="me-3 w-4 h-4" />
                     <span>Лента обещаний</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/defaultstorie" className="nav-content-bttn open-font">
+                  <Link href="/" className="nav-content-bttn open-font">
                     <PlusCircle className="me-3 w-4 h-4" />
                     <span>Создать обещание</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/defaultgroup" className="nav-content-bttn open-font">
+                  <Link href="/leaders" className="nav-content-bttn open-font">
                     <BarChart2 className="me-3 w-4 h-4" />
                     <span>Таблица лидеров</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/userpage" className="nav-content-bttn open-font">
+                  <Link href="/shop" className="nav-content-bttn open-font">
                     <ShoppingCart className="me-3 w-4 h-4" />
                     <span>Маркетплейс IPU</span>
                   </Link>

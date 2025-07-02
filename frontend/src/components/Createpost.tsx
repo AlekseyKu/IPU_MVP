@@ -41,7 +41,7 @@ const Createpost: React.FC = () => {
         </figure> */}
         <textarea
           name="message"
-          className="h100 bor-0 w-100 rounded-xxl p-2 ps-2 font-xssss text-grey-500 fw-500 border-light-md theme-dark-bg"
+          className="h100 bor-0 w-100 rounded-xxl p-2 ps-2 font-xssss text-grey-900 fw-500 border-light-md theme-dark-bg"
           cols={30}
           rows={10}
           placeholder="What's on your mind?"

@@ -26,7 +26,7 @@ const Appfooter: React.FC = () => {
   ]
 
   return (
-    <div className="app-footer border-0 shadow-lg bg-white d-flex justify-content-around align-items-center py-2">
+    <div className="app-footer border-0 shadow-lg bg-white d-flex justify-content-around align-items-center py-3">
       {links.map(({ href, icon: Icon }, idx) => {
         const isActive = pathname === href
 
