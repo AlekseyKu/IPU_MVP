@@ -1,8 +1,9 @@
-// frontend\src\components\Appfooter.tsx
+// frontend/src/components/Appfooter.tsx
 'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useUser } from '@/context/UserContext';
 import {
   Home,
   User,
@@ -14,9 +15,10 @@ import {
 
 const Appfooter: React.FC = () => {
   const pathname = usePathname()
+  const { telegramId } = useUser();
 
   const links = [
-    { href: '/', icon: User },
+    { href: telegramId ? `/user/${telegramId}` : '/', icon: User },
     { href: '/list', icon: List },
     { href: '/create', icon: CirclePlus },
     { href: '/leaders', icon: BarChart2 },
@@ -35,7 +37,6 @@ const Appfooter: React.FC = () => {
               className="w-6 h-6"
             />
           </Link>
-
         )
       })}
     </div>

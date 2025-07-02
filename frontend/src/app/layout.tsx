@@ -1,6 +1,7 @@
 // frontend\src\app\layout.tsx
 import './globals.scss'
 import type { Metadata } from 'next'
+import { UserProvider } from '@/context/UserContext'
 import TelegramExpand from '@/components/TelegramExpand'
 
 export const metadata: Metadata = {
@@ -12,8 +13,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body suppressHydrationWarning={true}>
-        <TelegramExpand />
-        {children}
+        <UserProvider>
+          <TelegramExpand />
+          {children}
+        </UserProvider>
       </body>
     </html>
   )

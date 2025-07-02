@@ -32,16 +32,16 @@ const Createpost: React.FC = () => {
       </div>
 
       <div className="card-body p-0 mt-3 position-relative">
-        <figure className="avatar position-absolute ms-2 mt-1 top-5">
+        {/* <figure className="avatar position-absolute ms-2 mt-1 top-5">
           <img
             src="assets/images/user.png"
             alt="icon"
             className="shadow-sm rounded-circle w30"
           />
-        </figure>
+        </figure> */}
         <textarea
           name="message"
-          className="h100 bor-0 w-100 rounded-xxl p-2 ps-5 font-xssss text-grey-500 fw-500 border-light-md theme-dark-bg"
+          className="h100 bor-0 w-100 rounded-xxl p-2 ps-2 font-xssss text-grey-500 fw-500 border-light-md theme-dark-bg"
           cols={30}
           rows={10}
           placeholder="What's on your mind?"
