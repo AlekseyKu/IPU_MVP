@@ -1,4 +1,4 @@
-// frontend\src\components\ProfilecardThree.tsx
+// frontend/src/components/ProfilecardThree.tsx
 'use client'
 
 import React from 'react'
@@ -7,20 +7,20 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 interface Props {
   onToggleDetail?: () => void
   isOpen?: boolean
-  username?: string
-  email?: string
+  login?: string
+  telegramId?: number
 }
 
 const ProfilecardThree: React.FC<Props> = ({
   onToggleDetail,
   isOpen = false,
-  username = 'Mohannad Zitoun',
-  email = 'support@gmail.com',
+  login = 'Mohannad Zitoun',
+  telegramId = 0,
 }) => {
   const tabs = [
     { id: 'navtabs1', label: 'Подписчики', count: 128 },
     { id: 'navtabs2', label: 'Обещания', count: 34 },
-    { id: 'navtabs3', label: 'Выпонено', count: 12 },
+    { id: 'navtabs3', label: 'Выполнено', count: 12 },
     { id: 'navtabs4', label: 'Звезды', count: 5 },
   ]
 
@@ -41,8 +41,8 @@ const ProfilecardThree: React.FC<Props> = ({
 
         <div className="d-flex align-items-center justify-content-between pe-3">
           <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
-            {username}
-            <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">{email}</span>
+            {login}
+            <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">{telegramId}</span>
           </h4>
 
           {onToggleDetail && (

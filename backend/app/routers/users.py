@@ -31,6 +31,7 @@ async def create_user(user: dict, db: asyncpg.Connection = Depends(get_db)):
             username
         )
         logger.info(f"User created: telegram_id={telegram_id}")
+        logger.info(f"User created: telegram_id={telegram_id}")
         return {"message": "Welcome! Your profile has been created.", "telegram_id": telegram_id, "username": username}
     except Exception as e:
         logger.error(f"Error in create_user: {str(e)}")
