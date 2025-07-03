@@ -230,7 +230,7 @@ const Header: React.FC = () => {
           <div className="form-group searchbox mb-0 border-0 p-1">
             <input type="text" className="form-control border-0" placeholder="Search..." />
             <span className="ms-1 mt-1 d-inline-block close searchbox-close cursor-pointer">
-              <X className="w-4 h-4" onClick={() => toggleState('isActive')} />
+              <X className="w-4 h-4 me-2 mb-2" onClick={() => toggleState('isActive')} />
             </span>
           </div>
         </form>

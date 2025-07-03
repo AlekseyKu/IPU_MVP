@@ -1,114 +1,137 @@
 // frontend\src\components\Createpost.tsx
 'use client'
 
-import React, { useState } from 'react'
-import {
-  Edit3,
-  Video,
-  Image as ImageIcon,
-  Camera,
-  MoreHorizontal,
-  Bookmark,
-  AlertCircle,
-  AlertOctagon,
-  Lock
-} from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import ReactDOM from 'react-dom'
+import { useCreatePostModal } from '@/context/UserContext'
+import { X, Image as ImageIcon } from 'lucide-react'
 
 const Createpost: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const toggleOpen = () => setIsOpen((prev) => !prev)
-  const menuClass = isOpen ? 'show' : ''
+  const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
+  const [title, setTitle] = useState('')
+  const [deadline, setDeadline] = useState('')
+  const [content, setContent] = useState('')
+  const [media, setMedia] = useState<File | null>(null)
 
-  return (
-    <div className="card w-100 shadow-xss rounded-xxl border-0 ps-4 pt-4 pe-4 pb-3 mb-3">
-      <div className="card-body p-0">
-        <a
-          href="/"
-          className="font-xssss fw-600 text-grey-500 card-body p-0 d-flex align-items-center"
+  useEffect(() => {
+    if (isCreatePostOpen) {
+      setTitle('')
+      setDeadline('')
+      setContent('')
+      setMedia(null)
+    }
+  }, [isCreatePostOpen])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log({ title, deadline, content, media })
+    setIsCreatePostOpen(false)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setMedia(e.target.files[0])
+    }
+  }
+
+  const handleClose = () => {
+    setIsCreatePostOpen(false)
+  }
+
+  if (!isCreatePostOpen || typeof window === 'undefined') return null
+
+  return ReactDOM.createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflowY: 'auto',
+        padding: '1rem',
+        opacity: 1,
+        animation: 'fadeIn 0.3s ease-out',
+      }}
+
+    >
+      <div
+        className="card shadow-xss rounded-xxl border-0 p-4 bg-white w-100"
+        style={{
+          maxWidth: '500px',
+          position: 'relative',
+          maxHeight: 'calc(100vh - 2rem)',
+          overflowY: 'auto',
+          transform: 'translateY(20px)',
+          animation: 'popupSlideIn 0.3s ease-out',
+        }}
+      >
+        <button
+          onClick={handleClose}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            background: 'none',
+            border: 'none',
+          }}
         >
-          <Edit3 className="w-4 h-4 text-primary me-2 bg-greylight p-1 rounded-circle" />
-          Создать обещание
-        </a>
-      </div>
-
-      <div className="card-body p-0 mt-3 position-relative">
-        {/* <figure className="avatar position-absolute ms-2 mt-1 top-5">
-          <img
-            src="assets/images/user.png"
-            alt="icon"
-            className="shadow-sm rounded-circle w30"
+          <X className="w-6 h-6" />
+        </button>
+        <h2 className="fw-bold mb-3">Создать обещание</h2>
+        <p className="text-muted mb-3">Опишите свое обещание и установите дедлайн при необходимости</p>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Название обещания"
+            className="form-control mb-3"
           />
-        </figure> */}
-        <textarea
-          name="message"
-          className="h100 bor-0 w-100 rounded-xxl p-2 ps-2 font-xssss text-grey-900 fw-500 border-light-md theme-dark-bg"
-          cols={30}
-          rows={10}
-          placeholder="What's on your mind?"
-        ></textarea>
+          <input
+            type="datetime-local"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            className="form-control mb-3"
+          />
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Введите текст обещания"
+            className="form-control mb-3"
+            style={{ height: '200px' }}
+          />
+          <div className="mb-3">
+            <label className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleFileChange}
+                className="d-none"
+              />
+              <ImageIcon className="me-2" />
+              Прикрепить фото/видео
+            </label>
+            {media && <div className="small mt-2">{media.name}</div>}
+          </div>
+          <div className="d-flex justify-content-end gap-2">
+            <button type="button" onClick={handleClose} className="btn btn-light">
+              Отмена
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Создать
+            </button>
+          </div>
+        </form>
       </div>
-
-      <div className="card-body d-flex p-0 mt-0">
-        <a
-          href="#video"
-          className="d-flex align-items-center font-xssss fw-600 ls-1 text-grey-700 text-dark pe-4"
-        >
-          <Video className="w-5 h-5 text-danger me-1" />
-          <span className="d-none-xs">Live Video</span>
-        </a>
-        <a
-          href="#photo"
-          className="d-flex align-items-center font-xssss fw-600 ls-1 text-grey-700 text-dark pe-4"
-        >
-          <ImageIcon className="w-5 h-5 text-success me-1" />
-          <span className="d-none-xs">Photo/Video</span>
-        </a>
-        <a
-          href="#activity"
-          className="d-flex align-items-center font-xssss fw-600 ls-1 text-grey-700 text-dark pe-4"
-        >
-          <Camera className="w-5 h-5 text-warning me-1" />
-          <span className="d-none-xs">Feeling/Activity</span>
-        </a>
-
-        <div
-          className={`ms-auto pointer ${menuClass}`}
-          id="dropdownMenu4"
-          data-bs-toggle="dropdown"
-          aria-expanded={isOpen}
-          onClick={toggleOpen}
-        >
-          <MoreHorizontal className="w-5 h-5 text-grey-900 bg-greylight p-1 rounded-circle" />
-        </div>
-
-        <div
-          className={`dropdown-menu p-4 right-0 rounded-xxl border-0 shadow-lg ${menuClass}`}
-          aria-labelledby="dropdownMenu4"
-        >
-          <DropdownItem Icon={Bookmark} title="Save Link" desc="Add this to your saved items" />
-          <DropdownItem Icon={AlertCircle} title="Hide Post" desc="Save to your saved items" />
-          <DropdownItem Icon={AlertOctagon} title="Hide all from Group" desc="Save to your saved items" />
-          <DropdownItem Icon={Lock} title="Unfollow Group" desc="Save to your saved items" />
-        </div>
-      </div>
-    </div>
+    </div>,
+    document.body
   )
 }
-
-interface DropdownItemProps {
-  Icon: React.ElementType
-  title: string
-  desc: string
-}
-
-const DropdownItem: React.FC<DropdownItemProps> = ({ Icon, title, desc }) => (
-  <div className="card-body p-0 d-flex mt-2">
-    <Icon className="w-5 h-5 text-grey-500 me-3" />
-    <h4 className="fw-600 text-grey-900 font-xssss mt-0 me-4 pointer">
-      {title}
-      <span className="d-block font-xsssss fw-500 mt-1 lh-3 text-grey-500">{desc}</span>
-    </h4>
-  </div>
-)
 
 export default Createpost

@@ -34,7 +34,7 @@ export default function Page() {
             <div className="row feed-body">
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 {/* <Storyslider /> */}
-                <Createpost />
+                {/* <Createpost /> */}
                 <Postview
                   id="32"
                   postvideo=""

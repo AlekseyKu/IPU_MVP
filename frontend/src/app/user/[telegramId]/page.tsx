@@ -123,7 +123,6 @@ export default function UserProfile() {
               </div>
 
               <div className="col-xl-8 col-xxl-9 col-lg-8">
-                <Createpost />
                 <Postview
                   id="32"
                   postvideo=""
