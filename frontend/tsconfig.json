@@ -17,7 +17,8 @@
     "jsx": "preserve",
     "baseUrl": "src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["*"],
+      "@types/*": ["types/*"]
     },
     "types": ["@supabase/supabase-js"],
     "incremental": true,
@@ -27,6 +28,6 @@
       }
     ]
   },
-  "include": ["src", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files"]
+  "include": ["src", "src/types.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files", "src/app/settings/page.tsx"]
 }

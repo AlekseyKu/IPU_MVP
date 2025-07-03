@@ -1,187 +1,180 @@
-// frontend\src\components\Postview.tsx
+// frontend/src/components/Postview.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { CirclePlay, CircleStop, Ellipsis } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+// Импорт общих типов
+import { PromiseData } from '@/types'
 
 interface PostviewProps {
-  user: string
-  time: string
-  des: string
-  avater: string
-  postimage?: string
-  postvideo?: string
-  id: string | number
+  promise: PromiseData
+  onToggle: () => void
+  isOpen: boolean
+  onUpdate: (updatedPromise: PromiseData) => void
 }
 
-const Postview: React.FC<PostviewProps> = ({ user, time, des, avater, postimage, postvideo, id }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isActive, setIsActive] = useState(false)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate }) => {
+  const { id, title, deadline, content, media_url, is_completed, created_at } = promise
   const [isMounted, setIsMounted] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [localPromise, setLocalPromise] = useState<PromiseData>(promise)
 
   useEffect(() => {
     setIsMounted(true)
-  }, [])
 
-  const toggleOpen = () => setIsOpen(!isOpen)
-  const toggleActive = () => setIsActive(!isActive)
+    if (!id) {
+      console.error('Promise ID is undefined')
+      return
+    }
 
-  const menuClass = isOpen ? ' show' : ''
-  const emojiClass = isActive ? ' active' : ''
+    const subscription = supabase
+      .channel(`promise-update-${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'promises', filter: `id=eq.${id}` },
+        (payload) => {
+          const updatedPromise = payload.new as PromiseData
+          setLocalPromise(updatedPromise)
+          if (onUpdate) onUpdate(updatedPromise)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [id, onUpdate])
 
   if (!isMounted) {
     return null
   }
 
+  if (!localPromise) {
+    return <div className="text-center p-2">Данные не загружены</div>
+  }
+
+  const statusText = localPromise.is_completed ? 'Завершено' : 'Активно'
+  const Icon = localPromise.is_completed ? CircleStop : CirclePlay
+  const iconColor = localPromise.is_completed ? 'text-accent' : 'text-primary'
+
+  const handleComplete = async () => {
+    if (!id) {
+      console.error('Cannot complete promise: ID is undefined')
+      return
+    }
+    const { error } = await supabase
+      .from('promises')
+      .update({ is_completed: true })
+      .eq('id', id)
+    if (error) console.error('Error completing promise:', error)
+    setMenuOpen(false)
+  }
+
+  const copyLink = () => {
+    if (!id) {
+      console.error('Cannot copy link: ID is undefined')
+      return
+    }
+    const link = `${window.location.origin}/promise/${id}`
+    navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована!'))
+    setMenuOpen(false)
+  }
+
+  const share = () => {
+    if (!id) {
+      console.error('Cannot share: ID is undefined')
+      return
+    }
+    const shareData = {
+      title: localPromise.title,
+      text: localPromise.content,
+      url: `${window.location.origin}/promise/${id}`,
+    }
+    if (navigator.share) {
+      navigator.share(shareData).catch((error) => console.error('Error sharing:', error))
+    } else {
+      alert('Поделиться недоступно на этом устройстве')
+    }
+    setMenuOpen(false)
+  }
+
   return (
-    <div className="card w-100 shadow-xss rounded-xxl border-0 p-4 mb-3">
-      <div className="card-body p-0 d-flex">
-        <figure className="avatar me-3">
-          <img src={`/assets/images/${avater}`} alt="avatar" className="shadow-sm rounded-circle w45" />
-        </figure>
-        <h4 className="fw-700 text-grey-900 font-xssss mt-1">
-          {user}
-          <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">{time}</span>
-        </h4>
-        <div className="ms-auto pointer" onClick={toggleOpen}>
-          <i className="ti-more-alt text-grey-900 btn-round-md bg-greylight font-xss"></i>
+    <div className="card w-100 shadow-sm rounded-xxl border-0 px-4 py-3 mb-3 position-relative" onClick={onToggle}>
+      <div className="card-body p-0 d-flex flex-column">
+        <div className="flex-grow-1">
+          <span className="text-dark font-xs mb-1">{title}</span>
         </div>
-      </div>
-
-      {postvideo && (
-        <div className="card-body p-0 mb-3 rounded-3 overflow-hidden uttam-die">
-          <a href="/defaultvideo" className="video-btn">
-            <video autoPlay loop className="float-right w-100">
-              <source src={`/assets/images/${postvideo}`} type="video/mp4" />
-            </video>
-          </a>
-        </div>
-      )}
-
-      <div className="card-body p-0 me-lg-5">
-        <p className="fw-500 text-grey-500 lh-26 font-xssss w-100 mb-2">
-          {des} <a href="/defaultvideo" className="fw-600 text-primary ms-2">See more</a>
-        </p>
-      </div>
-
-      {postimage && (
-        <div className="card-body d-block p-0 mb-3">
-          <div className="row ps-2 pe-2">
-            <div className="col-sm-12 p-1">
-              <img src={`/assets/images/${postimage}`} className="rounded-3 w-100" alt="post" />
-            </div>
+        <div className="d-flex justify-content-between align-items-center">
+          <span className="text-muted font-xsss">Дэдлайн: {new Date(deadline).toLocaleString([], {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          })}</span>
+          <div className="d-flex align-items-center text-nowrap">
+            <span className="text-muted font-xsss me-1">{statusText}</span>
+            <Icon className={`w-3 h-3 ${iconColor}`} />
           </div>
         </div>
-      )}
-
-      <div className="card-body d-flex p-0">
-        <div
-          className="emoji-bttn pointer d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss me-2"
-          onClick={toggleActive}
-        >
-          <i className="feather-thumbs-up text-white bg-primary-gradiant me-1 btn-round-xs font-xss"></i>
-          <i className="feather-heart text-white bg-red-gradiant me-2 btn-round-xs font-xss"></i>
-          2.8K Like
-        </div>
-        <div className={`emoji-wrap pointer ${emojiClass}`}>
-          <ul className="emojis list-inline mb-0">
-            <li className="emoji list-inline-item">👍</li>
-            <li className="emoji list-inline-item">😣</li>
-            <li className="emoji list-inline-item">😖</li>
-            <li className="emoji list-inline-item">😲</li>
-            <li className="emoji list-inline-item">😊</li>
-            <li className="emoji list-inline-item">👏</li>
-            <li className="emoji list-inline-item">😢</li>
-            <li className="emoji list-inline-item">🌝</li>
-          </ul>
-        </div>
-        <a
-          href="/defaultvideo"
-          className="d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss"
-        >
-          <i className="feather-message-circle text-dark text-grey-900 btn-round-sm font-lg"></i>
-          <span className="d-none-xss">22 Comment</span>
-        </a>
-        <div
-          className={`pointer ms-auto d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss${menuClass}`}
-          onClick={toggleOpen}
-        >
-          <i className="feather-share-2 text-grey-900 text-dark btn-round-sm font-lg"></i>
-          <span className="d-none-xs">Share</span>
-        </div>
-
-        {isOpen && (
-          <div className="dropdown-menu dropdown-menu-end p-4 rounded-xxl border-0 shadow-lg right-0">
-            <h4 className="fw-700 font-xss text-grey-900 d-flex align-items-center">
-              Share <i className="feather-x ms-auto font-xssss btn-round-xs bg-greylight text-grey-900 me-2"></i>
-            </h4>
-            <div className="card-body p-0 d-flex">
-              <ul className="d-flex align-items-center justify-content-between mt-2">
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-facebook">
-                    <i className="font-xs ti-facebook text-white"></i>
-                  </span>
-                </li>
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-twiiter">
-                    <i className="font-xs ti-twitter-alt text-white"></i>
-                  </span>
-                </li>
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-linkedin">
-                    <i className="font-xs ti-linkedin text-white"></i>
-                  </span>
-                </li>
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-instagram">
-                    <i className="font-xs ti-instagram text-white"></i>
-                  </span>
-                </li>
-                <li>
-                  <span className="btn-round-lg pointer bg-pinterest">
-                    <i className="font-xs ti-pinterest text-white"></i>
-                  </span>
-                </li>
-              </ul>
+      </div>
+      {isOpen && (
+        <div className="mt-3">
+          <p className="text-muted lh-sm small mb-2">{content}</p>
+          {media_url && (
+            <div className="mb-3">
+              {media_url.endsWith('.mp4') ? (
+                <video controls className="w-100 rounded">
+                  <source src={media_url} type="video/mp4" />
+                </video>
+              ) : (
+                <img src={media_url} alt="Attached media" className="w-100 rounded" />
+              )}
             </div>
-            <div className="card-body p-0 d-flex">
-              <ul className="d-flex align-items-center justify-content-between mt-2">
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-tumblr">
-                    <i className="font-xs ti-tumblr text-white"></i>
-                  </span>
-                </li>
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-youtube">
-                    <i className="font-xs ti-youtube text-white"></i>
-                  </span>
-                </li>
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-flicker">
-                    <i className="font-xs ti-flickr text-white"></i>
-                  </span>
-                </li>
-                <li className="me-1">
-                  <span className="btn-round-lg pointer bg-black">
-                    <i className="font-xs ti-vimeo-alt text-white"></i>
-                  </span>
-                </li>
-                <li>
-                  <span className="btn-round-lg pointer bg-whatsup">
-                    <i className="font-xs feather-phone text-white"></i>
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <h4 className="fw-700 font-xssss mt-4 text-grey-500 d-flex align-items-center mb-3">Copy Link</h4>
-            <i className="feather-copy position-absolute right-35 mt-3 font-xs text-grey-500"></i>
-            <input
-              type="text"
-              placeholder="https://socia.be/1rGxjoJKVF0"
-              className="bg-grey text-grey-500 font-xssss border-0 lh-32 p-2 font-xssss fw-600 rounded-3 w-100 theme-dark-bg"
+          )}
+          <span className="text-muted small">Создано: {new Date(created_at).toLocaleString([], {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          })}</span>
+          <div className="position-absolute bottom-0 end-0 mb-3 me-4">
+            <Ellipsis
+              className="cursor-pointer text-muted"
+              size={20}
+              onClick={(e) => {
+                e.stopPropagation()
+                setMenuOpen(!menuOpen)
+              }}
             />
+            {menuOpen && (
+              <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
+                {!localPromise.is_completed && (
+                  <button className="dropdown-item text-accent" onClick={handleComplete}>
+                    Завершить обещание
+                  </button>
+                )}
+                <button className="dropdown-item" onClick={copyLink}>
+                  Скопировать ссылку
+                </button>
+                <button className="dropdown-item" onClick={share}>
+                  Отправить
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -4,9 +4,10 @@ import React from 'react'
 interface Props {
   nickname?: string
   telegramId?: number
+  fullName: string;
 }
 
-const Profiledetail: React.FC<Props> = ({ nickname = 'Mohannad Zitoun', telegramId = 0 }) => {
+const Profiledetail: React.FC<Props> = ({ nickname, telegramId, fullName }) => {
   return (
     <div className="card w-100 shadow-xss rounded-xxl border-0 mb-3">
       <div className="card-body d-block p-4">
@@ -39,7 +40,8 @@ const Profiledetail: React.FC<Props> = ({ nickname = 'Mohannad Zitoun', telegram
       <div className="card-body d-flex pt-0">
         <i className="feather-user text-grey-500 me-3 font-lg"></i>
         <h4 className="fw-700 text-grey-900 font-xssss mt-0">
-          Login: {nickname} <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">ID: {telegramId}</span>
+          TG Username: {nickname} 
+          {/* <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">ID: {telegramId}</span> */}
         </h4>
       </div>
     </div>

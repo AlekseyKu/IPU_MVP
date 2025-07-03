@@ -1,17 +1,26 @@
-// frontend\src\components\Createpost.tsx
+// frontend/src/components/Createpost.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { useCreatePostModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+import { useUser } from '@/context/UserContext'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const Createpost: React.FC = () => {
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
+  const { telegramId } = useUser()
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (isCreatePostOpen) {
@@ -22,10 +31,42 @@ const Createpost: React.FC = () => {
     }
   }, [isCreatePostOpen])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log({ title, deadline, content, media })
-    setIsCreatePostOpen(false)
+    if (!telegramId) return
+
+    setLoading(true)
+    try {
+      let mediaUrl = null
+      if (media) {
+        const fileExt = media.name.split('.').pop()
+        const fileName = `${Date.now()}.${fileExt}`
+        const { error: uploadError } = await supabase.storage
+          .from('promises-media')
+          .upload(`public/${fileName}`, media, {
+            upsert: true
+          })
+        if (uploadError) throw uploadError
+        mediaUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/promises-media/public/${fileName}`
+      }
+
+      const { error } = await supabase.from('promises').insert({
+        user_id: telegramId,
+        title,
+        deadline,
+        content,
+        media_url: mediaUrl,
+        created_at: new Date().toISOString(),
+        is_completed: false // Устанавливаем по умолчанию как "не выполнено"
+      })
+
+      if (error) throw error
+      setIsCreatePostOpen(false)
+    } catch (error) {
+      console.error('Error saving promise:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,7 +99,6 @@ const Createpost: React.FC = () => {
         opacity: 1,
         animation: 'fadeIn 0.3s ease-out',
       }}
-
     >
       <div
         className="card shadow-xss rounded-xxl border-0 p-4 bg-white w-100"
@@ -92,12 +132,14 @@ const Createpost: React.FC = () => {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Название обещания"
             className="form-control mb-3"
+            required
           />
           <input
             type="datetime-local"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
             className="form-control mb-3"
+            required
           />
           <textarea
             value={content}
@@ -105,6 +147,7 @@ const Createpost: React.FC = () => {
             placeholder="Введите текст обещания"
             className="form-control mb-3"
             style={{ height: '200px' }}
+            required
           />
           <div className="mb-3">
             <label className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
@@ -120,11 +163,11 @@ const Createpost: React.FC = () => {
             {media && <div className="small mt-2">{media.name}</div>}
           </div>
           <div className="d-flex justify-content-end gap-2">
-            <button type="button" onClick={handleClose} className="btn btn-light">
+            <button type="button" onClick={handleClose} className="btn btn-light" disabled={loading}>
               Отмена
             </button>
-            <button type="submit" className="btn btn-primary">
-              Создать
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Сохранение...' : 'Создать'}
             </button>
           </div>
         </form>

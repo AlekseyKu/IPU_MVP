@@ -8,6 +8,7 @@ interface Props {
   onToggleDetail?: () => void
   isOpen?: boolean
   nickname?: string
+  fullName: string;
   telegramId?: number
   subscribers?: number
   promises?: number
@@ -19,6 +20,7 @@ const ProfilecardThree: React.FC<Props> = ({
   onToggleDetail,
   isOpen = false,
   nickname = 'Mohannad Zitoun',
+  fullName = 'Guest',
   telegramId = 0,
   subscribers = 0,
   promises = 0,
@@ -49,8 +51,8 @@ const ProfilecardThree: React.FC<Props> = ({
 
         <div className="d-flex align-items-center justify-content-between pe-3">
           <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
-            {nickname}
-            <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">{telegramId}</span>
+            {fullName}
+            <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{nickname}</span>
           </h4>
 
           {onToggleDetail && (
