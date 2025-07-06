@@ -8,7 +8,14 @@ export interface UserData {
   promises?: number;
   promises_done?: number;
   stars?: number;
-  fullName?: string; // Добавляем для передачи полного имени
+  fullName?: string;
+}
+
+export interface User {
+  telegram_id: number;
+  first_name: string | null;
+  last_name: string | null;
+  nickname: string | null;
 }
 
 export interface PromiseData {

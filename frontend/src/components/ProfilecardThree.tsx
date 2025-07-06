@@ -36,7 +36,7 @@ const ProfilecardThree: React.FC<Props> = ({
 
   return (
     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
-      <div className="card-body h250 p-0 rounded-xxl overflow-hidden m-3" style={{ height: '150px' }}>
+      <div className="hero-img card-body p-0 rounded-xxl overflow-hidden m-3" style={{ height: '150px' }}>
         <img src="/assets/images/comingsoon.svg" alt="avater" />
       </div>
 

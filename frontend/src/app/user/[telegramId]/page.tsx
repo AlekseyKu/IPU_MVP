@@ -37,7 +37,7 @@ export default function UserProfile() {
       setIsLoading(true);
       const id = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
       if (!id) {
-        setUserData({ nickname: 'Guest', telegram_id: 0, first_name: '', last_name: ''  });
+        setUserData({ nickname: 'Guest', telegram_id: 0, first_name: '', last_name: '' });
         setIsLoading(false);
         return;
       }
@@ -57,7 +57,7 @@ export default function UserProfile() {
         console.timeEnd('Supabase query - user');
         if (userError || !userDataResp) {
           console.error('Error fetching user from Supabase:', userError?.message);
-          setUserData({ nickname: 'Guest', telegram_id: id, first_name: '', last_name: ''  });
+          setUserData({ nickname: 'Guest', telegram_id: id, first_name: '', last_name: '' });
         } else {
           setUserData({
             telegram_id: userDataResp.telegram_id,
@@ -120,9 +120,22 @@ export default function UserProfile() {
       )
       .subscribe();
 
+    // Слушаем событие удаления обещания
+    const deleteSubscription = supabase
+      .channel(`promises-delete-${paramTelegramId || contextTelegramId}`)
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'promises', filter: `user_id=eq.${parseInt(paramTelegramId as string, 10) || contextTelegramId}` },
+        (payload) => {
+          setPromises((prev) => prev.filter((p) => p.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(insertSubscription);
       supabase.removeChannel(updateSubscription);
+      supabase.removeChannel(deleteSubscription);
     };
   }, [paramTelegramId, contextTelegramId, setTelegramId]);
 
@@ -131,6 +144,12 @@ export default function UserProfile() {
   }
 
   const fullName = `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim() || 'Guest';
+  const promisesCount = promises.length;
+  const promisesDoneCount = promises.filter((p) => p.is_completed).length;
+
+  const handleDelete = (id: string) => {
+    setPromises((prev) => prev.filter((p) => p.id !== id));
+  };
 
   return (
     <>
@@ -147,8 +166,8 @@ export default function UserProfile() {
                   nickname={userData?.nickname || 'Guest'}
                   telegramId={userData?.telegram_id || 0}
                   subscribers={userData?.subscribers || 0}
-                  promises={userData?.promises || 0}
-                  promisesDone={userData?.promises_done || 0}
+                  promises={promisesCount}
+                  promisesDone={promisesDoneCount}
                   stars={userData?.stars || 0}
                   fullName={fullName}
                 />
@@ -163,7 +182,7 @@ export default function UserProfile() {
                       exit={{ opacity: 0, y: 40 }}
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
-                      <Profiledetail nickname={userData?.nickname || 'Guest'} telegramId={userData?.telegram_id || 0} fullName={fullName}/>
+                      <Profiledetail nickname={userData?.nickname || 'Guest'} telegramId={userData?.telegram_id || 0} fullName={fullName} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -188,6 +207,7 @@ export default function UserProfile() {
                             prev.map((p) => (p.id === updatedPromise.id ? updatedPromise : p))
                           )
                         }
+                        onDelete={handleDelete}
                       />
                     </motion.div>
                   ))}

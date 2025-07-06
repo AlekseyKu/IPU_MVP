@@ -13,6 +13,7 @@ interface PostviewProps {
   onToggle: () => void
   isOpen: boolean
   onUpdate: (updatedPromise: PromiseData) => void
+  onDelete: (id: string) => void // Новый проп для уведомления об удалении
 }
 
 const supabase = createClient(
@@ -20,7 +21,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate }) => {
+const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete }) => {
   const { id, title, deadline, content, media_url, is_completed, created_at } = promise
   const [isMounted, setIsMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -105,6 +106,25 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
     setMenuOpen(false)
   }
 
+  const handleDelete = async () => {
+    if (!id) {
+      console.error('Cannot delete promise: ID is undefined')
+      return
+    }
+    if (confirm('Вы уверены, что хотите удалить это обещание?')) {
+      const { error } = await supabase
+        .from('promises')
+        .delete()
+        .eq('id', id)
+      if (error) {
+        console.error('Error deleting promise:', error)
+      } else {
+        setMenuOpen(false)
+        if (onDelete) onDelete(id) // Уведомляем родителя об удалении
+      }
+    }
+  }
+
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 px-4 py-3 mb-3 position-relative" onClick={onToggle}>
       <div className="card-body p-0 d-flex flex-column">
@@ -170,6 +190,9 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
                 <button className="dropdown-item" onClick={share}>
                   Отправить
                 </button>
+                <button className="dropdown-item text-danger" onClick={handleDelete}>
+                  Удалить обещание
+                </button> {/* Перемещено под "Отправить" */}
               </div>
             )}
           </div>
