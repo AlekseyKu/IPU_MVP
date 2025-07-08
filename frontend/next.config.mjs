@@ -22,12 +22,12 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: "default-src 'self' https://14c7-2a09-bac5-d46f-e6-00-17-317.ngrok-free.app 'unsafe-eval' 'unsafe-inline'; font-src 'self' https://14c7-2a09-bac5-d46f-e6-00-17-317.ngrok-free.app data:;",          },
+            value: "default-src 'self'  https://e51ef77f2ac7.ngrok-free.app 'unsafe-eval' 'unsafe-inline'; font-src 'self'  https://e51ef77f2ac7.ngrok-free.app data:;",          },
         ],
       },
     ]
   },
-  allowedDevOrigins: ['https://14c7-2a09-bac5-d46f-e6-00-17-317.ngrok-free.app', '*.local-origin.dev'],
+  allowedDevOrigins: [' https://e51ef77f2ac7.ngrok-free.app', '*.local-origin.dev'],
 }
 
 export default nextConfig

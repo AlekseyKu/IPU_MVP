@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useUser } from '@/context/UserContext';
 import {
   Video,
   Search,
@@ -30,6 +31,8 @@ const Header: React.FC = () => {
     isActive: false,
     isNoti: false,
   })
+
+  const { telegramId } = useUser();
 
   const [isMounted, setIsMounted] = useState(false)
 
@@ -199,7 +202,7 @@ const Header: React.FC = () => {
               <div className="nav-caption fw-600 font-xssss text-grey-500">Аккаунт</div>
               <ul className="mb-1">
                 <li>
-                  <Link href="/defaultsettings" className="nav-content-bttn open-font h-auto pt-2 pb-2">
+                  <Link href={telegramId ? `/settings/${telegramId}` : '/'} className="nav-content-bttn open-font h-auto pt-2 pb-2">
                     <Settings className="me-3 w-4 h-4 text-grey-500" />
                     <span>Настройки</span>
                   </Link>

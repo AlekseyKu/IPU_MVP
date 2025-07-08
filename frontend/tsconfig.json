@@ -15,10 +15,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
-    "baseUrl": "src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"],
-      "@types/*": ["types/*"]
+      "@/*": ["./src/*"],
     },
     "types": ["@supabase/supabase-js"],
     "incremental": true,
@@ -28,6 +27,6 @@
       }
     ]
   },
-  "include": ["src", "src/types.ts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files", "src/app/settings/page.tsx"]
+  "include": ["src", "src/types.ts", ".next/types/**/*.ts", "next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files", "src/app/setup/[telegramId]/page.tsx"]
 }

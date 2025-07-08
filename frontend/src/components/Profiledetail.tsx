@@ -1,51 +1,146 @@
 // frontend/src/components/Profiledetail.tsx
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react';
 
 interface Props {
-  nickname?: string
-  telegramId?: number
+  nickname?: string;
+  telegramId?: number;
   fullName: string;
+  about?: string;
+  address?: string;
+  onChangeAbout?: (text: string) => void;
+  onChangeAddress?: (text: string) => void;
+  onChangeFullName?: (firstName: string, lastName: string) => void;
+  isEditable?: boolean;
 }
 
-const Profiledetail: React.FC<Props> = ({ nickname, telegramId, fullName }) => {
+const Profiledetail: React.FC<Props> = ({
+  nickname,
+  telegramId,
+  fullName,
+  about = '',
+  address = '',
+  onChangeAbout,
+  onChangeAddress,
+  onChangeFullName,
+  isEditable = false,
+}) => {
+  const [localAbout, setLocalAbout] = useState(about);
+  const [localAddress, setLocalAddress] = useState(address);
+  const [firstName, setFirstName] = useState(fullName.split(' ')[0] || '');
+  const [lastName, setLastName] = useState(fullName.split(' ')[1] || '');
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
+        setShowTooltip(false);
+      }
+    }
+
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showTooltip]);
+
   return (
     <div className="card w-100 shadow-xss rounded-xxl border-0 mb-3">
-      <div className="card-body d-block p-4">
-        <h4 className="fw-700 mb-3 font-xsss text-grey-900">About</h4>
-        <p className="fw-500 text-grey-500 lh-24 font-xssss mb-0">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi nulla dolor, ornare at commodo non, feugiat non nisi. Phasellus faucibus mollis pharetra. Proin blandit ac massa sed rhoncus
-        </p>
-      </div>
-      {/* <div className="card-body border-top-xs d-flex">
-        <i className="feather-lock text-grey-500 me-3 font-lg"></i>
-        <h4 className="fw-700 text-grey-900 font-xssss mt-0">
-          Private <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">What's up, how are you?</span>
-        </h4>
-      </div> */}
+      <div className="card-body d-block px-3">
+        <h4 className="fw-700 mb-3 font-xsss text-grey-900 ms-1">Информация</h4>
 
-      {/* <div className="card-body d-flex pt-0">
-        <i className="feather-eye text-grey-500 me-3 font-lg"></i>
-        <h4 className="fw-700 text-grey-900 font-xssss mt-0">
-          Visible <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">Anyone can find you</span>
-        </h4>
-      </div> */}
-      <div className="card-body d-flex pt-0">
-        <i className="feather-map-pin text-grey-500 me-3 font-lg"></i>
-        <h4 className="fw-700 text-grey-900 font-xssss mt-1">Flodia, Austria</h4>
+        {isEditable ? (
+          <div className="mb-3">
+            <div className="d-flex flex-wrap gap-2 mb-2">
+              <div className="flex-fill">
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    onChangeFullName?.(e.target.value, lastName);
+                  }}
+                  className="form-control font-xsss"
+                  placeholder="Имя"
+                />
+              </div>
+              <div className="flex-fill">
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    onChangeFullName?.(firstName, e.target.value);
+                  }}
+                  className="form-control font-xsss"
+                  placeholder="Фамилия"
+                />
+              </div>
+            </div>
+
+            <textarea
+              value={localAbout}
+              onChange={(e) => {
+                setLocalAbout(e.target.value);
+                onChangeAbout?.(e.target.value);
+              }}
+              className="form-control lh-24 font-xsss mb-0"
+              placeholder="О себе"
+              style={{ height: '180px' }}
+            />
+
+            {/* <input
+              type="text"
+              value={localAddress}
+              onChange={(e) => {
+                setLocalAddress(e.target.value);
+                onChangeAddress?.(e.target.value);
+              }}
+              className="form-control font-xsss"
+              placeholder="Адрес"
+            /> */}
+          </div>
+        ) : (
+          <>
+            <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">{localAbout}</p>
+            {/* <h4 className="fw-700 text-grey-900 font-xssss mb-0">{localAddress}</h4> */}
+          </>
+        )}
       </div>
-      {/* <div className="card-body d-flex pt-0">
-        <i className="feather-users text-grey-500 me-3 font-lg"></i>
-        <h4 className="fw-700 text-grey-900 font-xssss mt-1">General Group</h4>
-      </div> */}
-      <div className="card-body d-flex pt-0">
-        <i className="feather-user text-grey-500 me-3 font-lg"></i>
-        <h4 className="fw-700 text-grey-900 font-xssss mt-0">
-          TG Username: {nickname} 
-          {/* <span className="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">ID: {telegramId}</span> */}
+
+      <div className="card-body px-4 pt-0 text-center position-relative">
+        <h4
+          className="fw-700 text-grey-900 font-xsss m-0"
+          onClick={() => setShowTooltip(true)}
+          style={{ cursor: 'pointer' }}
+        >
+          TG Username: {nickname}
         </h4>
+
+        {showTooltip && (
+          <div
+            ref={tooltipRef}
+            className="position-absolute bg-white border p-2 shadow rounded font-xssss"
+            style={{
+              bottom: '100%',
+              right: '5%',
+              width: '90%',
+              zIndex: 1000,
+              marginBottom: '8px',
+            }}
+          >
+            Telegram username остается неизменным для оптимального поиска и привязки пользователей к аккаунту.
+          </div>
+        )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Profiledetail
+export default Profiledetail;

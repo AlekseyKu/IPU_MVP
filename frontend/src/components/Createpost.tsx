@@ -145,7 +145,7 @@ const Createpost: React.FC = () => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Введите текст обещания"
-            className="form-control mb-3"
+            className="form-control mb-3 lh-30"
             style={{ height: '200px' }}
             required
           />
