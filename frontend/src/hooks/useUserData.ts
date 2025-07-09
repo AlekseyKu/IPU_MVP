@@ -17,7 +17,7 @@ interface UserData {
   promises_done?: number;
   stars?: number;
   hero_img_url?: string;
-  avatar_url?: string;
+  avatar_img_url?: string;
   about?: string;
   address?: string;
 }
@@ -41,7 +41,7 @@ export const useUserData = (telegramId: number) => {
         console.log(`Fetching user data for telegramId: ${telegramId}`);
         const { data, error } = await supabase
           .from('users')
-          .select('telegram_id, username, first_name, last_name, subscribers, promises, promises_done, stars, hero_img_url, avatar_url, about, address')
+          .select('telegram_id, username, first_name, last_name, subscribers, promises, promises_done, stars, hero_img_url, avatar_img_url, about, address')
           .eq('telegram_id', telegramId)
           .single();
 
@@ -60,7 +60,7 @@ export const useUserData = (telegramId: number) => {
             promises_done: data.promises_done || 0,
             stars: data.stars || 0,
             hero_img_url: data.hero_img_url || defaultHeroImg,
-            avatar_url: data.avatar_url || defaultAvatarImg,
+            avatar_img_url: data.avatar_img_url || defaultAvatarImg,
             about: data.about || '',
             address: data.address || '',
           });

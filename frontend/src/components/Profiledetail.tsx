@@ -1,11 +1,4 @@
-// frontend/src/components/Profiledetail.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface Props {
   username?: string;
@@ -17,6 +10,7 @@ interface Props {
   onChangeAddress?: (text: string) => void;
   onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
+  isSavingImage?: boolean;
 }
 
 const Profiledetail: React.FC<Props> = ({
@@ -43,33 +37,6 @@ const Profiledetail: React.FC<Props> = ({
     setFirstName(fullName.split(' ')[0] || '');
     setLastName(fullName.split(' ')[1] || '');
   }, [about, address, fullName]);
-
-  const handleSave = async () => {
-    if (isEditable && telegramId) {
-      try {
-        const { error } = await supabase
-          .from('users')
-          .update({
-            first_name: firstName,
-            last_name: lastName,
-            about: localAbout,
-            address: localAddress,
-          })
-          .eq('telegram_id', telegramId);
-
-        if (error) {
-          console.error('Error saving user data:', error.message);
-        } else {
-          console.log('User data saved:', { firstName, lastName, about: localAbout, address: localAddress });
-          onChangeFullName?.(firstName, lastName);
-          onChangeAbout?.(localAbout);
-          onChangeAddress?.(localAddress);
-        }
-      } catch (error) {
-        console.error('General error saving user data:', error);
-      }
-    }
-  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -117,23 +84,17 @@ const Profiledetail: React.FC<Props> = ({
 
             <textarea
               value={localAbout}
-              onChange={(e) => setLocalAbout(e.target.value)}
+              onChange={(e) => {
+                setLocalAbout(e.target.value);
+                onChangeAbout?.(e.target.value);
+              }}
               className="form-control lh-24 font-xsss mb-0"
               placeholder="О себе"
               style={{ height: '180px' }}
             />
-
-            <button
-              onClick={handleSave}
-              className="btn btn-primary mt-3"
-            >
-              Сохранить
-            </button>
           </div>
         ) : (
-          <>
-            <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">{localAbout || 'Не указано'}</p>
-          </>
+          <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">{localAbout || 'Не указано'}</p>
         )}
       </div>
 

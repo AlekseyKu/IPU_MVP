@@ -1,4 +1,3 @@
-// frontend/src/app/settings/[telegramId]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -17,15 +16,18 @@ export default function SettingsPage() {
   const { telegramId: contextTelegramId, initData } = useUser();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
   const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
-  const [heroImg, setHeroImg] = useState(userData?.hero_img_url || defaultHeroImg);
-  const [avatar, setAvatar] = useState(userData?.avatar_url || defaultAvatarImg);
+  const [heroImg, setHeroImg] = useState<string>(defaultHeroImg);
+  const [avatar, setAvatar] = useState<string>(defaultAvatarImg);
   const [error, setError] = useState<string | null>(null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
 
   useEffect(() => {
-    console.log('initData in SettingsPage:', initData); // Логирование
+    console.log('SettingsPage userData:', userData);
+    console.log('SettingsPage heroImg:', heroImg, 'avatar:', avatar);
+    console.log('initData in SettingsPage:', initData);
     if (userData) {
       setHeroImg(userData.hero_img_url || defaultHeroImg);
-      setAvatar(userData.avatar_url || defaultAvatarImg);
+      setAvatar(userData.avatar_img_url || defaultAvatarImg);
     }
   }, [userData, defaultHeroImg, defaultAvatarImg, initData]);
 
@@ -52,26 +54,29 @@ export default function SettingsPage() {
         return;
       }
 
-      console.log('Sending initData:', effectiveInitData); // Логирование
+      console.log('Sending initData:', effectiveInitData);
 
       const formData = new FormData();
       formData.append('file', file);
       formData.append('initData', effectiveInitData);
       formData.append('file_type', type);
 
+      setIsSavingImage(true);
+
       try {
         const response = await fetch(`/api/users/${telegramId}/upload`, {
           method: 'POST',
           body: formData,
         });
+
+        const { url } = await response.json();
+
         if (!response.ok) {
-          const errorData = await response.json();
-          setError(`Error uploading ${type} image: ${errorData.detail || 'Unknown error'}`);
-          console.error('Error response:', errorData);
+          setError(`Error uploading ${type} image`);
+          console.error('Error response:', url);
           return;
         }
 
-        const { url } = await response.json();
         if (type === 'hero') {
           setHeroImg(url);
         } else {
@@ -83,6 +88,8 @@ export default function SettingsPage() {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         setError(`General error uploading ${type} image: ${errorMessage}`);
         console.error(`Error uploading ${type} image:`, error);
+      } finally {
+        setIsSavingImage(false);
       }
     };
     input.click();
@@ -104,8 +111,8 @@ export default function SettingsPage() {
             <div className="row">
               <div className="col-xl-12 mb-3">
                 <ProfilecardThree
-                  onToggleDetail={() => {}} // Блокируем переключение
-                  isOpen={true} // Всегда развернуто
+                  onToggleDetail={() => {}}
+                  isOpen={true}
                   username={userData.username || ''}
                   telegramId={userData.telegram_id}
                   subscribers={userData.subscribers || 0}
@@ -127,6 +134,7 @@ export default function SettingsPage() {
                   fullName={fullName}
                   about={userData.about || ''}
                   isEditable={true}
+                  isSavingImage={isSavingImage}
                 />
               </div>
             </div>

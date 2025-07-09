@@ -1,8 +1,13 @@
-// frontend/src/components/ProfilecardThree.tsx
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Props {
   onToggleDetail?: () => void;
@@ -20,6 +25,7 @@ interface Props {
   onChangeAvatar?: (url: string) => void;
   onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
+  isSavingImage?: boolean;
   onHeroClick?: (event: React.MouseEvent) => void;
   onAvatarClick?: (event: React.MouseEvent) => void;
 }
@@ -36,14 +42,47 @@ const ProfilecardThree: React.FC<Props> = ({
   stars = 0,
   heroImgUrl = '/assets/images/ipu/hero-img.png',
   avatarUrl = '/assets/images/ipu/avatar.png',
-  onChangeHeroImg,
-  onChangeAvatar,
+  onChangeFullName,
   isEditable = false,
+  isSavingImage = false,
   onHeroClick,
   onAvatarClick,
 }) => {
-  const [heroImg, setHeroImg] = useState(heroImgUrl);
-  const [avatar, setAvatar] = useState(avatarUrl);
+  const [loading, setLoading] = useState(false);
+  const isLoading = loading || isSavingImage;
+
+  const [firstName, setFirstName] = useState(fullName.split(' ')[0] || '');
+  const [lastName, setLastName] = useState(fullName.split(' ')[1] || '');
+
+  useEffect(() => {
+    const [first = '', last = ''] = fullName.split(' ');
+    setFirstName(first);
+    setLastName(last);
+  }, [fullName]);
+
+  const handleSave = async () => {
+    if (!isEditable || !telegramId) return;
+    setLoading(true);
+
+    const updatePromise = supabase
+      .from('users')
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+      })
+      .eq('telegram_id', telegramId);
+
+    const delay = new Promise((res) => setTimeout(res, 2000));
+    const [{ error }] = await Promise.all([updatePromise, delay]);
+
+    if (!error) {
+      onChangeFullName?.(firstName, lastName);
+    } else {
+      console.error('Ошибка при сохранении:', error.message);
+    }
+
+    setLoading(false);
+  };
 
   const tabs = [
     { id: 'navtabs1', label: 'Подписчики', count: subscribers },
@@ -55,57 +94,78 @@ const ProfilecardThree: React.FC<Props> = ({
   return (
     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
       <div
-        className="hero-img card-body p-0 rounded-xxl overflow-hidden m-3"
-        style={{ 
-          height: '150px', 
-          position: 'relative', 
-          cursor: isEditable ? 'pointer' : 'default' }}
+        className="hero-img card-body p-0 rounded-xxxl overflow-hidden m-3"
+        style={{
+          height: '150px',
+          position: 'relative',
+          cursor: isEditable ? 'pointer' : 'default'
+        }}
         onClick={isEditable ? onHeroClick : undefined}
       >
-        <img 
-          src={heroImg} 
-          alt="hero" 
+        <img
+          src={heroImgUrl}
+          alt="hero"
           className="d-block w-100 h-100"
-          style={{ 
-            objectFit: 'cover', 
+          style={{
+            objectFit: 'cover',
             objectPosition: 'center',
-          }} 
+          }}
         />
       </div>
 
       <div className="card-body p-0 position-relative">
         <figure
-          className="avatar position-absolute w100 z-index-1"
-          style={{ top: '-40px', left: '30px', cursor: isEditable ? 'pointer' : 'default' }}
+          className="avatar position-absolute z-index-1"
+          style={{
+            top: '-40px',
+            left: '30px',
+            cursor: isEditable ? 'pointer' : 'default',
+            width: '100px',
+            height: '100px'
+          }}
           onClick={isEditable ? onAvatarClick : undefined}
         >
           <img
-            src={avatar}
+            src={avatarUrl}
             alt="avatar"
-            className="float-right p-1 bg-white rounded-circle w-100"
+            className="p-1 bg-white rounded-circle w-100 h-100"
+            style={{
+              objectFit: 'cover',
+              objectPosition: 'center',
+            }}
           />
         </figure>
 
-        <div className="ster d-flex align-items-center justify-content-between pb-1">
-          {isEditable ? (
-            <div style={{ paddingLeft: '140px', paddingBottom: '7vh' }} />
-          ) : (
+        {isEditable && (
+          <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
+            <button
+              onClick={handleSave}
+              className="btn btn-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        )}
+
+        {!isEditable && (
+          <div className="ster d-flex align-items-center justify-content-between pb-1">
             <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
               {fullName || 'Не указано'}
               <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
             </h4>
-          )}
 
-          {!isEditable && onToggleDetail && (
-            <button
-              onClick={onToggleDetail}
-              className="bg-greylight rounded-circle p-2 me-4 d-flex align-items-center justify-content-center border-0"
-              title="Toggle Profile Detail"
-            >
-              {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          )}
-        </div>
+            {onToggleDetail && (
+              <button
+                onClick={onToggleDetail}
+                className="bg-greylight rounded-circle p-2 me-4 d-flex align-items-center justify-content-center border-0"
+                title="Toggle Profile Detail"
+              >
+                {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {!isEditable && (
@@ -129,6 +189,6 @@ const ProfilecardThree: React.FC<Props> = ({
       )}
     </div>
   );
-}
+};
 
 export default ProfilecardThree;

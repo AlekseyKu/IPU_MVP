@@ -147,7 +147,7 @@ export default function UserProfile() {
                   promisesDone={promisesDoneCount}
                   stars={userData.stars || 0}
                   heroImgUrl={userData.hero_img_url || defaultHeroImg}
-                  avatarUrl={userData.avatar_url || defaultAvatarImg}
+                  avatarUrl={userData.avatar_img_url || defaultAvatarImg}
                   isEditable={false}
                 />
               </div>

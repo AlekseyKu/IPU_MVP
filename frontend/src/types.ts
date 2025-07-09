@@ -9,7 +9,7 @@ export interface UserData {
   promises_done?: number;
   stars?: number;
   hero_img_url?: string;
-  avatar_url?: string;
+  avatar_img_url?: string;
   about?: string;
   address?: string;
 }
