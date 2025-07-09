@@ -16,8 +16,6 @@ import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
 import Load from '@/components/Load';
 import { AnimatePresence, motion } from 'framer-motion';
-
-// Импорт общих типов
 import { UserData, PromiseData } from '@/types';
 
 const supabase = createClient(
@@ -63,7 +61,11 @@ export default function UserProfile() {
       }
     }
 
-    fetchData();
+    if (telegramId) {
+      fetchData();
+    } else {
+      setIsLoading(false);
+    }
 
     const insertSubscription = supabase
       .channel(`promises-insert-${paramTelegramId || contextTelegramId}`)
@@ -108,10 +110,14 @@ export default function UserProfile() {
   }, [paramTelegramId, contextTelegramId, telegramId, setTelegramId]);
 
   if (isLoading || userLoading) {
-    return <div className="text-center p-5">Loading...</div>;
+    return <Load />;
   }
 
-  const fullName = `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim();
+  if (!userData) {
+    return <div className="text-center p-5">Пользователь не найден</div>;
+  }
+
+  const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Не указано';
   const promisesCount = promises.length;
   const promisesDoneCount = promises.filter((p) => p.is_completed).length;
 
@@ -119,7 +125,7 @@ export default function UserProfile() {
     setPromises((prev) => prev.filter((p) => p.id !== id));
   };
 
-  console.log('User Data:', userData); // Отладка отображения
+  console.log('User Data:', userData);
 
   return (
     <>
@@ -133,15 +139,15 @@ export default function UserProfile() {
                 <ProfilecardThree
                   onToggleDetail={() => setShowProfileDetail((prev) => !prev)}
                   isOpen={showProfileDetail}
-                  nickname={userData?.nickname || 'Guest'}
+                  username={userData.username || ''}
                   fullName={fullName}
-                  telegramId={userData?.telegram_id || 0}
-                  subscribers={userData?.subscribers || 0}
+                  telegramId={userData.telegram_id}
+                  subscribers={userData.subscribers || 0}
                   promises={promisesCount}
                   promisesDone={promisesDoneCount}
-                  stars={userData?.stars || 0}
-                  heroImgUrl={userData?.hero_img_url || defaultHeroImg}
-                  avatarUrl={userData?.avatar_url || defaultAvatarImg}
+                  stars={userData.stars || 0}
+                  heroImgUrl={userData.hero_img_url || defaultHeroImg}
+                  avatarUrl={userData.avatar_url || defaultAvatarImg}
                   isEditable={false}
                 />
               </div>
@@ -155,11 +161,11 @@ export default function UserProfile() {
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
                       <Profiledetail
-                        nickname={userData?.nickname || 'Guest'}
-                        telegramId={userData?.telegram_id || 0}
+                        username={userData.username || ''}
+                        telegramId={userData.telegram_id}
                         fullName={fullName}
-                        about={userData?.about}
-                        address={userData?.address}
+                        about={userData.about || ''}
+                        // address={userData.address || ''}
                         isEditable={false}
                       />
                     </motion.div>

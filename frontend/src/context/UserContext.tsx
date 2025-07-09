@@ -5,7 +5,9 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface UserContextType {
   telegramId: number | null;
+  initData: string | null;
   setTelegramId: (id: number | null) => void;
+  setInitData: (data: string | null) => void;
 }
 
 interface CreatePostModalContextType {
@@ -18,9 +20,10 @@ const CreatePostModalContext = createContext<CreatePostModalContextType | undefi
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [telegramId, setTelegramId] = useState<number | null>(null);
+  const [initData, setInitData] = useState<string | null>(null);
 
   return (
-    <UserContext.Provider value={{ telegramId, setTelegramId }}>
+    <UserContext.Provider value={{ telegramId, initData, setTelegramId, setInitData }}>
       {children}
     </UserContext.Provider>
   );

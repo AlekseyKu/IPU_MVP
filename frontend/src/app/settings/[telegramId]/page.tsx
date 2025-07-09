@@ -1,145 +1,136 @@
 // frontend/src/app/settings/[telegramId]/page.tsx
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { useUserData } from '@/hooks/useUserData';
-import { createClient } from '@supabase/supabase-js';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
+import Load from '@/components/Load';
 import { UserData } from '@/types';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function SettingsPage() {
   const { telegramId: paramTelegramId } = useParams();
-  const { telegramId: contextTelegramId } = useUser();
+  const { telegramId: contextTelegramId, initData } = useUser();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
   const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
   const [heroImg, setHeroImg] = useState(userData?.hero_img_url || defaultHeroImg);
   const [avatar, setAvatar] = useState(userData?.avatar_url || defaultAvatarImg);
-  const [firstName, setFirstName] = useState(userData?.first_name || '');
-  const [lastName, setLastName] = useState(userData?.last_name || '');
-  const [about, setAbout] = useState(userData?.about || '');
-  const [address, setAddress] = useState(userData?.address || '');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('initData in SettingsPage:', initData); // Логирование
+    if (userData) {
+      setHeroImg(userData.hero_img_url || defaultHeroImg);
+      setAvatar(userData.avatar_url || defaultAvatarImg);
+    }
+  }, [userData, defaultHeroImg, defaultAvatarImg, initData]);
 
   const handleImageUpload = async (type: 'hero' | 'avatar', event: React.MouseEvent) => {
+    if (!telegramId || !userData) {
+      setError('No telegramId or userData available');
+      return;
+    }
+
+    const effectiveInitData = initData || window.Telegram?.WebApp?.initData || '';
+    if (!effectiveInitData) {
+      setError('No initData available');
+      return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/png,image/jpeg';
     input.onchange = async (e: Event) => {
       const fileInput = e.target as HTMLInputElement;
       const file = fileInput.files?.[0];
-      if (!file || !telegramId) return;
-
-      const fileName = `${telegramId}/${type}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('user-images')
-        .upload(fileName, file, { upsert: true });
-      if (uploadError) {
-        console.error(`Error uploading ${type} image:`, uploadError.message);
+      if (!file) {
+        setError('No file selected');
         return;
       }
 
-      const { data: urlData } = supabase.storage
-        .from('user-images')
-        .getPublicUrl(fileName);
-      const publicUrl = urlData.publicUrl;
+      console.log('Sending initData:', effectiveInitData); // Логирование
 
-      if (type === 'hero') {
-        setHeroImg(publicUrl);
-      } else if (type === 'avatar') {
-        setAvatar(publicUrl);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('initData', effectiveInitData);
+      formData.append('file_type', type);
+
+      try {
+        const response = await fetch(`/api/users/${telegramId}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          setError(`Error uploading ${type} image: ${errorData.detail || 'Unknown error'}`);
+          console.error('Error response:', errorData);
+          return;
+        }
+
+        const { url } = await response.json();
+        if (type === 'hero') {
+          setHeroImg(url);
+        } else {
+          setAvatar(url);
+        }
+        setError(null);
+        console.log(`${type} image uploaded and saved:`, url);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        setError(`General error uploading ${type} image: ${errorMessage}`);
+        console.error(`Error uploading ${type} image:`, error);
       }
     };
     input.click();
   };
 
-  const handleSave = async () => {
-    if (!telegramId || !userData) return;
-
-    console.log('Saving user data:', { first_name: firstName, last_name: lastName, about, address }); // Отладка
-    const { error } = await supabase
-      .from('users')
-      .update({
-        first_name: firstName,
-        last_name: lastName,
-        hero_img_url: heroImg,
-        avatar_url: avatar,
-        about,
-        address,
-      })
-      .eq('telegram_id', telegramId);
-    if (error) {
-      console.error('Error updating user data:', error.message);
-    } else {
-      console.log('User data updated successfully'); // Отладка
-    }
-  };
-
-  if (isLoading) {
-    return <div className="text-center p-5">Loading...</div>;
+  if (isLoading || !userData) {
+    return <Load />;
   }
 
-  const fullName = `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim() || 'Guest';
+  const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Не указано';
 
   return (
     <>
       <Header />
       <div className="main-content">
+        {error && <div className="alert alert-danger">{error}</div>}
         <div className="middle-sidebar-bottom">
           <div className="middle-sidebar-left pe-0">
             <div className="row">
               <div className="col-xl-12 mb-3">
                 <ProfilecardThree
-                  onToggleDetail={() => {}} // Блокируем переключение, так как всегда развернуто
+                  onToggleDetail={() => {}} // Блокируем переключение
                   isOpen={true} // Всегда развернуто
-                  nickname={userData?.nickname || 'Guest'}
-                  telegramId={userData?.telegram_id || 0}
-                  subscribers={userData?.subscribers || 0}
-                  promises={userData?.promises || 0}
-                  promisesDone={userData?.promises_done || 0}
-                  stars={userData?.stars || 0}
+                  username={userData.username || ''}
+                  telegramId={userData.telegram_id}
+                  subscribers={userData.subscribers || 0}
+                  promises={userData.promises || 0}
+                  promisesDone={userData.promises_done || 0}
+                  stars={userData.stars || 0}
                   fullName={fullName}
                   heroImgUrl={heroImg}
                   avatarUrl={avatar}
-                  onChangeHeroImg={(url) => setHeroImg(url)}
-                  onChangeAvatar={(url) => setAvatar(url)}
-                  onChangeFullName={(fn, ln) => { setFirstName(fn); setLastName(ln); }}
-                  isEditable={true} // Разрешаем редактирование
+                  isEditable={true}
                   onHeroClick={handleImageUpload.bind(null, 'hero')}
                   onAvatarClick={handleImageUpload.bind(null, 'avatar')}
                 />
               </div>
               <div className="col-xl-4 col-xxl-3 col-lg-4">
                 <Profiledetail
-                  nickname={userData?.nickname || 'Guest'}
-                  telegramId={userData?.telegram_id || 0}
+                  username={userData.username || ''}
+                  telegramId={userData.telegram_id}
                   fullName={fullName}
-                  about={userData?.about}
-                  address={userData?.address}
-                  onChangeAbout={(text) => setAbout(text)}
-                  onChangeAddress={(text) => setAddress(text)}
-                  onChangeFullName={(fn, ln) => { setFirstName(fn); setLastName(ln); }}
-                  isEditable={true} // Разрешаем редактирование
+                  about={userData.about || ''}
+                  isEditable={true}
                 />
               </div>
             </div>
           </div>
-        </div>
-        <div className="text-center mt-0">
-          <button
-            onClick={handleSave}
-            className="btn btn-primary"
-          >
-            Сохранить
-          </button>
         </div>
       </div>
       <Appfooter />

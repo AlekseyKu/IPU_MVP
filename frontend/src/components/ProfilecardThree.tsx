@@ -3,17 +3,11 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface Props {
   onToggleDetail?: () => void;
   isOpen?: boolean;
-  nickname?: string;
+  username?: string;
   fullName: string;
   telegramId?: number;
   subscribers?: number;
@@ -33,30 +27,23 @@ interface Props {
 const ProfilecardThree: React.FC<Props> = ({
   onToggleDetail,
   isOpen = false,
-  nickname = 'Mohannad Zitoun',
-  fullName = 'Guest',
+  username = '',
+  fullName = '',
   telegramId = 0,
   subscribers = 0,
   promises = 0,
   promisesDone = 0,
   stars = 0,
-  heroImgUrl = '/assets/images/ipu/logo_bg.png',
-  avatarUrl = '/assets/images/user.png',
+  heroImgUrl = '/assets/images/ipu/hero-img.png',
+  avatarUrl = '/assets/images/ipu/avatar.png',
   onChangeHeroImg,
   onChangeAvatar,
-  onChangeFullName,
   isEditable = false,
   onHeroClick,
   onAvatarClick,
 }) => {
   const [heroImg, setHeroImg] = useState(heroImgUrl);
   const [avatar, setAvatar] = useState(avatarUrl);
-
-  const handleSave = () => {
-    if (onChangeHeroImg) onChangeHeroImg(heroImg);
-    if (onChangeAvatar) onChangeAvatar(avatar);
-    if (onChangeFullName) onChangeFullName('', ''); // Передаем пустые значения, так как поля перенесены
-  };
 
   const tabs = [
     { id: 'navtabs1', label: 'Подписчики', count: subscribers },
@@ -101,13 +88,11 @@ const ProfilecardThree: React.FC<Props> = ({
 
         <div className="ster d-flex align-items-center justify-content-between pb-1">
           {isEditable ? (
-            <div style={{ paddingLeft: '140px', paddingBottom: '7vh' }}>
-              {/* Поля имени и фамилии убраны */}
-            </div>
+            <div style={{ paddingLeft: '140px', paddingBottom: '7vh' }} />
           ) : (
             <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
-              {fullName}
-              <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{nickname}</span>
+              {fullName || 'Не указано'}
+              <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
             </h4>
           )}
 

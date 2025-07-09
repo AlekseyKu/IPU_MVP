@@ -1,3 +1,4 @@
+// frontend\src\app\layout.tsx
 import './globals.scss'
 import type { Metadata, Viewport } from 'next'
 import { UserProvider, CreatePostModalProvider } from '@/context/UserContext'

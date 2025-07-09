@@ -1,7 +1,7 @@
 // frontend/src/types.ts
 export interface UserData {
   telegram_id: number;
-  nickname: string | null;
+  username: string | null;
   first_name: string | null;
   last_name: string | null;
   subscribers?: number;
@@ -18,7 +18,7 @@ export interface User {
   telegram_id: number;
   first_name: string | null;
   last_name: string | null;
-  nickname: string | null;
+  username: string | null;
 }
 
 export interface PromiseData {
