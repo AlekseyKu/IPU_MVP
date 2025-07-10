@@ -8,7 +8,7 @@ import { Activity, Ellipsis, CircleStop, CirclePlay } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
-
+import Link from 'next/link';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,15 +18,14 @@ const supabase = createClient(
 export default function ListPage() {
   const [promises, setPromises] = useState<PromiseData[]>([]);
   const [users, setUsers] = useState<Record<string, User>>({});
-  const [isOpen, setIsOpen] = useState<Record<string, boolean>>({}); // Состояние для раскрытия обещания
-  const [menuOpen, setMenuOpen] = useState<Record<string, boolean>>({}); // Состояние для меню
+  const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
+  const [menuOpen, setMenuOpen] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        // Fetch all promises
         const { data: promisesData, error: promisesError } = await supabase
           .from('promises')
           .select('*')
@@ -37,7 +36,6 @@ export default function ListPage() {
           setPromises(promisesData || []);
         }
 
-        // Fetch all users
         const { data: usersData, error: usersError } = await supabase
           .from('users')
           .select('telegram_id, first_name, last_name, username, avatar_img_url');
@@ -152,13 +150,15 @@ export default function ListPage() {
                       >
                         <div className="card-body p-0 d-flex flex-column">
                           <div className="d-flex align-items-center mb-2">
-                            <img
-                              src={user.avatar_img_url || '/assets/images/defaultAvatar.png'}
-                              alt="avatar"
-                              width={32}
-                              height={32}
-                              className="rounded-circle me-2"
-                            />
+                            <Link href={`/profile/${promise.user_id}`}>
+                              <img
+                                src={user.avatar_img_url || '/assets/images/defaultAvatar.png'}
+                                alt="avatar"
+                                width={32}
+                                height={32}
+                                className="rounded-circle me-2"
+                              />
+                            </Link>
                             <span className="text-dark font-xsss">{fullName}</span>
                           </div>
 

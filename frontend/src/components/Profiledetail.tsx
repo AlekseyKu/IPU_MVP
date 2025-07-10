@@ -1,4 +1,5 @@
-'use client';
+// frontend/src/components/Profiledetail.tsx
+'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
 
@@ -13,7 +14,8 @@ interface Props {
   onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
   isSavingImage?: boolean;
-  scrollContainerRef?: React.RefObject<HTMLElement>; // ⬅ новый проп
+  isOwnProfile?: boolean;
+  scrollContainerRef?: React.RefObject<HTMLElement>;
 }
 
 const Profiledetail: React.FC<Props> = ({
@@ -26,6 +28,8 @@ const Profiledetail: React.FC<Props> = ({
   onChangeAddress,
   onChangeFullName,
   isEditable = false,
+  isSavingImage = false,
+  isOwnProfile = false,
   scrollContainerRef,
 }) => {
   const [localAbout, setLocalAbout] = useState(about);
@@ -33,7 +37,6 @@ const Profiledetail: React.FC<Props> = ({
   const [firstName, setFirstName] = useState(fullName.split(' ')[0] || '');
   const [lastName, setLastName] = useState(fullName.split(' ')[1] || '');
   const [showTooltip, setShowTooltip] = useState(false);
-
   const tooltipRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);

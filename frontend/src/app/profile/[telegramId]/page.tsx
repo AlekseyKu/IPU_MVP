@@ -14,22 +14,44 @@ import { UserData } from '@/types';
 export default function ProfilePage() {
   const { telegramId: paramTelegramId } = useParams();
   const { telegramId: currentUserId } = useUser();
-  const telegramId = parseInt(paramTelegramId as string, 10);
+  const telegramId = Number(paramTelegramId); // Явное преобразование в число
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const isEditable = currentUserId === telegramId;
+  const isOwnProfile = currentUserId === telegramId;
+
+  // Отладочный лог для проверки
+  useEffect(() => {
+    console.log('ProfilePage: currentUserId=', currentUserId, 'telegramId=', telegramId, 'isOwnProfile=', isOwnProfile);
+  }, [currentUserId, telegramId]);
 
   useEffect(() => {
     async function fetchUserData() {
+      if (!telegramId || isNaN(telegramId)) {
+        setError('Invalid telegramId');
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/users/${telegramId}`);
-        if (!response.ok) {
+        const [profileResponse, subscriptionResponse] = await Promise.all([
+          fetch(`/api/users/${telegramId}`),
+          fetch(`/api/subscriptions?follower_id=${currentUserId}&followed_id=${telegramId}`)
+        ]);
+
+        if (!profileResponse.ok) {
           throw new Error('User not found');
         }
-        const data: UserData = await response.json();
-        setUserData(data);
+
+        const profileData: UserData = await profileResponse.json();
+        setUserData(profileData);
+
+        const subscriptionData = await subscriptionResponse.json();
+        setIsSubscribed(!!subscriptionData.length);
+
         setError(null);
       } catch (err: any) {
         setError(err.message || 'Error loading profile');
@@ -37,10 +59,35 @@ export default function ProfilePage() {
         setIsLoading(false);
       }
     }
-    if (telegramId) {
+    if (telegramId && currentUserId) {
       fetchUserData();
     }
-  }, [telegramId]);
+  }, [telegramId, currentUserId]);
+
+  const handleSubscribe = async (telegramId: number, isSubscribed: boolean) => {
+    try {
+      const response = await fetch('/api/subscriptions', {
+        method: isSubscribed ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ follower_id: currentUserId, followed_id: telegramId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Subscription action failed');
+      }
+
+      setIsSubscribed(!isSubscribed);
+      setUserData((prev) => prev ? {
+        ...prev,
+        subscribers: isSubscribed
+          ? Math.max(0, (prev.subscribers || 0) - 1)
+          : (prev.subscribers || 0) + 1
+      } : prev);
+    } catch (error) {
+      setError('Error updating subscription');
+      throw error;
+    }
+  };
 
   if (isLoading || !userData) {
     return <Load />;
@@ -70,6 +117,9 @@ export default function ProfilePage() {
                   heroImgUrl={userData.hero_img_url || '/assets/images/ipu/hero-img.png'}
                   avatarUrl={userData.avatar_img_url || '/assets/images/ipu/avatar.png'}
                   isEditable={isEditable}
+                  isOwnProfile={isOwnProfile}
+                  onSubscribe={handleSubscribe}
+                  isSubscribed={isSubscribed}
                 />
               </div>
               <div className="col-xl-4 col-xxl-3 col-lg-4">

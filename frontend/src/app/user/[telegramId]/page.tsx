@@ -7,7 +7,6 @@ import { useUser } from '@/context/UserContext';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useUserData } from '@/hooks/useUserData';
-
 import Header from '@/components/Header';
 import Leftnav from '@/components/Leftnav';
 import Appfooter from '@/components/Appfooter';
@@ -30,12 +29,32 @@ export default function UserProfile() {
   const [promises, setPromises] = useState<PromiseData[]>([]);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localUserData, setLocalUserData] = useState<UserData | null>(null);
 
-  const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
+  const telegramId = Number(paramTelegramId) || contextTelegramId || 0;
   const { userData, isLoading: userLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
+  const isOwnProfile = contextTelegramId === telegramId;
+
+  useEffect(() => {
+    console.log('UserProfile: contextTelegramId=', contextTelegramId, 'telegramId=', telegramId, 'isOwnProfile=', isOwnProfile);
+  }, [contextTelegramId, telegramId]);
+
+  useEffect(() => {
+    if (userData) {
+      setLocalUserData(userData);
+    }
+  }, [userData]);
 
   useEffect(() => {
     async function fetchData() {
+      if (!telegramId || isNaN(telegramId)) {
+        setError('Invalid telegramId');
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       setTelegramId(telegramId);
 
@@ -50,11 +69,22 @@ export default function UserProfile() {
         console.timeEnd('Supabase query - promises');
         if (promisesError) {
           console.error('Error fetching promises:', promisesError.message);
+          setError('Error fetching promises');
         } else {
           setPromises(promisesData || []);
         }
+
+        console.time('Supabase query - subscription');
+        const { data: subscriptionData } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('follower_id', contextTelegramId)
+          .eq('followed_id', telegramId);
+        console.timeEnd('Supabase query - subscription');
+        setIsSubscribed(!!subscriptionData?.length);
       } catch (error) {
         console.error('General error:', error);
+        setError('General error occurred');
       } finally {
         setIsLoading(false);
         console.timeEnd('Total fetch time');
@@ -63,75 +93,58 @@ export default function UserProfile() {
 
     if (telegramId) {
       fetchData();
-    } else {
-      setIsLoading(false);
     }
-
-    const insertSubscription = supabase
-      .channel(`promises-insert-${paramTelegramId || contextTelegramId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
-        (payload) => {
-          setPromises((prev) => [payload.new as PromiseData, ...prev.filter((p) => p.id !== payload.new.id)]);
-        }
-      )
-      .subscribe();
-
-    const updateSubscription = supabase
-      .channel(`promises-update-${paramTelegramId || contextTelegramId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
-        (payload) => {
-          setPromises((prev) =>
-            prev.map((p) => (p.id === payload.new.id ? (payload.new as PromiseData) : p))
-          );
-        }
-      )
-      .subscribe();
-
-    const deleteSubscription = supabase
-      .channel(`promises-delete-${paramTelegramId || contextTelegramId}`)
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
-        (payload) => {
-          setPromises((prev) => prev.filter((p) => p.id !== payload.old.id));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(insertSubscription);
-      supabase.removeChannel(updateSubscription);
-      supabase.removeChannel(deleteSubscription);
-    };
   }, [paramTelegramId, contextTelegramId, telegramId, setTelegramId]);
 
-  if (isLoading || userLoading) {
-    return <Load />;
-  }
+  const handleSubscribe = async (telegramId: number, isSubscribed: boolean) => {
+    try {
+      const response = await fetch('/api/subscriptions', {
+        method: isSubscribed ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ follower_id: contextTelegramId, followed_id: telegramId }),
+      });
 
-  if (!userData) {
-    return <div className="text-center p-5">Пользователь не найден</div>;
-  }
+      if (!response.ok) {
+        throw new Error('Subscription action failed');
+      }
 
-  const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || '';
-  const promisesCount = promises.length;
-  const promisesDoneCount = promises.filter((p) => p.is_completed).length;
+      setIsSubscribed(!isSubscribed);
+      setLocalUserData((prev) =>
+        prev
+          ? {
+              ...prev,
+              subscribers: isSubscribed
+                ? Math.max(0, (prev.subscribers || 0) - 1)
+                : (prev.subscribers || 0) + 1,
+            }
+          : prev
+      );
+    } catch (error) {
+      setError('Error updating subscription');
+      throw error;
+    }
+  };
 
   const handleDelete = (id: string) => {
     setPromises((prev) => prev.filter((p) => p.id !== id));
   };
 
-  console.log('User Data:', userData);
+  if (isLoading || userLoading || !localUserData) {
+    return <Load />;
+  }
+
+  const fullName = `${localUserData.first_name || ''} ${localUserData.last_name || ''}`.trim() || '';
+  const promisesCount = promises.length;
+  const promisesDoneCount = promises.filter((p) => p.is_completed).length;
+
+  console.log('Local User Data:', localUserData);
 
   return (
     <>
       <Header />
       <Leftnav />
       <div className="main-content">
+        {error && <div className="alert alert-danger">{error}</div>}
         <div className="middle-sidebar-bottom">
           <div className="middle-sidebar-left pe-0">
             <div className="row">
@@ -139,16 +152,19 @@ export default function UserProfile() {
                 <ProfilecardThree
                   onToggleDetail={() => setShowProfileDetail((prev) => !prev)}
                   isOpen={showProfileDetail}
-                  username={userData.username || ''}
+                  username={localUserData.username || ''}
                   fullName={fullName}
-                  telegramId={userData.telegram_id}
-                  subscribers={userData.subscribers || 0}
+                  telegramId={localUserData.telegram_id}
+                  subscribers={localUserData.subscribers || 0}
                   promises={promisesCount}
                   promisesDone={promisesDoneCount}
-                  stars={userData.stars || 0}
-                  heroImgUrl={userData.hero_img_url || defaultHeroImg}
-                  avatarUrl={userData.avatar_img_url || defaultAvatarImg}
+                  stars={localUserData.stars || 0}
+                  heroImgUrl={localUserData.hero_img_url || defaultHeroImg}
+                  avatarUrl={localUserData.avatar_img_url || defaultAvatarImg}
                   isEditable={false}
+                  isOwnProfile={isOwnProfile}
+                  onSubscribe={handleSubscribe}
+                  isSubscribed={isSubscribed}
                 />
               </div>
               <div className="col-xl-4 col-xxl-3 col-lg-4">
@@ -161,11 +177,10 @@ export default function UserProfile() {
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
                       <Profiledetail
-                        username={userData.username || ''}
-                        telegramId={userData.telegram_id}
+                        username={localUserData.username || ''}
+                        telegramId={localUserData.telegram_id}
                         fullName={fullName}
-                        about={userData.about || ''}
-                        // address={userData.address || ''}
+                        about={localUserData.about || ''}
                         isEditable={false}
                       />
                     </motion.div>

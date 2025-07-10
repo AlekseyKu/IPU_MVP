@@ -1,4 +1,5 @@
-'use client';
+// frontend/src/app/settings/[telegramId]/page.tsx
+'use client'
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
@@ -16,7 +17,6 @@ export default function SettingsPage() {
   const { telegramId: contextTelegramId, initData } = useUser();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
   const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
-
   const [heroImg, setHeroImg] = useState<string>(defaultHeroImg);
   const [avatar, setAvatar] = useState<string>(defaultAvatarImg);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,6 @@ export default function SettingsPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
-
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -185,6 +184,7 @@ export default function SettingsPage() {
                   heroImgUrl={heroImg}
                   avatarUrl={avatar}
                   isEditable={true}
+                  isOwnProfile={true}
                   isSavingImage={isSavingImage}
                   isSavingText={isSavingText}
                   isDirty={isDirty}

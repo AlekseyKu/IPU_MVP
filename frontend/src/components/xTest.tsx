@@ -1,158 +1,200 @@
-// // frontend/src/app/user/[telegramId]/page.tsx
+// // frontend/src/components/ProfilecardThree.tsx
 // 'use client'
 
-// import { useState, useEffect } from 'react';
-// import { useParams } from 'next/navigation';
-// import { createClient } from '@supabase/supabase-js';
-// import { useUser } from '@/context/UserContext';
+// import React, { useState } from 'react';
+// import { ChevronDown, ChevronUp } from 'lucide-react';
 
-// import Header from '@/components/Header';
-// import Leftnav from '@/components/Leftnav';
-// import Appfooter from '@/components/Appfooter';
-// import ProfilecardThree from '@/components/ProfilecardThree';
-// import Profiledetail from '@/components/Profiledetail';
-// import { AnimatePresence, motion } from 'framer-motion';
+// interface Props {
+//   onToggleDetail?: () => void;
+//   isOpen?: boolean;
+//   username?: string;
+//   fullName: string;
+//   telegramId?: number;
+//   subscribers?: number;
+//   promises?: number;
+//   promisesDone?: number;
+//   stars?: number;
+//   heroImgUrl?: string;
+//   avatarUrl?: string;
+//   onChangeHeroImg?: (url: string) => void;
+//   onChangeAvatar?: (url: string) => void;
+//   onChangeFullName?: (firstName: string, lastName: string) => void;
+//   isEditable?: boolean;
+//   isSavingImage?: boolean;
+//   isSavingText?: boolean;
+//   isDirty?: boolean;
+//   onSaveClick?: () => void;
+//   onHeroClick?: (event: React.MouseEvent) => void;
+//   onAvatarClick?: (event: React.MouseEvent) => void;
+//   isOwnProfile?: boolean;
+//   onSubscribe?: (telegramId: number, isSubscribed: boolean) => Promise<void>;
+//   isSubscribed?: boolean;
+// }
 
-// // Импорт общих типов
-// import { UserData, PromiseData } from '@/types';
+// const ProfilecardThree: React.FC<Props> = ({
+//   onToggleDetail,
+//   isOpen = false,
+//   username = '',
+//   fullName = '',
+//   telegramId = 0,
+//   subscribers = 0,
+//   promises = 0,
+//   promisesDone = 0,
+//   stars = 0,
+//   heroImgUrl = '/assets/images/ipu/hero-img.png',
+//   avatarUrl = '/assets/images/ipu/avatar.png',
+//   onChangeFullName,
+//   isEditable = false,
+//   isSavingImage = false,
+//   isSavingText = false,
+//   isDirty = false,
+//   onSaveClick,
+//   onHeroClick,
+//   onAvatarClick,
+//   isOwnProfile = false,
+//   onSubscribe,
+//   isSubscribed = false,
+// }) => {
+//   const [isSubscribing, setIsSubscribing] = useState(false);
+//   const isLoading = isSavingImage || isSavingText || isSubscribing;
 
-// const supabase = createClient(
-//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-// );
-
-// export default function UserProfile() {
-//   const { telegramId: paramTelegramId } = useParams();
-//   const { telegramId: contextTelegramId, setTelegramId } = useUser();
-//   const [showProfileDetail, setShowProfileDetail] = useState(true);
-//   const [userData, setUserData] = useState<UserData | null>(null);
-//   const [promises, setPromises] = useState<PromiseData[]>([]);
-//   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   useEffect(() => {
-//     async function fetchData() {
-//       setIsLoading(true);
-//       const id = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
-//       if (!id) {
-//         setUserData({ username: 'Guest', telegram_id: 0, first_name: '', last_name: '' });
-//         setIsLoading(false);
-//         return;
-//       }
-
-//       setTelegramId(id);
-
-//       console.time('Total fetch time');
-//       try {
-//         // Fetch user data
-//         console.time('Supabase query - user');
-//         const { data: userDataResp, error: userError } = await supabase
-//           .from('users')
-//           .select('telegram_id, username, first_name, last_name, subscribers, promises, promises_done, stars')
-//           .eq('telegram_id', id)
-//           .single();
-
-//         console.timeEnd('Supabase query - user');
-//         if (userError || !userDataResp) {
-//           console.error('Error fetching user from Supabase:', userError?.message);
-//           setUserData({ username: 'Guest', telegram_id: id, first_name: '', last_name: '' });
-//         } else {
-//           setUserData({
-//             telegram_id: userDataResp.telegram_id,
-//             username: userDataResp.username || 'Guest',
-//             first_name: userDataResp.first_name || '',
-//             last_name: userDataResp.last_name || '',
-//             subscribers: userDataResp.subscribers || 0,
-//             promises: userDataResp.promises || 0,
-//             promises_done: userDataResp.promises_done || 0,
-//             stars: userDataResp.stars || 0,
-//           });
-//         }
-
-//         // Fetch promises
-//         console.time('Supabase query - promises');
-//         const { data: promisesData, error: promisesError } = await supabase
-//           .from('promises')
-//           .select('*')
-//           .eq('user_id', id)
-//           .order('created_at', { ascending: false });
-//         console.timeEnd('Supabase query - promises');
-//         if (promisesError) {
-//           console.error('Error fetching promises:', promisesError.message);
-//         } else {
-//           setPromises(promisesData || []);
-//         }
-//       } catch (error) {
-//         console.error('General error:', error);
-//       } finally {
-//         setIsLoading(false);
-//         console.timeEnd('Total fetch time');
-//       }
-//     }
-
-//     fetchData();
-
-//   }, [paramTelegramId, contextTelegramId, setTelegramId]);
-
-//   if (isLoading) {
-//     return <div className="text-center p-5">Loading...</div>;
-//   }
-
-//   const fullName = `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim() || 'Guest';
-//   const promisesCount = promises.length;
-//   const promisesDoneCount = promises.filter((p) => p.is_completed).length;
-
-//   const handleDelete = (id: string) => {
-//     setPromises((prev) => prev.filter((p) => p.id !== id));
+//   const handleSave = () => {
+//     if (!isEditable || !telegramId) return;
+//     const [first = '', last = ''] = fullName.split(' ');
+//     onChangeFullName?.(first, last);
+//     onSaveClick?.();
 //   };
 
+//   const handleSubscribe = async () => {
+//     if (!telegramId || !onSubscribe) return;
+//     setIsSubscribing(true);
+//     try {
+//       await onSubscribe(telegramId, isSubscribed);
+//     } catch (error) {
+//       console.error('Error subscribing:', error);
+//     } finally {
+//       setIsSubscribing(false);
+//     }
+//   };
+
+//   const tabs = [
+//     { id: 'navtabs1', label: 'Подписчики', count: subscribers },
+//     { id: 'navtabs2', label: 'Обещания', count: promises },
+//     { id: 'navtabs3', label: 'Выполнено', count: promisesDone },
+//     { id: 'navtabs4', label: 'Звезды', count: stars },
+//   ];
+
 //   return (
-//     <>
-//       <Header />
-//       <Leftnav />
-//       <div className="main-content">
-//         <div className="middle-sidebar-bottom">
-//           <div className="middle-sidebar-left pe-0">
-//             <div className="row">
-//               <div className="col-xl-12 mb-3">
-//                 <ProfilecardThree
-//                   onToggleDetail={() => setShowProfileDetail((prev) => !prev)}
-//                   isOpen={showProfileDetail}
-//                   username={userData?.username || 'Guest'}
-//                   telegramId={userData?.telegram_id || 0}
-//                   subscribers={userData?.subscribers || 0}
-//                   promises={promisesCount}
-//                   promisesDone={promisesDoneCount}
-//                   stars={userData?.stars || 0}
-//                   fullName={fullName}
-//                   isEditable={false} // Только просмотр
-//                 />
-//               </div>
-//               <div className="col-xl-4 col-xxl-3 col-lg-4">
-//                 <AnimatePresence>
-//                   {showProfileDetail && (
-//                     <motion.div
-//                       initial={{ opacity: 0, y: 40 }}
-//                       animate={{ opacity: 1, y: 0 }}
-//                       exit={{ opacity: 0, y: 40 }}
-//                       transition={{ duration: 0.3, ease: 'easeOut' }}
-//                     >
-//                       <Profiledetail
-//                         username={userData?.username || 'Guest'}
-//                         telegramId={userData?.telegram_id || 0}
-//                         fullName={fullName}
-//                         isEditable={false} // Только просмотр
-//                       />
-//                     </motion.div>
-//                   )}
-//                 </AnimatePresence>
-//               </div>
-              
-//             </div>
+//     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
+//       <div
+//         className="hero-img card-body p-0 rounded-xxxl overflow-hidden m-3"
+//         style={{
+//           height: '150px',
+//           position: 'relative',
+//           cursor: isEditable ? 'pointer' : 'default',
+//         }}
+//         onClick={isEditable ? onHeroClick : undefined}
+//       >
+//         <img
+//           src={heroImgUrl}
+//           alt="hero"
+//           className="d-block w-100 h-100"
+//           style={{
+//             objectFit: 'cover',
+//             objectPosition: 'center',
+//           }}
+//         />
+//       </div>
+
+//       <div className="card-body p-0 position-relative">
+//         <figure
+//           className="avatar position-absolute z-index-1"
+//           style={{
+//             top: '-40px',
+//             left: '30px',
+//             cursor: isEditable ? 'pointer' : 'default',
+//             width: '100px',
+//             height: '100px',
+//           }}
+//           onClick={isEditable ? onAvatarClick : undefined}
+//         >
+//           <img
+//             src={avatarUrl}
+//             alt="avatar"
+//             className="p-1 bg-white rounded-circle w-100 h-100"
+//             style={{
+//               objectFit: 'cover',
+//               objectPosition: 'center',
+//             }}
+//           />
+//         </figure>
+
+//         {isEditable && (
+//           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
+//             <button
+//               onClick={handleSave}
+//               className={`btn btn-primary ${!isDirty ? 'opacity-50' : ''}`}
+//               disabled={!isDirty || isSavingText || isSavingImage}
+//             >
+//               {(isSavingText || isSavingImage) ? 'Сохранение...' : 'Сохранить'}
+//             </button>
+//           </div>
+//         )}
+
+//         {!isOwnProfile && (
+//           <div className="mt-3">
+//             <h4 className="fw-500 font-sm mt-0 mb-0" style={{ paddingLeft: '140px' }}>
+//               {fullName || 'Не указано'}
+//               <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
+//             </h4>
+//           </div>
+//         )}
+//       </div>
+
+//       {!isEditable && (
+//         <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
+//           <ul
+//             className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
+//             id="pills-tab"
+//             role="tablist"
+//           >
+//             {tabs.map(({ label, count }, i) => (
+//               <li
+//                 key={i}
+//                 className="flex-fill d-flex flex-column align-items-center justify-content-center text-center me-0"
+//               >
+//                 <div className="fw-400 font-xss mb-0">{count}</div>
+//                 <div className="fw-400 font-xssss text-dark">{label}</div>
+//               </li>
+//             ))}
+//           </ul>
+//         </div>
+//       )}
+
+//       {!isOwnProfile && (
+//         <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
+//           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
+//             <button
+//               onClick={handleSubscribe}
+//               className="btn btn-outline-primary me-2"
+//               disabled={isLoading}
+//             >
+//               {isSubscribing ? 'Обработка...' : isSubscribed ? 'Отписаться' : 'Подписаться'}
+//             </button>
+//             {onToggleDetail && (
+//               <button
+//                 onClick={onToggleDetail}
+//                 className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0"
+//                 title="Toggle Profile Detail"
+//               >
+//                 {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+//               </button>
+//             )}
 //           </div>
 //         </div>
-//       </div>
-//       <Appfooter />
-//     </>
+//       )}
+//     </div>
 //   );
-// }
+// };
+
+// export default ProfilecardThree;

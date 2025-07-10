@@ -1,4 +1,3 @@
-// frontend/src/components/ProfilecardThree.tsx
 'use client'
 
 import React, { useState } from 'react';
@@ -26,6 +25,9 @@ interface Props {
   onSaveClick?: () => void;
   onHeroClick?: (event: React.MouseEvent) => void;
   onAvatarClick?: (event: React.MouseEvent) => void;
+  isOwnProfile?: boolean;
+  onSubscribe?: (telegramId: number, isSubscribed: boolean) => Promise<void>;
+  isSubscribed?: boolean;
 }
 
 const ProfilecardThree: React.FC<Props> = ({
@@ -48,13 +50,30 @@ const ProfilecardThree: React.FC<Props> = ({
   onSaveClick,
   onHeroClick,
   onAvatarClick,
+  isOwnProfile = false,
+  onSubscribe,
+  isSubscribed = false,
 }) => {
-  const isLoading = isSavingImage || isSavingText;
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const isLoading = isSavingImage || isSavingText || isSubscribing;
 
   const handleSave = () => {
     if (!isEditable || !telegramId) return;
     const [first = '', last = ''] = fullName.split(' ');
     onChangeFullName?.(first, last);
+    onSaveClick?.();
+  };
+
+  const handleSubscribe = async () => {
+    if (!telegramId || !onSubscribe) return;
+    setIsSubscribing(true);
+    try {
+      await onSubscribe(telegramId, isSubscribed);
+    } catch (error) {
+      console.error('Error subscribing:', error);
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const tabs = [
@@ -63,6 +82,36 @@ const ProfilecardThree: React.FC<Props> = ({
     { id: 'navtabs3', label: 'Выполнено', count: promisesDone },
     { id: 'navtabs4', label: 'Звезды', count: stars },
   ];
+
+  const nameBlock = (
+    <div className="mt-0">
+      <h4 className="fw-500 font-sm mt-0 mb-0" style={{ paddingLeft: '140px' }}>
+        {fullName || 'Не указано'}
+        <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
+      </h4>
+    </div>
+  );
+
+  const subscribeBlock = (
+    <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
+      <button
+        onClick={handleSubscribe}
+        className="btn btn-outline-primary me-2"
+        disabled={isLoading}
+      >
+        {isSubscribing ? 'Обработка...' : isSubscribed ? 'Отписаться' : 'Подписаться'}
+      </button>
+      {onToggleDetail && (
+        <button
+          onClick={onToggleDetail}
+          className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0"
+          title="Toggle Profile Detail"
+        >
+          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
@@ -109,10 +158,14 @@ const ProfilecardThree: React.FC<Props> = ({
           />
         </figure>
 
+        {/* top section name (if viewing another user's profile) */}
+        {!isOwnProfile && nameBlock}
+
+        {/* кнопка Сохранить */}
         {isEditable && (
           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
             <button
-              onClick={onSaveClick}
+              onClick={handleSave}
               className={`btn btn-primary ${!isDirty ? 'opacity-50' : ''}`}
               disabled={!isDirty || isSavingText || isSavingImage}
             >
@@ -120,29 +173,14 @@ const ProfilecardThree: React.FC<Props> = ({
             </button>
           </div>
         )}
-
-        {!isEditable && (
-          <div className="ster d-flex align-items-center justify-content-between pb-1">
-            <h4 className="fw-500 font-sm mt-0 mb-lg-5 mb-0" style={{ paddingLeft: '140px' }}>
-              {fullName || 'Не указано'}
-              <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
-            </h4>
-
-            {onToggleDetail && (
-              <button
-                onClick={onToggleDetail}
-                className="bg-greylight rounded-circle p-2 me-4 d-flex align-items-center justify-content-center border-0"
-                title="Toggle Profile Detail"
-              >
-                {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
-      {!isEditable && (
-        <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
+      {/* нижний блок: имя (если свой профиль), или кнопка подписки (если чужой) */}
+      <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
+        {!isOwnProfile ? subscribeBlock : null}
+        {isOwnProfile && !isEditable && nameBlock}
+
+        {!isEditable && (
           <ul
             className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
             id="pills-tab"
@@ -158,8 +196,8 @@ const ProfilecardThree: React.FC<Props> = ({
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

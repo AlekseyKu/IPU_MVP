@@ -1,27 +1,55 @@
-// frontend/src/app/api/users/[telegramId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { UserData } from '@/types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-export async function GET(request: NextRequest, { params }: { params: { telegramId: string } }) {
-  const telegramId = parseInt(params.telegramId, 10);
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ telegramId: string }> }
+) {
+  const { telegramId } = await context.params;
+  const parsedTelegramId = Number(telegramId);
 
-  if (isNaN(telegramId)) {
+  if (isNaN(parsedTelegramId)) {
     return NextResponse.json({ detail: 'Invalid telegramId' }, { status: 400 });
   }
 
-  const { data, error } = await supabase
-    .from('users')
-    .select('telegram_id, username, first_name, last_name, about, hero_img_url, avatar_img_url, subscribers, promises, promises_done, stars')
-    .eq('telegram_id', telegramId)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('telegram_id, first_name, last_name, username, about, avatar_img_url, hero_img_url, subscribers, promises, promises_done, stars')
+      .eq('telegram_id', parsedTelegramId)
+      .single();
 
-  if (error || !data) {
-    return NextResponse.json({ detail: 'User not found' }, { status: 404 });
+    if (error || !data) {
+      return NextResponse.json({ detail: 'User not found' }, { status: 404 });
+    }
+
+    if (!('telegram_id' in data)) {
+      throw new Error('Invalid user data structure');
+    }
+
+    const userData: UserData = {
+      telegram_id: data.telegram_id,
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      username: data.username || '',
+      about: data.about || '',
+      avatar_img_url: data.avatar_img_url || '',
+      hero_img_url: data.hero_img_url || '',
+      subscribers: data.subscribers || 0,
+      promises: data.promises || 0,
+      promises_done: data.promises_done || 0,
+      stars: data.stars || 0,
+    };
+
+    return NextResponse.json(userData);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return NextResponse.json({ detail: 'Internal server error' }, { status: 500 });
   }
-
-  return NextResponse.json(data);
 }
