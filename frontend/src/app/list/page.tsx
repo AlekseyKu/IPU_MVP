@@ -49,7 +49,7 @@ export default function ListPage() {
               telegram_id: user.telegram_id,
               first_name: user.first_name || '',
               last_name: user.last_name || '',
-              nickname: user.username || '',
+              username: user.username || '',
             };
             return acc;
           }, {} as Record<string, User>);
@@ -136,8 +136,8 @@ export default function ListPage() {
               <div className="col-12">
                 <AnimatePresence>
                   {promises.map((promise) => {
-                    const user = users[promise.user_id] || { first_name: '', last_name: '', nickname: '' };
-                    const fullName = `${user.first_name} ${user.last_name}`.trim() || user.nickname || 'Guest';
+                    const user = users[promise.user_id] || { first_name: '', last_name: '', username: '' };
+                    const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || 'Guest';
 
                     return (
                       <motion.div

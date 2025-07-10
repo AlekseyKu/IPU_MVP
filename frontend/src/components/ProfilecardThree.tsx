@@ -1,13 +1,8 @@
+// frontend/src/components/ProfilecardThree.tsx
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface Props {
   onToggleDetail?: () => void;
@@ -26,6 +21,9 @@ interface Props {
   onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
   isSavingImage?: boolean;
+  isSavingText?: boolean;
+  isDirty?: boolean;
+  onSaveClick?: () => void;
   onHeroClick?: (event: React.MouseEvent) => void;
   onAvatarClick?: (event: React.MouseEvent) => void;
 }
@@ -45,43 +43,18 @@ const ProfilecardThree: React.FC<Props> = ({
   onChangeFullName,
   isEditable = false,
   isSavingImage = false,
+  isSavingText = false,
+  isDirty = false,
+  onSaveClick,
   onHeroClick,
   onAvatarClick,
 }) => {
-  const [loading, setLoading] = useState(false);
-  const isLoading = loading || isSavingImage;
+  const isLoading = isSavingImage || isSavingText;
 
-  const [firstName, setFirstName] = useState(fullName.split(' ')[0] || '');
-  const [lastName, setLastName] = useState(fullName.split(' ')[1] || '');
-
-  useEffect(() => {
-    const [first = '', last = ''] = fullName.split(' ');
-    setFirstName(first);
-    setLastName(last);
-  }, [fullName]);
-
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!isEditable || !telegramId) return;
-    setLoading(true);
-
-    const updatePromise = supabase
-      .from('users')
-      .update({
-        first_name: firstName,
-        last_name: lastName,
-      })
-      .eq('telegram_id', telegramId);
-
-    const delay = new Promise((res) => setTimeout(res, 2000));
-    const [{ error }] = await Promise.all([updatePromise, delay]);
-
-    if (!error) {
-      onChangeFullName?.(firstName, lastName);
-    } else {
-      console.error('Ошибка при сохранении:', error.message);
-    }
-
-    setLoading(false);
+    const [first = '', last = ''] = fullName.split(' ');
+    onChangeFullName?.(first, last);
   };
 
   const tabs = [
@@ -98,7 +71,7 @@ const ProfilecardThree: React.FC<Props> = ({
         style={{
           height: '150px',
           position: 'relative',
-          cursor: isEditable ? 'pointer' : 'default'
+          cursor: isEditable ? 'pointer' : 'default',
         }}
         onClick={isEditable ? onHeroClick : undefined}
       >
@@ -121,7 +94,7 @@ const ProfilecardThree: React.FC<Props> = ({
             left: '30px',
             cursor: isEditable ? 'pointer' : 'default',
             width: '100px',
-            height: '100px'
+            height: '100px',
           }}
           onClick={isEditable ? onAvatarClick : undefined}
         >
@@ -139,11 +112,11 @@ const ProfilecardThree: React.FC<Props> = ({
         {isEditable && (
           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
             <button
-              onClick={handleSave}
-              className="btn btn-primary"
-              disabled={isLoading}
+              onClick={onSaveClick}
+              className={`btn btn-primary ${!isDirty ? 'opacity-50' : ''}`}
+              disabled={!isDirty || isSavingText || isSavingImage}
             >
-              {isLoading ? 'Сохранение...' : 'Сохранить'}
+              {(isSavingText || isSavingImage) ? 'Сохранение...' : 'Сохранить'}
             </button>
           </div>
         )}

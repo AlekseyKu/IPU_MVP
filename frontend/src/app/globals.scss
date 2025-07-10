@@ -43,3 +43,7 @@ a {
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out;
 }
+
+.scroll-adjust {
+  scroll-margin-top: 250px; /* или больше */
+}

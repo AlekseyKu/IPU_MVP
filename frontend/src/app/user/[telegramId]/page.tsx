@@ -117,7 +117,7 @@ export default function UserProfile() {
     return <div className="text-center p-5">Пользователь не найден</div>;
   }
 
-  const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Не указано';
+  const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || '';
   const promisesCount = promises.length;
   const promisesDoneCount = promises.filter((p) => p.is_completed).length;
 

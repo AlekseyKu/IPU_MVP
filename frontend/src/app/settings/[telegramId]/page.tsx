@@ -1,3 +1,4 @@
+// frontend/src/app/settings/[telegramId]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -20,16 +21,29 @@ export default function SettingsPage() {
   const [avatar, setAvatar] = useState<string>(defaultAvatarImg);
   const [error, setError] = useState<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
+  const [isSavingText, setIsSavingText] = useState(false);
+  const [firstName, setFirstName] = useState(userData?.first_name || '');
+  const [lastName, setLastName] = useState(userData?.last_name || '');
+  const [about, setAbout] = useState(userData?.about || '');
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    console.log('SettingsPage userData:', userData);
-    console.log('SettingsPage heroImg:', heroImg, 'avatar:', avatar);
-    console.log('initData in SettingsPage:', initData);
     if (userData) {
       setHeroImg(userData.hero_img_url || defaultHeroImg);
       setAvatar(userData.avatar_img_url || defaultAvatarImg);
+      setFirstName(userData.first_name || '');
+      setLastName(userData.last_name || '');
+      setAbout(userData.about || '');
     }
-  }, [userData, defaultHeroImg, defaultAvatarImg, initData]);
+  }, [userData, defaultHeroImg, defaultAvatarImg]);
+
+  useEffect(() => {
+    const hasChanges =
+      firstName !== (userData?.first_name || '') ||
+      lastName !== (userData?.last_name || '') ||
+      about !== (userData?.about || '');
+    setIsDirty(hasChanges);
+  }, [firstName, lastName, about, userData]);
 
   const handleImageUpload = async (type: 'hero' | 'avatar', event: React.MouseEvent) => {
     if (!telegramId || !userData) {
@@ -54,8 +68,6 @@ export default function SettingsPage() {
         return;
       }
 
-      console.log('Sending initData:', effectiveInitData);
-
       const formData = new FormData();
       formData.append('file', file);
       formData.append('initData', effectiveInitData);
@@ -73,7 +85,6 @@ export default function SettingsPage() {
 
         if (!response.ok) {
           setError(`Error uploading ${type} image`);
-          console.error('Error response:', url);
           return;
         }
 
@@ -82,12 +93,11 @@ export default function SettingsPage() {
         } else {
           setAvatar(url);
         }
+
         setError(null);
-        console.log(`${type} image uploaded and saved:`, url);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        setError(`General error uploading ${type} image: ${errorMessage}`);
-        console.error(`Error uploading ${type} image:`, error);
+        setError(`Error uploading ${type} image: ${errorMessage}`);
       } finally {
         setIsSavingImage(false);
       }
@@ -95,11 +105,41 @@ export default function SettingsPage() {
     input.click();
   };
 
+  const handleSaveProfile = async () => {
+    if (!telegramId) {
+      setError('No telegramId available');
+      return;
+    }
+
+    setIsSavingText(true);
+    try {
+      const response = await fetch(`/api/users/${telegramId}/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name: firstName, last_name: lastName, about }),
+      });
+
+      if (!response.ok) {
+        const { detail } = await response.json();
+        setError(detail || 'Error saving profile');
+        return;
+      }
+
+      setError(null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Error saving profile: ${errorMessage}`);
+    } finally {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setIsSavingText(false);
+    }
+  };
+
   if (isLoading || !userData) {
     return <Load />;
   }
 
-  const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Не указано';
+  const fullName = `${firstName || ''} ${lastName || ''}`.trim() || '';
 
   return (
     <>
@@ -111,8 +151,6 @@ export default function SettingsPage() {
             <div className="row">
               <div className="col-xl-12 mb-3">
                 <ProfilecardThree
-                  onToggleDetail={() => {}}
-                  isOpen={true}
                   username={userData.username || ''}
                   telegramId={userData.telegram_id}
                   subscribers={userData.subscribers || 0}
@@ -123,8 +161,16 @@ export default function SettingsPage() {
                   heroImgUrl={heroImg}
                   avatarUrl={avatar}
                   isEditable={true}
+                  isSavingImage={isSavingImage}
+                  isSavingText={isSavingText}
+                  isDirty={isDirty}
                   onHeroClick={handleImageUpload.bind(null, 'hero')}
                   onAvatarClick={handleImageUpload.bind(null, 'avatar')}
+                  onChangeFullName={(first, last) => {
+                    setFirstName(first);
+                    setLastName(last);
+                  }}
+                  onSaveClick={handleSaveProfile}
                 />
               </div>
               <div className="col-xl-4 col-xxl-3 col-lg-4">
@@ -132,9 +178,14 @@ export default function SettingsPage() {
                   username={userData.username || ''}
                   telegramId={userData.telegram_id}
                   fullName={fullName}
-                  about={userData.about || ''}
+                  about={about}
                   isEditable={true}
                   isSavingImage={isSavingImage}
+                  onChangeAbout={(text) => setAbout(text)}
+                  onChangeFullName={(first, last) => {
+                    setFirstName(first);
+                    setLastName(last);
+                  }}
                 />
               </div>
             </div>

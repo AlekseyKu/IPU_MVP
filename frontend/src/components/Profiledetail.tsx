@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 
 interface Props {
@@ -29,7 +31,11 @@ const Profiledetail: React.FC<Props> = ({
   const [firstName, setFirstName] = useState(fullName.split(' ')[0] || '');
   const [lastName, setLastName] = useState(fullName.split(' ')[1] || '');
   const [showTooltip, setShowTooltip] = useState(false);
+
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const lastNameRef = useRef<HTMLInputElement>(null);
+  const aboutRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setLocalAbout(about);
@@ -54,6 +60,12 @@ const Profiledetail: React.FC<Props> = ({
     };
   }, [showTooltip]);
 
+  const scrollToInput = (ref: React.RefObject<HTMLElement>) => {
+    setTimeout(() => {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0); // задержка под появление клавиатуры
+  };
+
   return (
     <div className="card w-100 shadow-xss rounded-xxl border-0 mb-3">
       <div className="card-body d-block px-3">
@@ -64,31 +76,46 @@ const Profiledetail: React.FC<Props> = ({
             <div className="d-flex flex-wrap gap-2 mb-2">
               <div className="flex-fill">
                 <input
+                  ref={firstNameRef}
                   type="text"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="form-control font-xsss"
+                  onFocus={() => scrollToInput(firstNameRef)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFirstName(value);
+                    onChangeFullName?.(value, lastName);
+                  }}
+                  className="form-control font-xsss scroll-adjust"
                   placeholder="Имя"
                 />
               </div>
               <div className="flex-fill">
                 <input
+                  ref={lastNameRef}
                   type="text"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="form-control font-xsss"
+                  onFocus={() => scrollToInput(lastNameRef)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setLastName(value);
+                    onChangeFullName?.(firstName, value);
+                  }}
+                  className="form-control font-xsss scroll-adjust"
                   placeholder="Фамилия"
                 />
               </div>
             </div>
 
             <textarea
+              ref={aboutRef}
+              onFocus={() => scrollToInput(aboutRef)}
               value={localAbout}
               onChange={(e) => {
-                setLocalAbout(e.target.value);
-                onChangeAbout?.(e.target.value);
+                const value = e.target.value;
+                setLocalAbout(value);
+                onChangeAbout?.(value);
               }}
-              className="form-control lh-24 font-xsss mb-0"
+              className="form-control lh-24 font-xsss mb-0 scroll-adjust"
               placeholder="О себе"
               style={{ height: '180px' }}
             />
