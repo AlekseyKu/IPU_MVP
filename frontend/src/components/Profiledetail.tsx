@@ -13,6 +13,7 @@ interface Props {
   onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
   isSavingImage?: boolean;
+  scrollContainerRef?: React.RefObject<HTMLElement>; // ⬅ новый проп
 }
 
 const Profiledetail: React.FC<Props> = ({
@@ -25,6 +26,7 @@ const Profiledetail: React.FC<Props> = ({
   onChangeAddress,
   onChangeFullName,
   isEditable = false,
+  scrollContainerRef,
 }) => {
   const [localAbout, setLocalAbout] = useState(about);
   const [localAddress, setLocalAddress] = useState(address);
@@ -62,8 +64,17 @@ const Profiledetail: React.FC<Props> = ({
 
   const scrollToInput = (ref: React.RefObject<HTMLElement>) => {
     setTimeout(() => {
-      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 0); // задержка под появление клавиатуры
+      if (!ref.current || !scrollContainerRef?.current) return;
+
+      const inputRect = ref.current.getBoundingClientRect();
+      const containerRect = scrollContainerRef.current.getBoundingClientRect();
+      const offsetTop = inputRect.top - containerRect.top + scrollContainerRef.current.scrollTop - 150;
+
+      scrollContainerRef.current.scrollTo({
+        top: offsetTop,
+        behavior: 'smooth',
+      });
+    }, 300);
   };
 
   return (
@@ -85,7 +96,7 @@ const Profiledetail: React.FC<Props> = ({
                     setFirstName(value);
                     onChangeFullName?.(value, lastName);
                   }}
-                  className="form-control font-xsss scroll-adjust"
+                  className="form-control font-xsss"
                   placeholder="Имя"
                 />
               </div>
@@ -100,7 +111,7 @@ const Profiledetail: React.FC<Props> = ({
                     setLastName(value);
                     onChangeFullName?.(firstName, value);
                   }}
-                  className="form-control font-xsss scroll-adjust"
+                  className="form-control font-xsss"
                   placeholder="Фамилия"
                 />
               </div>
@@ -115,7 +126,7 @@ const Profiledetail: React.FC<Props> = ({
                 setLocalAbout(value);
                 onChangeAbout?.(value);
               }}
-              className="form-control lh-24 font-xsss mb-0 scroll-adjust"
+              className="form-control lh-24 font-xsss mb-0"
               placeholder="О себе"
               style={{ height: '180px' }}
             />

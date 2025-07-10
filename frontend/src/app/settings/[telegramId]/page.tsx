@@ -1,7 +1,6 @@
-// frontend/src/app/settings/[telegramId]/page.tsx
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { useUserData } from '@/hooks/useUserData';
@@ -17,6 +16,7 @@ export default function SettingsPage() {
   const { telegramId: contextTelegramId, initData } = useUser();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
   const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
+
   const [heroImg, setHeroImg] = useState<string>(defaultHeroImg);
   const [avatar, setAvatar] = useState<string>(defaultAvatarImg);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +26,10 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState(userData?.last_name || '');
   const [about, setAbout] = useState(userData?.about || '');
   const [isDirty, setIsDirty] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
+
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (userData) {
@@ -44,6 +48,18 @@ export default function SettingsPage() {
       about !== (userData?.about || '');
     setIsDirty(hasChanges);
   }, [firstName, lastName, about, userData]);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      setViewportHeight(window.innerHeight);
+      const heightDiff = window.innerHeight < screen.height ? screen.height - window.innerHeight : 0;
+      setIsKeyboardOpen(heightDiff > 150);
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   const handleImageUpload = async (type: 'hero' | 'avatar', event: React.MouseEvent) => {
     if (!telegramId || !userData) {
@@ -144,7 +160,15 @@ export default function SettingsPage() {
   return (
     <>
       <Header />
-      <div className="main-content">
+      <div
+        className="main-content"
+        ref={contentRef}
+        style={{
+          height: viewportHeight - (isKeyboardOpen ? 0 : 56),
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {error && <div className="alert alert-danger">{error}</div>}
         <div className="middle-sidebar-bottom">
           <div className="middle-sidebar-left pe-0">
@@ -186,13 +210,14 @@ export default function SettingsPage() {
                     setFirstName(first);
                     setLastName(last);
                   }}
+                  scrollContainerRef={contentRef}
                 />
               </div>
             </div>
           </div>
         </div>
       </div>
-      <Appfooter />
+      {!isKeyboardOpen && <Appfooter />}
     </>
   );
 }

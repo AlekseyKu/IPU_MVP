@@ -1,54 +1,61 @@
-// frontend/src/components/Appfooter.tsx
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useUser, useCreatePostModal } from '@/context/UserContext';
-import {
-  Home,
-  User,
-  CirclePlus,
-  BarChart2,
-  List,
-  ShoppingCart
-} from 'lucide-react'
+import React from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useUser, useCreatePostModal } from '@/context/UserContext'
+import { Home, User, CirclePlus, BarChart2, List, ShoppingCart } from 'lucide-react'
 
 const Appfooter: React.FC = () => {
   const pathname = usePathname()
-  const { telegramId } = useUser();
-  const { setIsCreatePostOpen } = useCreatePostModal(); // Добавляем управление попапом
+  const router = useRouter()
+  const { telegramId } = useUser()
+  const { setIsCreatePostOpen } = useCreatePostModal()
 
   const links = [
-    { href: telegramId ? `/user/${telegramId}` : '/', icon: User },
-    { href: '/list', icon: List },
-    { href: '#', onClick: () => setIsCreatePostOpen(true), icon: CirclePlus }, // Открытие попапа
-    { href: '/leaders', icon: BarChart2 },
-    { href: '/shop', icon: ShoppingCart },
+    {
+      icon: User,
+      getHref: () => (telegramId ? `/user/${telegramId}` : '/'),
+      onClick: () => router.push(telegramId ? `/user/${telegramId}` : '/')
+    },
+    {
+      icon: List,
+      getHref: () => '/list',
+      onClick: () => router.push('/list')
+    },
+    {
+      icon: CirclePlus,
+      getHref: () => '#',
+      onClick: () => setIsCreatePostOpen(true)
+    },
+    {
+      icon: BarChart2,
+      getHref: () => '/leaders',
+      onClick: () => router.push('/leaders')
+    },
+    {
+      icon: ShoppingCart,
+      getHref: () => '/shop',
+      onClick: () => router.push('/shop')
+    },
   ]
 
   return (
     <div className="app-footer border-0 shadow-lg bg-white d-flex justify-content-around align-items-center py-3">
-      {links.map(({ href, icon: Icon, onClick }, idx) => {
+      {links.map(({ icon: Icon, getHref, onClick }, idx) => {
+        const href = getHref()
         const isActive = pathname === href
-        const handleClick = (e: React.MouseEvent) => {
-          if (onClick) {
-            e.preventDefault()
-            onClick()
-          }
-        }
 
         return (
-          <Link
+          <button
             key={idx}
-            href={href}
-            onClick={handleClick}
-            className="nav-content-bttn nav-center"
+            onClick={(e) => { e.preventDefault(); onClick() }}
+            className="nav-content-bttn nav-center bg-transparent border-0 p-0"
           >
             <Icon
               style={{ color: isActive ? '#0066ff' : '#A0AEC0' }}
               className="w-6 h-6"
             />
-          </Link>
+          </button>
         )
       })}
     </div>
