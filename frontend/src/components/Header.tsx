@@ -22,6 +22,9 @@ import {
   Newspaper,
   Send,
   ExternalLink,
+  Linkedin,
+  Instagram,
+  Facebook,
   X,
 } from 'lucide-react'
 
@@ -52,8 +55,8 @@ const Header: React.FC = () => {
         {/* Лого слева */}
         <Link href="/" className="d-flex align-items-center">
           <Image
-            src="/assets/images/IPU/logo.png"
-            alt="IPU Logo"
+            src="/assets/images/ipu/logo.png"
+            alt="Logo"
             width={157}
             height={50}
             className="me-3"
@@ -125,9 +128,9 @@ const Header: React.FC = () => {
 
       {/* nav menu */}
       <nav className={`navigation scroll-bar ${uiState.isOpen ? 'nav-active' : ''}`}>
-        <div className="container ps-0 pe-0 ">
+        <div className="container ps-0 pe-0 pt-5">
           <div className="nav-content ">
-            <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2 mt-2 ">
+            {/* <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2 mt-2 ">
               <div className="nav-caption fw-600 font-xssss text-grey-500">
                 <span>МЕНЮ</span>
               </div>
@@ -163,10 +166,10 @@ const Header: React.FC = () => {
                   </Link>
                 </li>
               </ul>
-            </div>
+            </div> */}
 
             <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2">
-              <div className="nav-caption fw-600 font-xssss text-grey-500">
+              <div className="nav-caption fw-600 font-xssss text-grey-500 align-items-bottom">
                 <span>Ресурсы  </span>IPU
               </div>
               <ul className="mb-3">
@@ -178,11 +181,30 @@ const Header: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/defaulthotel" className="nav-content-bttn open-font">
+                  <Link href="https://telegram.im/@dexstudioapp" className="nav-content-bttn open-font">
                     <Send className="me-3 w-5 h-5" />
-                    <span>Мы в Telegram</span>
+                    <span>Telegram</span>
                   </Link>
                 </li>
+                <li>
+                  <Link href="https://www.linkedin.com/company/dexstudioapp/?viewAsMember=true" target="_blank" className="nav-content-bttn open-font">
+                    <Linkedin className="me-3 w-5 h-5" />
+                    <span>LinkedIn</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="https://www.instagram.com/dexstudioapp" target="_blank" className="nav-content-bttn open-font">
+                    <Instagram className="me-3 w-5 h-5" />
+                    <span>Instagram</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="https://www.facebook.com/profile.php?id=61572373418340" target="_blank" className="nav-content-bttn open-font">
+                    <Facebook className="me-3 w-5 h-5" />
+                    <span>Facebook</span>
+                  </Link>
+                </li>                
+            
                 {/* <li>
                   <Link href="/defaultevent" className="nav-content-bttn open-font">
                     <MapPin className="me-3 w-5 h-5" />
@@ -213,13 +235,13 @@ const Header: React.FC = () => {
                     <span>Analytics</span>
                   </Link>
                 </li> */}
-                <li>
+                {/* <li>
                   <Link href="/defaultmessage" className="nav-content-bttn open-font h-auto pt-2 pb-2">
                     <MessageSquare className="me-3 w-4 h-4 text-grey-500" />
                     <span>Чат</span>
-                    {/* <span className="circle-count bg-warning mt-0">23</span> */}
+                    <span className="circle-count bg-warning mt-0">23</span>
                   </Link>
-                </li>
+                </li> */}
               </ul>
             </div>
           </div>

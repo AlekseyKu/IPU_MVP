@@ -12533,7 +12533,8 @@ strong,
 }
 @media (max-width: 991.98px) {
   .nav-header {
-    padding: 9px 15px 9px 15px;
+    /* padding: 9px 15px 9px 15px; */
+    padding: 9px;
     height: auto;
     position: fixed;
     top: env(safe-area-inset-top);
@@ -12608,7 +12609,7 @@ strong,
   flex-shrink: 0;
   width: 27px;
   height: 27px;
-  margin-right: 32px;
+  margin-right: 24px;
   font-size: 0;
   position: relative;
   transition: all 0.25s ease;
