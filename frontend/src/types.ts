@@ -19,6 +19,7 @@ export interface User {
   first_name: string | null;
   last_name: string | null;
   username: string | null;
+  avatar_img_url?: string;
 }
 
 export interface PromiseData {

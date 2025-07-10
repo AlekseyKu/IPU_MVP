@@ -25,16 +25,16 @@ async def create_user(user: dict, db: asyncpg.Connection = Depends(get_db)):
         )
         if existing_user:
             await db.execute(
-                "UPDATE users SET username = $2, first_name = $3, last_name = $4, updated_at = NOW() WHERE telegram_id = $1",
-                telegram_id, username, first_name, last_name
+                "UPDATE users SET username = $2, updated_at = NOW() WHERE telegram_id = $1",
+                telegram_id, username
             )
             logger.info(f"User updated: telegram_id={telegram_id}")
             return {
                 "message": "Welcome back! Your profile has been updated.",
                 "telegram_id": telegram_id,
                 "username": username,
-                "first_name": first_name,
-                "last_name": last_name
+                # "first_name": first_name,
+                # "last_name": last_name
             }
 
         await db.execute(

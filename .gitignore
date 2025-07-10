@@ -1,0 +1,102 @@
+# 🧠 УНИЧТОЖАЕМ все виртуальные окружения Python
+venv*/
+**/venv*/
+**/.venv/
+**/env/
+**/.env/
+**/.env.*
+
+# 📦 Node.js модули везде
+node_modules/
+**/node_modules/
+
+# 🧹 Кэш и байт-код в любой папке
+__pycache__/
+**/__pycache__/
+*.py[cod]
+**/*.py[cod]
+
+# 🔥 Логи и временные файлы, где бы они ни были
+*.log
+**/*.log
+*.tmp
+**/*.tmp
+*.bak
+**/*.bak
+*.swp
+**/*.swp
+*.pid
+**/*.pid
+
+# 🧪 Тестовые и временные артефакты
+coverage/
+**/coverage/
+*.coverage
+**/*.coverage
+*.test.*
+**/*.test.*
+
+# 🛠️ IDE и редакторы
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# 🚫 Секреты и ключи
+*.env
+**/*.env
+*.key
+*.pem
+*.crt
+
+# 💣 Билды и артефакты
+dist/
+build/
+**/dist/
+**/build/
+*.tgz
+*.zip
+*.tar
+*.tar.gz
+
+# 🔧 Lock-файлы и дебаг-логи
+*.lock
+*.log.*
+pnpm-debug.log
+yarn-error.log
+
+# 🧠 ML, AI и data science
+*.ckpt
+*.h5
+*.pt
+*.pth
+runs/
+wandb/
+**/runs/
+**/wandb/
+
+# 🐘 SQLite или другие БД-файлы
+*.sqlite
+*.db
+**/*.sqlite
+**/*.db
+
+# 📸 Snapshots и output-тесты
+__snapshots__/
+**/__snapshots__/
+
+# 💀 Git system
+.git/
+**/.git/
+
+# 🍏 MacOS и Windows
+.DS_Store
+Thumbs.db
+
+# 📁 Ваши спец-папки
+logs/
+**/logs/
+temp/
+**/temp/
+.cache/
+**/.cache/

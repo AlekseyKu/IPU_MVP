@@ -26,7 +26,7 @@ export const useUserData = (telegramId: number) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const defaultHeroImg = '/assets/images/ipu/hero-img.png';
-  const defaultAvatarImg = '/assets/images/ipu/avatar.png';
+  const defaultAvatarImg = '/assets/images/defaultAvatar.svg';
 
   useEffect(() => {
     async function fetchData() {

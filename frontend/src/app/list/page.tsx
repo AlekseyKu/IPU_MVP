@@ -40,7 +40,7 @@ export default function ListPage() {
         // Fetch all users
         const { data: usersData, error: usersError } = await supabase
           .from('users')
-          .select('telegram_id, first_name, last_name, username');
+          .select('telegram_id, first_name, last_name, username, avatar_img_url');
         if (usersError) {
           console.error('Error fetching users:', usersError.message);
         } else {
@@ -50,6 +50,7 @@ export default function ListPage() {
               first_name: user.first_name || '',
               last_name: user.last_name || '',
               username: user.username || '',
+              avatar_img_url: user.avatar_img_url || '',
             };
             return acc;
           }, {} as Record<string, User>);
@@ -151,9 +152,16 @@ export default function ListPage() {
                       >
                         <div className="card-body p-0 d-flex flex-column">
                           <div className="d-flex align-items-center mb-2">
-                            <Activity className="w-6 h-6 me-2" />
+                            <img
+                              src={user.avatar_img_url || '/assets/images/defaultAvatar.png'}
+                              alt="avatar"
+                              width={32}
+                              height={32}
+                              className="rounded-circle me-2"
+                            />
                             <span className="text-dark font-xsss">{fullName}</span>
                           </div>
+
                           <div className="flex-grow-1">
                             <span className="text-dark font-xs mb-1">{promise.title}</span>
                           </div>
