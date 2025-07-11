@@ -1,33 +1,35 @@
 'use client'
+//frontend\src\components\ProfilecardThree.tsx
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
+// Определение пропсов компонента
 interface Props {
-  onToggleDetail?: () => void;
-  isOpen?: boolean;
-  username?: string;
-  fullName: string;
-  telegramId?: number;
-  subscribers?: number;
-  promises?: number;
-  promisesDone?: number;
-  stars?: number;
-  heroImgUrl?: string;
-  avatarUrl?: string;
-  onChangeHeroImg?: (url: string) => void;
-  onChangeAvatar?: (url: string) => void;
-  onChangeFullName?: (firstName: string, lastName: string) => void;
-  isEditable?: boolean;
-  isSavingImage?: boolean;
-  isSavingText?: boolean;
-  isDirty?: boolean;
-  onSaveClick?: () => void;
-  onHeroClick?: (event: React.MouseEvent) => void;
-  onAvatarClick?: (event: React.MouseEvent) => void;
-  isOwnProfile?: boolean;
-  onSubscribe?: (telegramId: number, isSubscribed: boolean) => Promise<void>;
-  isSubscribed?: boolean;
+  onToggleDetail?: () => void; // Функция переключения деталей профиля
+  isOpen?: boolean; // Состояние открытости деталей
+  username?: string; // Юзернейм пользователя
+  fullName: string; // Полное имя (имя + фамилия)
+  telegramId?: number; // ID пользователя в Telegram
+  subscribers?: number; // Количество подписчиков
+  promises?: number; // Количество обещаний
+  promisesDone?: number; // Количество выполненных обещаний
+  stars?: number; // Количество звёзд
+  heroImgUrl?: string; // URL изображения фона
+  avatarUrl?: string; // URL аватара
+  onChangeHeroImg?: (url: string) => void; // Обработчик изменения фона
+  onChangeAvatar?: (url: string) => void; // Обработчик изменения аватара
+  onChangeFullName?: (firstName: string, lastName: string) => void; // Обработчик изменения имени
+  isEditable?: boolean; // Режим редактирования (true для /settings)
+  isSavingImage?: boolean; // Состояние сохранения изображения
+  isSavingText?: boolean; // Состояние сохранения текста
+  isDirty?: boolean; // Флаг изменений, требующих сохранения
+  onSaveClick?: () => void; // Функция сохранения изменений
+  onHeroClick?: (event: React.MouseEvent) => void; // Обработчик клика по фону
+  onAvatarClick?: (event: React.MouseEvent) => void; // Обработчик клика по аватару
+  isOwnProfile?: boolean; // Флаг, что профиль принадлежит текущему пользователю
+  onSubscribe?: (telegramId: number, isSubscribed: boolean) => Promise<void>; // Обработчик подписки
+  isSubscribed?: boolean; // Состояние подписки
 }
 
 const ProfilecardThree: React.FC<Props> = ({
@@ -54,9 +56,12 @@ const ProfilecardThree: React.FC<Props> = ({
   onSubscribe,
   isSubscribed = false,
 }) => {
+  // Локальное состояние для процесса подписки
   const [isSubscribing, setIsSubscribing] = useState(false);
+  // Общее состояние загрузки (сохранение изображения, текста или подписки)
   const isLoading = isSavingImage || isSavingText || isSubscribing;
 
+  // Обработчик сохранения изменений (работает только в режиме редактирования)
   const handleSave = () => {
     if (!isEditable || !telegramId) return;
     const [first = '', last = ''] = fullName.split(' ');
@@ -64,6 +69,7 @@ const ProfilecardThree: React.FC<Props> = ({
     onSaveClick?.();
   };
 
+  // Обработчик подписки/отписки (работает только для чужих профилей)
   const handleSubscribe = async () => {
     if (!telegramId || !onSubscribe) return;
     setIsSubscribing(true);
@@ -76,6 +82,7 @@ const ProfilecardThree: React.FC<Props> = ({
     }
   };
 
+  // Массив данных для вкладок счётчиков
   const tabs = [
     { id: 'navtabs1', label: 'Подписчики', count: subscribers },
     { id: 'navtabs2', label: 'Обещания', count: promises },
@@ -83,6 +90,7 @@ const ProfilecardThree: React.FC<Props> = ({
     { id: 'navtabs4', label: 'Звезды', count: stars },
   ];
 
+  // Блок с именем и юзернеймом
   const nameBlock = (
     <div className="mt-0">
       <h4 className="fw-500 font-sm mt-0 mb-0" style={{ paddingLeft: '140px' }}>
@@ -92,6 +100,18 @@ const ProfilecardThree: React.FC<Props> = ({
     </div>
   );
 
+  // Блок с кнопкой переключения деталей (отображается только в режиме просмотра)
+  const detailToggleBlock = (
+    <button
+      onClick={onToggleDetail}
+      className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0 ms-2"
+      title="Toggle Profile Detail"
+    >
+      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+    </button>
+  );
+
+  // Блок с кнопкой подписки (отображается только для чужих профилей)
   const subscribeBlock = (
     <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
       <button
@@ -99,22 +119,14 @@ const ProfilecardThree: React.FC<Props> = ({
         className="btn btn-outline-primary me-2"
         disabled={isLoading}
       >
-        {isSubscribing ? 'Обработка...' : isSubscribed ? 'Отписаться' : 'Подписаться'}
+        {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
       </button>
-      {onToggleDetail && (
-        <button
-          onClick={onToggleDetail}
-          className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0"
-          title="Toggle Profile Detail"
-        >
-          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-      )}
     </div>
   );
 
   return (
     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
+      {/* Секция фона профиля (редактируемая при isEditable=true) */}
       <div
         className="hero-img card-body p-0 rounded-xxxl overflow-hidden m-3"
         style={{
@@ -136,6 +148,7 @@ const ProfilecardThree: React.FC<Props> = ({
       </div>
 
       <div className="card-body p-0 position-relative">
+        {/* Аватар (редактируемый при isEditable=true) */}
         <figure
           className="avatar position-absolute z-index-1"
           style={{
@@ -158,10 +171,7 @@ const ProfilecardThree: React.FC<Props> = ({
           />
         </figure>
 
-        {/* top section name (if viewing another user's profile) */}
-        {!isOwnProfile && nameBlock}
-
-        {/* кнопка Сохранить */}
+        {/* Кнопка Сохранить (отображается только при isEditable=true) */}
         {isEditable && (
           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
             <button
@@ -173,13 +183,19 @@ const ProfilecardThree: React.FC<Props> = ({
             </button>
           </div>
         )}
+
+        {/* Имя и юзернейм с кнопкой переключения деталей (отображается только в режиме просмотра) */}
+        {!isEditable && (
+          <div className="d-flex align-items-center justify-content-between pe-3">
+            {nameBlock}
+            {onToggleDetail && detailToggleBlock}
+          </div>
+        )}
       </div>
 
-      {/* нижний блок: имя (если свой профиль), или кнопка подписки (если чужой) */}
+      {/* Нижняя секция: счётчики и дополнительные элементы */}
       <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
-        {!isOwnProfile ? subscribeBlock : null}
-        {isOwnProfile && !isEditable && nameBlock}
-
+        {/* Счётчики (отображаются только при !isEditable) */}
         {!isEditable && (
           <ul
             className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
@@ -197,6 +213,9 @@ const ProfilecardThree: React.FC<Props> = ({
             ))}
           </ul>
         )}
+
+        {/* Кнопка подписки (отображается только для чужих профилей) */}
+        {!isOwnProfile && subscribeBlock}
       </div>
     </div>
   );

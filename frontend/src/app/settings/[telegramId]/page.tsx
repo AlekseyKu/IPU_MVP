@@ -217,7 +217,8 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-      {!isKeyboardOpen && <Appfooter />}
+      {/* {!isKeyboardOpen && <Appfooter />} */}
+      <Appfooter />
     </>
   );
 }

@@ -96,6 +96,48 @@ export default function UserProfile() {
     }
   }, [paramTelegramId, contextTelegramId, telegramId, setTelegramId]);
 
+  // Подписка на изменения таблицы promises в реальном времени
+  useEffect(() => {
+    if (!telegramId) return;
+
+    const channel = supabase
+      .channel(`promises-${telegramId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'promises',
+        filter: `user_id=eq.${telegramId}`,
+      }, (payload) => {
+        const newPromise = payload.new as PromiseData;
+        setPromises((prev) => [...prev, newPromise].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'promises',
+        filter: `user_id=eq.${telegramId}`,
+      }, (payload) => {
+        const updatedPromise = payload.new as PromiseData;
+        setPromises((prev) =>
+          prev.map((p) => (p.id === updatedPromise.id ? updatedPromise : p))
+        );
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'promises',
+        filter: `user_id=eq.${telegramId}`,
+      }, (payload) => {
+        const deletedId = payload.old.id as string;
+        setPromises((prev) => prev.filter((p) => p.id !== deletedId));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [telegramId]);
+
   const handleSubscribe = async (telegramId: number, isSubscribed: boolean) => {
     try {
       const response = await fetch('/api/subscriptions', {
@@ -114,8 +156,8 @@ export default function UserProfile() {
           ? {
               ...prev,
               subscribers: isSubscribed
-                ? Math.max(0, (prev.subscribers || 0) - 1)
-                : (prev.subscribers || 0) + 1,
+                ? Math.max(0, (prev.subscribers ?? 0) - 1)
+                : (prev.subscribers ?? 0) + 1,
             }
           : prev
       );
@@ -125,8 +167,57 @@ export default function UserProfile() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     setPromises((prev) => prev.filter((p) => p.id !== id));
+
+    try {
+      const currentPromises = localUserData?.promises ?? 0;
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ promises: Math.max(0, currentPromises - 1) })
+        .eq('telegram_id', telegramId);
+
+      if (updateError) {
+        throw new Error('Failed to update promises count');
+      }
+
+      setLocalUserData((prev) =>
+        prev ? { ...prev, promises: Math.max(0, (prev.promises ?? 0) - 1) } : prev
+      );
+    } catch (error) {
+      setError('Error updating promises in DB');
+      console.error('Error:', error);
+    }
+  };
+
+  const handleUpdate = async (updatedPromise: PromiseData) => {
+    setPromises((prev) =>
+      prev.map((p) => (p.id === updatedPromise.id ? updatedPromise : p))
+    );
+
+    try {
+      const currentPromisesDone = localUserData?.promises_done ?? 0;
+      const wasCompleted = promises.find((p) => p.id === updatedPromise.id)?.is_completed ?? false;
+      const updateDone = wasCompleted !== updatedPromise.is_completed
+        ? (updatedPromise.is_completed ? 1 : -1)
+        : 0;
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ promises_done: Math.max(0, currentPromisesDone + updateDone) })
+        .eq('telegram_id', telegramId);
+
+      if (updateError) {
+        throw new Error('Failed to update promises_done count');
+      }
+
+      setLocalUserData((prev) =>
+        prev ? { ...prev, promises_done: Math.max(0, (prev.promises_done ?? 0) + updateDone) } : prev
+      );
+    } catch (error) {
+      setError('Error updating promises_done in DB');
+      console.error('Error:', error);
+    }
   };
 
   if (isLoading || userLoading || !localUserData) {
@@ -201,11 +292,7 @@ export default function UserProfile() {
                         promise={promise}
                         onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
                         isOpen={openPromiseId === promise.id}
-                        onUpdate={(updatedPromise) =>
-                          setPromises((prev: PromiseData[]) =>
-                            prev.map((p) => (p.id === updatedPromise.id ? updatedPromise : p))
-                          )
-                        }
+                        onUpdate={handleUpdate}
                         onDelete={handleDelete}
                       />
                     </motion.div>

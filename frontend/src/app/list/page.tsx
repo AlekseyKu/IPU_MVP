@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { User, PromiseData } from '@/types';
 import { Activity, Ellipsis, CircleStop, CirclePlay } from 'lucide-react';
@@ -21,6 +22,7 @@ export default function ListPage() {
   const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchData() {
@@ -219,6 +221,9 @@ export default function ListPage() {
                               />
                               {isOpen[promise.id] && menuOpen[promise.id] && (
                                 <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
+                                  <button className="dropdown-item" onClick={() => router.push(`/profile/${promise.user_id}`)}>
+                                    Посмотреть профиль
+                                  </button>
                                   <button className="dropdown-item" onClick={() => copyLink(promise.id)}>
                                     Скопировать ссылку
                                   </button>
