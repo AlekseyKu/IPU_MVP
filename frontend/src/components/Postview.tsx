@@ -13,7 +13,8 @@ interface PostviewProps {
   onToggle: () => void
   isOpen: boolean
   onUpdate: (updatedPromise: PromiseData) => void
-  onDelete: (id: string) => void // Новый проп для уведомления об удалении
+  onDelete: (id: string) => void
+  isOwnProfile: boolean
 }
 
 const supabase = createClient(
@@ -21,7 +22,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete }) => {
+const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete, isOwnProfile }) => {
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise
   const [isMounted, setIsMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -68,8 +69,8 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   const publicText = localPromise.is_public ? 'Публичное' : 'Личное'
 
   const handleComplete = async () => {
-    if (!id) {
-      console.error('Cannot complete promise: ID is undefined')
+    if (!id || !isOwnProfile) {
+      console.error('Cannot complete promise: ID is undefined or not own profile')
       return
     }
     const { error } = await supabase
@@ -109,8 +110,8 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   }
 
   const handleDelete = async () => {
-    if (!id) {
-      console.error('Cannot delete promise: ID is undefined')
+    if (!id || !isOwnProfile) {
+      console.error('Cannot delete promise: ID is undefined or not own profile')
       return
     }
     if (confirm('Вы уверены, что хотите удалить это обещание?')) {
@@ -128,12 +129,16 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   }
 
   return (
-    <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
+    <div className="card w-100 shadow-sm rounded-xxl border-0 px-4 py-3 mb-3 position-relative" onClick={onToggle}>
       <div className="card-body p-0 d-flex flex-column">
-        <span className="text-dark font-xs mb-1">{title}</span>
-        <div className="d-flex justify-content-end align-items-center mb-1">
-          <span className="text-muted font-xsss me-1">{publicText}</span>
-          <PublicIcon className="w-3 h-3 text-muted" />
+        <div className="flex-grow-1">
+          <span className="text-dark font-xs mb-1">{title}</span>
+          {isOwnProfile && (
+            <div className="d-flex justify-content-end align-items-center mb-1">
+              <span className="text-muted font-xsss me-1">{publicText}</span>
+              <PublicIcon className="w-3 h-3 text-muted" />
+            </div>
+          )}
         </div>
         <div className="d-flex justify-content-between align-items-center">
           <span className="text-muted font-xsss">Дэдлайн: {new Date(deadline).toLocaleString([], {
@@ -183,7 +188,7 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
             />
             {menuOpen && (
               <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
-                {!localPromise.is_completed && (
+                {isOwnProfile && !localPromise.is_completed && (
                   <button className="dropdown-item text-accent" onClick={handleComplete}>
                     Завершить обещание
                   </button>
@@ -194,9 +199,11 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
                 <button className="dropdown-item" onClick={share}>
                   Отправить
                 </button>
-                <button className="dropdown-item text-danger" onClick={handleDelete}>
-                  Удалить обещание
-                </button>
+                {isOwnProfile && (
+                  <button className="dropdown-item text-danger" onClick={handleDelete}>
+                    Удалить обещание
+                  </button>
+                )}
               </div>
             )}
           </div>

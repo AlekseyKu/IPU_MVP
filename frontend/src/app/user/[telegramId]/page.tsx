@@ -294,6 +294,7 @@ export default function UserProfile() {
                         isOpen={openPromiseId === promise.id}
                         onUpdate={handleUpdate}
                         onDelete={handleDelete}
+                        isOwnProfile={isOwnProfile}
                       />
                     </motion.div>
                   ))}
