@@ -53,7 +53,8 @@ export default function Page() {
 
     if (telegramId === null) {
       console.error('No telegramId available');
-      router.push('/error');
+      // router.push('/error');
+      router.push('/');
     }
   }, [router, setTelegramId, setInitData]);
 

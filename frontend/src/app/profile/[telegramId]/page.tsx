@@ -11,7 +11,8 @@ import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
 import Load from '@/components/Load';
 import { AnimatePresence, motion } from 'framer-motion'; // Импорт для анимации
-import { UserData } from '@/types';
+import { UserData, PromiseData } from '@/types';
+import Postview from '@/components/Postview';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,6 +24,8 @@ export default function ProfilePage() {
   const { telegramId: currentUserId } = useUser() || {}; // Обработка случая, если useUser() вернёт undefined
   const telegramId = Number(paramTelegramId); // Явное преобразование в число
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [promises, setPromises] = useState<PromiseData[]>([]);
+  const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -36,7 +39,7 @@ export default function ProfilePage() {
   }, [currentUserId, telegramId]);
 
   useEffect(() => {
-    async function fetchUserData() {
+    async function fetchData() {
       if (!telegramId || isNaN(telegramId)) {
         setError('Invalid telegramId');
         setIsLoading(false);
@@ -45,7 +48,10 @@ export default function ProfilePage() {
 
       setIsLoading(true);
       try {
-        const profileResponse = await fetch(`/api/users/${telegramId}`);
+        const [profileResponse, promisesResponse] = await Promise.all([
+          fetch(`/api/users/${telegramId}`),
+          supabase.from('promises').select('*').eq('user_id', telegramId).eq('is_public', true).order('created_at', { ascending: false }),
+        ]);
 
         if (!profileResponse.ok) {
           throw new Error('User not found');
@@ -53,6 +59,12 @@ export default function ProfilePage() {
 
         const profileData: UserData = await profileResponse.json();
         setUserData(profileData);
+
+        if (promisesResponse.error) {
+          console.error('Error fetching promises:', promisesResponse.error.message);
+        } else {
+          setPromises(promisesResponse.data || []);
+        }
 
         // Загрузка статуса подписки только если пользователь авторизован
         if (currentUserId) {
@@ -63,16 +75,58 @@ export default function ProfilePage() {
 
         setError(null);
       } catch (err: any) {
-        setError(err.message || 'Error loading profile');
+        setError(err.message || 'Error loading profile or promises');
       } finally {
         setIsLoading(false);
       }
     }
 
     if (telegramId) {
-      fetchUserData();
+      fetchData();
     }
   }, [telegramId, currentUserId]);
+
+  // Реальное время обновление обещаний
+  useEffect(() => {
+    if (!telegramId) return;
+
+    const channel = supabase
+      .channel(`promises-${telegramId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'promises',
+        filter: `user_id=eq.${telegramId},is_public=eq.true`,
+      }, (payload) => {
+        const newPromise = payload.new as PromiseData;
+        setPromises((prev) => [...prev, newPromise].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'promises',
+        filter: `user_id=eq.${telegramId},is_public=eq.true`,
+      }, (payload) => {
+        const updatedPromise = payload.new as PromiseData;
+        setPromises((prev) =>
+          prev.map((p) => (p.id === updatedPromise.id ? updatedPromise : p))
+        );
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'promises',
+        filter: `user_id=eq.${telegramId},is_public=eq.true`,
+      }, (payload) => {
+        const deletedId = payload.old.id as string;
+        setPromises((prev) => prev.filter((p) => p.id !== deletedId));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [telegramId]);
 
   const handleSubscribe = async (telegramId: number, isSubscribed: boolean) => {
     if (!currentUserId) {
@@ -170,6 +224,27 @@ export default function ProfilePage() {
                       />
                     </motion.div>
                   )}
+                </AnimatePresence>
+              </div>
+              <div className="col-xl-8 col-xxl-9 col-lg-8">
+                <AnimatePresence>
+                  {promises.map((promise) => (
+                    <motion.div
+                      key={promise.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                    >
+                      <Postview
+                        promise={promise}
+                        onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
+                        isOpen={openPromiseId === promise.id}
+                        onUpdate={() => {}}
+                        onDelete={() => {}}
+                      />
+                    </motion.div>
+                  ))}
                 </AnimatePresence>
               </div>
             </div>

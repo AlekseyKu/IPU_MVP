@@ -31,4 +31,5 @@ export interface PromiseData {
   media_url?: string;
   is_completed: boolean;
   created_at: string;
+  is_public: boolean;
 }

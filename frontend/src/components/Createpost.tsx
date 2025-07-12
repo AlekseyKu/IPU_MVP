@@ -21,6 +21,7 @@ const Createpost: React.FC = () => {
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isPublic, setIsPublic] = useState(true) // Публичное по умолчанию
 
   useEffect(() => {
     if (isCreatePostOpen) {
@@ -28,12 +29,19 @@ const Createpost: React.FC = () => {
       setDeadline('')
       setContent('')
       setMedia(null)
+      setIsPublic(true) // Сброс на публичное при открытии
     }
   }, [isCreatePostOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telegramId) return
+
+    const currentDate = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z'
+    if (new Date(deadline) <= new Date(currentDate)) {
+      console.error('Deadline must be in the future')
+      return
+    }
 
     setLoading(true)
     try {
@@ -57,7 +65,8 @@ const Createpost: React.FC = () => {
         content,
         media_url: mediaUrl,
         created_at: new Date().toISOString(),
-        is_completed: false // Устанавливаем по умолчанию как "не выполнено"
+        is_completed: false,
+        is_public: isPublic // Добавлен новый параметр
       })
 
       if (error) throw error
@@ -134,6 +143,18 @@ const Createpost: React.FC = () => {
             className="form-control mb-3"
             required
           />
+          <div className="form-check form-switch mb-3">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              id="isPublic"
+            />
+            <label className="form-check-label font-xsss" htmlFor="isPublic">
+              {isPublic ? 'Публичное' : 'Личное'}
+            </label>
+          </div>
           <input
             type="datetime-local"
             value={deadline}
@@ -166,7 +187,7 @@ const Createpost: React.FC = () => {
             <button type="button" onClick={handleClose} className="btn btn-light" disabled={loading}>
               Отмена
             </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+            <button type="submit" className="btn btn-outline-primary" disabled={loading}>
               {loading ? 'Сохранение...' : 'Создать'}
             </button>
           </div>

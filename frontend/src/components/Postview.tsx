@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { CirclePlay, CircleStop, Ellipsis } from 'lucide-react'
+import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
 // Импорт общих типов
@@ -22,7 +22,7 @@ const supabase = createClient(
 )
 
 const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete }) => {
-  const { id, title, deadline, content, media_url, is_completed, created_at } = promise
+  const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise
   const [isMounted, setIsMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [localPromise, setLocalPromise] = useState<PromiseData>(promise)
@@ -64,6 +64,8 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   const statusText = localPromise.is_completed ? 'Завершено' : 'Активно'
   const Icon = localPromise.is_completed ? CircleStop : CirclePlay
   const iconColor = localPromise.is_completed ? 'text-accent' : 'text-primary'
+  const PublicIcon = localPromise.is_public ? Globe : GlobeLock
+  const publicText = localPromise.is_public ? 'Публичное' : 'Личное'
 
   const handleComplete = async () => {
     if (!id) {
@@ -126,10 +128,12 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   }
 
   return (
-    <div className="card w-100 shadow-sm rounded-xxl border-0 px-4 py-3 mb-3 position-relative" onClick={onToggle}>
+    <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
       <div className="card-body p-0 d-flex flex-column">
-        <div className="flex-grow-1">
-          <span className="text-dark font-xs mb-1">{title}</span>
+        <span className="text-dark font-xs mb-1">{title}</span>
+        <div className="d-flex justify-content-end align-items-center mb-1">
+          <span className="text-muted font-xsss me-1">{publicText}</span>
+          <PublicIcon className="w-3 h-3 text-muted" />
         </div>
         <div className="d-flex justify-content-between align-items-center">
           <span className="text-muted font-xsss">Дэдлайн: {new Date(deadline).toLocaleString([], {
@@ -192,7 +196,7 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
                 </button>
                 <button className="dropdown-item text-danger" onClick={handleDelete}>
                   Удалить обещание
-                </button> {/* Перемещено под "Отправить" */}
+                </button>
               </div>
             )}
           </div>

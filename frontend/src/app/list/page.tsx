@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import Link from 'next/link';
+import { useUser } from '@/context/UserContext';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,29 +23,31 @@ export default function ListPage() {
   const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [showSubscribedOnly, setShowSubscribedOnly] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<number[]>([]);
   const router = useRouter();
+  const { telegramId: currentUserId } = useUser() || { telegramId: null }; // Используем useUser
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const { data: promisesData, error: promisesError } = await supabase
-          .from('promises')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (promisesError) {
-          console.error('Error fetching promises:', promisesError.message);
+        const [promisesResponse, usersResponse, subscriptionsResponse] = await Promise.all([
+          supabase.from('promises').select('*').eq('is_public', true).order('created_at', { ascending: false }),
+          supabase.from('users').select('telegram_id, first_name, last_name, username, avatar_img_url'),
+          currentUserId ? supabase.from('subscriptions').select('followed_id').eq('follower_id', currentUserId) : { data: [], error: null },
+        ]);
+
+        if (promisesResponse.error) {
+          console.error('Error fetching promises:', promisesResponse.error.message);
         } else {
-          setPromises(promisesData || []);
+          setPromises(promisesResponse.data || []);
         }
 
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('telegram_id, first_name, last_name, username, avatar_img_url');
-        if (usersError) {
-          console.error('Error fetching users:', usersError.message);
+        if (usersResponse.error) {
+          console.error('Error fetching users:', usersResponse.error.message);
         } else {
-          const usersMap = usersData.reduce((acc, user) => {
+          const usersMap = usersResponse.data.reduce((acc, user) => {
             acc[user.telegram_id] = {
               telegram_id: user.telegram_id,
               first_name: user.first_name || '',
@@ -55,6 +58,12 @@ export default function ListPage() {
             return acc;
           }, {} as Record<string, User>);
           setUsers(usersMap);
+        }
+
+        if (subscriptionsResponse.error) {
+          console.error('Error fetching subscriptions:', subscriptionsResponse.error.message);
+        } else if (subscriptionsResponse.data) {
+          setSubscriptions(subscriptionsResponse.data.map((sub) => sub.followed_id));
         }
       } catch (error) {
         console.error('General error:', error);
@@ -69,7 +78,7 @@ export default function ListPage() {
       .channel('promises-insert-all')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'promises' },
+        { event: 'INSERT', schema: 'public', table: 'promises', filter: 'is_public=eq.true' },
         (payload) => {
           setPromises((prev) => [payload.new as PromiseData, ...prev]);
         }
@@ -80,7 +89,7 @@ export default function ListPage() {
       .channel('promises-update-all')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'promises' },
+        { event: 'UPDATE', schema: 'public', table: 'promises', filter: 'is_public=eq.true' },
         (payload) => {
           setPromises((prev) =>
             prev.map((p) => (p.id === payload.new.id ? (payload.new as PromiseData) : p))
@@ -93,7 +102,7 @@ export default function ListPage() {
       supabase.removeChannel(insertSubscription);
       supabase.removeChannel(updateSubscription);
     };
-  }, []);
+  }, [currentUserId]);
 
   if (isLoading) {
     return <div className="text-center p-5">Loading...</div>;
@@ -127,6 +136,11 @@ export default function ListPage() {
     setMenuOpen((prev) => ({ ...prev, [promise.id]: false }));
   };
 
+  // Синхронная фильтрация с использованием локального состояния subscriptions
+  const filteredPromises = showSubscribedOnly && currentUserId
+    ? promises.filter((promise) => subscriptions.includes(promise.user_id))
+    : promises;
+
   return (
     <>
       <Header />
@@ -134,9 +148,24 @@ export default function ListPage() {
         <div className="middle-sidebar-bottom">
           <div className="middle-sidebar-left pe-0">
             <div className="row">
+              <div className="col-12 px-3 py-1">
+                <div className="form-check form-switch">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    style={{ transform: 'scale(1.4)'}}
+                    checked={showSubscribedOnly}
+                    onChange={(e) => setShowSubscribedOnly(e.target.checked)}
+                    id="showSubscribedOnly"
+                  />
+                  <label className="form-check-label ms-1" htmlFor="showSubscribedOnly">
+                    Мои подписки
+                  </label>
+                </div>
+              </div>
               <div className="col-12">
                 <AnimatePresence>
-                  {promises.map((promise) => {
+                  {filteredPromises.map((promise) => {
                     const user = users[promise.user_id] || { first_name: '', last_name: '', username: '' };
                     const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || 'Guest';
 
