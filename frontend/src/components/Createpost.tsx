@@ -20,8 +20,9 @@ const Createpost: React.FC = () => {
   const [deadline, setDeadline] = useState('')
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [isPublic, setIsPublic] = useState(true) // Публичное по умолчанию
+  const [isPublic, setIsPublic] = useState(true)
 
   useEffect(() => {
     if (isCreatePostOpen) {
@@ -29,7 +30,8 @@ const Createpost: React.FC = () => {
       setDeadline('')
       setContent('')
       setMedia(null)
-      setIsPublic(true) // Сброс на публичное при открытии
+      setPreviewUrl(null)
+      setIsPublic(true)
     }
   }, [isCreatePostOpen])
 
@@ -47,15 +49,16 @@ const Createpost: React.FC = () => {
     try {
       let mediaUrl = null
       if (media) {
-        const fileExt = media.name.split('.').pop()
-        const fileName = `${Date.now()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from('promises-media')
-          .upload(`public/${fileName}`, media, {
-            upsert: true
-          })
-        if (uploadError) throw uploadError
-        mediaUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/promises-media/public/${fileName}`
+        const formData = new FormData()
+        formData.append('file', media)
+        formData.append('telegramId', telegramId.toString())
+        const response = await fetch('/api/promises/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (!response.ok) throw new Error('Upload failed')
+        const data = await response.json()
+        mediaUrl = data.url
       }
 
       const { error } = await supabase.from('promises').insert({
@@ -66,7 +69,7 @@ const Createpost: React.FC = () => {
         media_url: mediaUrl,
         created_at: new Date().toISOString(),
         is_completed: false,
-        is_public: isPublic // Добавлен новый параметр
+        is_public: isPublic
       })
 
       if (error) throw error
@@ -80,7 +83,17 @@ const Createpost: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      setMedia(e.target.files[0])
+      const file = e.target.files[0]
+      setMedia(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const handleRemoveMedia = () => {
+    setMedia(null)
+    setPreviewUrl(null)
+    if (document.querySelector('input[type="file"]')) {
+      (document.querySelector('input[type="file"]') as HTMLInputElement).value = ''
     }
   }
 
@@ -134,6 +147,24 @@ const Createpost: React.FC = () => {
         </button>
         <h2 className="fw-bold mb-3">Создать обещание</h2>
         <p className="text-muted mb-3">Опишите свое обещание и установите дедлайн при необходимости</p>
+        {previewUrl && (
+          <div className="mb-3 position-relative">
+            {previewUrl.endsWith('.mp4') ? (
+              <video controls className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }}>
+                <source src={previewUrl} type="video/mp4" />
+              </video>
+            ) : (
+              <img src={previewUrl} alt="Preview" className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }} />
+            )}
+            <button
+              onClick={handleRemoveMedia}
+              className="btn btn-sm btn-danger position-absolute"
+              style={{ top: '5px', right: '5px' }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -181,7 +212,6 @@ const Createpost: React.FC = () => {
               <ImageIcon className="me-2" />
               Прикрепить фото/видео
             </label>
-            {media && <div className="small mt-2">{media.name}</div>}
           </div>
           <div className="d-flex justify-content-end gap-2">
             <button type="button" onClick={handleClose} className="btn btn-light" disabled={loading}>

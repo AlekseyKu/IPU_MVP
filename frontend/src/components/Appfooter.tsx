@@ -1,3 +1,4 @@
+//frontend\src\components\Appfooter.tsx
 'use client'
 
 import React from 'react'
