@@ -1,4 +1,3 @@
-// frontend/src/app/settings/[telegramId]/page.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
@@ -10,24 +9,26 @@ import Appfooter from '@/components/Appfooter';
 import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
 import Load from '@/components/Load';
-import { UserData } from '@/types';
 
 export default function SettingsPage() {
   const { telegramId: paramTelegramId } = useParams();
   const { telegramId: contextTelegramId, initData } = useUser();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
+
   const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
-  const [heroImg, setHeroImg] = useState<string>(defaultHeroImg);
-  const [avatar, setAvatar] = useState<string>(defaultAvatarImg);
+
+  const [heroImg, setHeroImg] = useState(defaultHeroImg);
+  const [avatar, setAvatar] = useState(defaultAvatarImg);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [about, setAbout] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
   const [isSavingText, setIsSavingText] = useState(false);
-  const [firstName, setFirstName] = useState(userData?.first_name || '');
-  const [lastName, setLastName] = useState(userData?.last_name || '');
-  const [about, setAbout] = useState(userData?.about || '');
   const [isDirty, setIsDirty] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
+
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -145,16 +146,13 @@ export default function SettingsPage() {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setError(`Error saving profile: ${errorMessage}`);
     } finally {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setIsSavingText(false);
+      setTimeout(() => setIsSavingText(false), 1500);
     }
   };
 
   if (isLoading || !userData) {
     return <Load />;
   }
-
-  const fullName = `${firstName || ''} ${lastName || ''}`.trim() || '';
 
   return (
     <>
@@ -180,7 +178,8 @@ export default function SettingsPage() {
                   promises={userData.promises || 0}
                   promisesDone={userData.promises_done || 0}
                   stars={userData.stars || 0}
-                  fullName={fullName}
+                  firstName={firstName}
+                  lastName={lastName}
                   heroImgUrl={heroImg}
                   avatarUrl={avatar}
                   isEditable={true}
@@ -201,7 +200,7 @@ export default function SettingsPage() {
                 <Profiledetail
                   username={userData.username || ''}
                   telegramId={userData.telegram_id}
-                  fullName={fullName}
+                  fullName={`${firstName} ${lastName}`.trim()}
                   about={about}
                   isEditable={true}
                   isSavingImage={isSavingImage}
@@ -217,7 +216,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-      {/* {!isKeyboardOpen && <Appfooter />} */}
       <Appfooter />
     </>
   );

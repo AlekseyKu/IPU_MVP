@@ -1,7 +1,7 @@
 // frontend/src/context/UserContext.tsx
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface UserContextType {
   telegramId: number | null;
@@ -19,8 +19,33 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 const CreatePostModalContext = createContext<CreatePostModalContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [telegramId, setTelegramId] = useState<number | null>(null);
-  const [initData, setInitData] = useState<string | null>(null);
+  const [telegramId, setTelegramIdState] = useState<number | null>(null);
+  const [initData, setInitDataState] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedId = localStorage.getItem('telegramId');
+    const storedInit = localStorage.getItem('initData');
+    if (storedId) setTelegramIdState(Number(storedId));
+    if (storedInit) setInitDataState(storedInit);
+  }, []);
+
+  const setTelegramId = (id: number | null) => {
+    setTelegramIdState(id);
+    if (id !== null) {
+      localStorage.setItem('telegramId', id.toString());
+    } else {
+      localStorage.removeItem('telegramId');
+    }
+  };
+
+  const setInitData = (data: string | null) => {
+    setInitDataState(data);
+    if (data !== null) {
+      localStorage.setItem('initData', data);
+    } else {
+      localStorage.removeItem('initData');
+    }
+  };
 
   return (
     <UserContext.Provider value={{ telegramId, initData, setTelegramId, setInitData }}>

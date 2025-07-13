@@ -1,5 +1,4 @@
-// frontend/src/components/Profiledetail.tsx
-'use client'
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 
@@ -34,8 +33,13 @@ const Profiledetail: React.FC<Props> = ({
 }) => {
   const [localAbout, setLocalAbout] = useState(about);
   const [localAddress, setLocalAddress] = useState(address);
-  const [firstName, setFirstName] = useState(fullName.split(' ')[0] || '');
-  const [lastName, setLastName] = useState(fullName.split(' ')[1] || '');
+
+  const initialFirstName = fullName.trim().split(' ')[0] || '';
+  const initialLastName = fullName.trim().split(' ').slice(1).join(' ') || '';
+
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
+
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
@@ -45,8 +49,10 @@ const Profiledetail: React.FC<Props> = ({
   useEffect(() => {
     setLocalAbout(about);
     setLocalAddress(address);
-    setFirstName(fullName.split(' ')[0] || '');
-    setLastName(fullName.split(' ')[1] || '');
+
+    const parts = fullName.trim().split(' ');
+    setFirstName(parts[0] || '');
+    setLastName(parts.slice(1).join(' ') || '');
   }, [about, address, fullName]);
 
   useEffect(() => {
@@ -71,7 +77,8 @@ const Profiledetail: React.FC<Props> = ({
 
       const inputRect = ref.current.getBoundingClientRect();
       const containerRect = scrollContainerRef.current.getBoundingClientRect();
-      const offsetTop = inputRect.top - containerRect.top + scrollContainerRef.current.scrollTop - 150;
+      const offsetTop =
+        inputRect.top - containerRect.top + scrollContainerRef.current.scrollTop - 150;
 
       scrollContainerRef.current.scrollTo({
         top: offsetTop,
@@ -135,7 +142,9 @@ const Profiledetail: React.FC<Props> = ({
             />
           </div>
         ) : (
-          <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">{localAbout || 'Не указано'}</p>
+          <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
+            {localAbout || 'Не указано'}
+          </p>
         )}
       </div>
 
@@ -160,7 +169,8 @@ const Profiledetail: React.FC<Props> = ({
               marginBottom: '8px',
             }}
           >
-            Telegram username остается неизменным для оптимального поиска и привязки пользователей к аккаунту.
+            Telegram username остается неизменным для оптимального поиска и привязки пользователей к
+            аккаунту.
           </div>
         )}
       </div>

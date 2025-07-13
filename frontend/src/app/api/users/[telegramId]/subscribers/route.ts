@@ -1,10 +1,6 @@
+// frontend/src/app/api/users/[telegramId]/subscribers/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabaseClient';
 
 export async function PATCH(
   request: NextRequest,
@@ -19,37 +15,39 @@ export async function PATCH(
 
   try {
     const { action } = await request.json();
-    if (!action || !['increment', 'decrement'].includes(action)) {
+
+    if (!['increment', 'decrement'].includes(action)) {
       return NextResponse.json({ detail: 'Invalid action, use "increment" or "decrement"' }, { status: 400 });
     }
 
-    const { data: user } = await supabase
+    const { data: user, error: fetchError } = await supabase
       .from('users')
-      .select('telegram_id, subscribers')
+      .select('subscribers')
       .eq('telegram_id', parsedTelegramId)
       .single();
 
-    if (!user) {
+    if (fetchError || !user) {
       return NextResponse.json({ detail: 'User not found' }, { status: 404 });
     }
 
-    const newSubscribersCount = action === 'increment'
-      ? (user.subscribers || 0) + 1
-      : Math.max(0, (user.subscribers || 0) - 1);
+    const updatedCount =
+      action === 'increment'
+        ? (user.subscribers ?? 0) + 1
+        : Math.max(0, (user.subscribers ?? 0) - 1);
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('users')
-      .update({ subscribers: newSubscribersCount })
+      .update({ subscribers: updatedCount })
       .eq('telegram_id', parsedTelegramId);
 
-    if (error) {
-      console.error('Error updating subscribers:', error.message);
+    if (updateError) {
+      console.error('Error updating subscribers:', updateError.message);
       return NextResponse.json({ detail: 'Error updating subscribers' }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Subscribers updated', subscribers: newSubscribersCount }, { status: 200 });
+    return NextResponse.json({ message: 'Subscribers updated', subscribers: updatedCount });
   } catch (error) {
-    console.error('General error:', error);
+    console.error('Unhandled error:', error);
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 });
   }
 }

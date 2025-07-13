@@ -1,11 +1,7 @@
+// frontend\src\app\api\users\[telegramId]\route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabaseClient';
 import { UserData } from '@/types';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export async function GET(
   request: NextRequest,
@@ -21,16 +17,14 @@ export async function GET(
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('telegram_id, first_name, last_name, username, about, avatar_img_url, hero_img_url, subscribers, promises, promises_done, stars')
+      .select(
+        'telegram_id, first_name, last_name, username, about, avatar_img_url, hero_img_url, subscribers, promises, promises_done, stars'
+      )
       .eq('telegram_id', parsedTelegramId)
       .single();
 
     if (error || !data) {
       return NextResponse.json({ detail: 'User not found' }, { status: 404 });
-    }
-
-    if (!('telegram_id' in data)) {
-      throw new Error('Invalid user data structure');
     }
 
     const userData: UserData = {
@@ -48,8 +42,8 @@ export async function GET(
     };
 
     return NextResponse.json(userData);
-  } catch (error) {
-    console.error('Error fetching user:', error);
+  } catch (err) {
+    console.error('Error fetching user:', err);
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 });
   }
 }

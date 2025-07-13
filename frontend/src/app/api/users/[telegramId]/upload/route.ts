@@ -1,13 +1,11 @@
 // frontend/src/app/api/users/[telegramId]/upload/route.ts
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function POST(request: Request, context: { params: Promise<{ telegramId: string }> }) {
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ telegramId: string }> }
+) {
   const { telegramId } = await context.params;
   const formData = await request.formData();
   const file = formData.get('file') as File;

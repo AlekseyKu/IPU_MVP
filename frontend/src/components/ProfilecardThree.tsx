@@ -1,15 +1,13 @@
-// frontend/src/components/ProfilecardThree.tsx
+// frontend\src\components\ProfilecardThree.tsx
 'use client'
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-// Определение пропсов компонента
 interface Props {
   onToggleDetail?: () => void;
   isOpen?: boolean;
   username?: string;
-  fullName: string;
   telegramId?: number;
   subscribers?: number;
   promises?: number;
@@ -17,26 +15,25 @@ interface Props {
   stars?: number;
   heroImgUrl?: string;
   avatarUrl?: string;
-  onChangeHeroImg?: (url: string) => void;
-  onChangeAvatar?: (url: string) => void;
-  onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
   isSavingImage?: boolean;
   isSavingText?: boolean;
   isDirty?: boolean;
-  onSaveClick?: () => void;
+  onSaveClick?: () => void | Promise<void>;
   onHeroClick?: (event: React.MouseEvent) => void;
   onAvatarClick?: (event: React.MouseEvent) => void;
+  onChangeFullName?: (firstName: string, lastName: string) => void;
   isOwnProfile?: boolean;
   onSubscribe?: (telegramId: number, isSubscribed: boolean) => Promise<void>;
   isSubscribed?: boolean;
+  firstName: string;
+  lastName: string;
 }
 
 const ProfilecardThree: React.FC<Props> = ({
   onToggleDetail,
   isOpen = false,
   username = '',
-  fullName = '',
   telegramId = 0,
   subscribers = 0,
   promises = 0,
@@ -44,7 +41,6 @@ const ProfilecardThree: React.FC<Props> = ({
   stars = 0,
   heroImgUrl = '/assets/images/ipu/hero-img.png',
   avatarUrl = '/assets/images/ipu/avatar.png',
-  onChangeFullName,
   isEditable = false,
   isSavingImage = false,
   isSavingText = false,
@@ -52,17 +48,19 @@ const ProfilecardThree: React.FC<Props> = ({
   onSaveClick,
   onHeroClick,
   onAvatarClick,
+  onChangeFullName,
   isOwnProfile = false,
   onSubscribe,
   isSubscribed = false,
+  firstName,
+  lastName,
 }) => {
   const [isSubscribing, setIsSubscribing] = useState(false);
   const isLoading = isSavingImage || isSavingText || isSubscribing;
 
   const handleSave = () => {
     if (!isEditable || !telegramId) return;
-    const [first = '', last = ''] = fullName.split(' ');
-    onChangeFullName?.(first, last);
+    onChangeFullName?.(firstName, lastName);
     onSaveClick?.();
   };
 
@@ -79,42 +77,13 @@ const ProfilecardThree: React.FC<Props> = ({
   };
 
   const tabs = [
-    { id: 'navtabs1', label: 'Подписчики', count: subscribers },
-    { id: 'navtabs2', label: 'Обещания', count: promises },
-    { id: 'navtabs3', label: 'Выполнено', count: promisesDone },
-    { id: 'navtabs4', label: 'Звезды', count: stars },
+    { label: 'Подписчики', count: subscribers },
+    { label: 'Обещания', count: promises },
+    { label: 'Выполнено', count: promisesDone },
+    { label: 'Звезды', count: stars },
   ];
 
-  const nameBlock = (
-    <div className="mt-0">
-      <h4 className="fw-500 font-sm mt-0 mb-0" style={{ paddingLeft: '140px' }}>
-        {fullName || 'Не указано'}
-        <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
-      </h4>
-    </div>
-  );
-
-  const detailToggleBlock = (
-    <button
-      onClick={onToggleDetail}
-      className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0 ms-2"
-      title="Toggle Profile Detail"
-    >
-      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-    </button>
-  );
-
-  const subscribeBlock = (
-    <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
-      <button
-        onClick={handleSubscribe}
-        className="btn btn-outline-primary me-2"
-        disabled={isLoading}
-      >
-        {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
-      </button>
-    </div>
-  );
+  const fullName = `${firstName || ''} ${lastName || ''}`.trim();
 
   return (
     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
@@ -159,8 +128,21 @@ const ProfilecardThree: React.FC<Props> = ({
 
         {!isEditable && (
           <div className="d-flex align-items-center justify-content-between pe-3">
-            {nameBlock}
-            {onToggleDetail && detailToggleBlock}
+            <div className="mt-0" style={{ paddingLeft: '140px' }}>
+              <h4 className="fw-500 font-sm mt-0 mb-0">
+                {fullName || 'Не указано'}
+                <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
+              </h4>
+            </div>
+            {onToggleDetail && (
+              <button
+                onClick={onToggleDetail}
+                className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0 ms-2"
+                title="Toggle Profile Detail"
+              >
+                {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -169,7 +151,6 @@ const ProfilecardThree: React.FC<Props> = ({
         {!isEditable && (
           <ul
             className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
-            id="pills-tab"
             role="tablist"
           >
             {tabs.map(({ label, count }, i) => (
@@ -184,7 +165,17 @@ const ProfilecardThree: React.FC<Props> = ({
           </ul>
         )}
 
-        {!isOwnProfile && subscribeBlock}
+        {!isOwnProfile && (
+          <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
+            <button
+              onClick={handleSubscribe}
+              className="btn btn-outline-primary me-2"
+              disabled={isLoading}
+            >
+              {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
