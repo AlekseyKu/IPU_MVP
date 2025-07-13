@@ -1,200 +1,258 @@
-// // frontend/src/components/ProfilecardThree.tsx
-// 'use client'
+// frontend/src/components/Postview.tsx - предыдущий вариант с CirclePlay
+'use client'
 
-// import React, { useState } from 'react';
-// import { ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react'
+import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
 
-// interface Props {
-//   onToggleDetail?: () => void;
-//   isOpen?: boolean;
-//   username?: string;
-//   fullName: string;
-//   telegramId?: number;
-//   subscribers?: number;
-//   promises?: number;
-//   promisesDone?: number;
-//   stars?: number;
-//   heroImgUrl?: string;
-//   avatarUrl?: string;
-//   onChangeHeroImg?: (url: string) => void;
-//   onChangeAvatar?: (url: string) => void;
-//   onChangeFullName?: (firstName: string, lastName: string) => void;
-//   isEditable?: boolean;
-//   isSavingImage?: boolean;
-//   isSavingText?: boolean;
-//   isDirty?: boolean;
-//   onSaveClick?: () => void;
-//   onHeroClick?: (event: React.MouseEvent) => void;
-//   onAvatarClick?: (event: React.MouseEvent) => void;
-//   isOwnProfile?: boolean;
-//   onSubscribe?: (telegramId: number, isSubscribed: boolean) => Promise<void>;
-//   isSubscribed?: boolean;
-// }
+// Импорт общих типов
+import { PromiseData } from '@/types'
 
-// const ProfilecardThree: React.FC<Props> = ({
-//   onToggleDetail,
-//   isOpen = false,
-//   username = '',
-//   fullName = '',
-//   telegramId = 0,
-//   subscribers = 0,
-//   promises = 0,
-//   promisesDone = 0,
-//   stars = 0,
-//   heroImgUrl = '/assets/images/ipu/hero-img.png',
-//   avatarUrl = '/assets/images/ipu/avatar.png',
-//   onChangeFullName,
-//   isEditable = false,
-//   isSavingImage = false,
-//   isSavingText = false,
-//   isDirty = false,
-//   onSaveClick,
-//   onHeroClick,
-//   onAvatarClick,
-//   isOwnProfile = false,
-//   onSubscribe,
-//   isSubscribed = false,
-// }) => {
-//   const [isSubscribing, setIsSubscribing] = useState(false);
-//   const isLoading = isSavingImage || isSavingText || isSubscribing;
+interface PostviewProps {
+  promise: PromiseData
+  onToggle: () => void
+  isOpen: boolean
+  onUpdate: (updatedPromise: PromiseData) => void
+  onDelete: (id: string) => void
+  isOwnProfile: boolean
+}
 
-//   const handleSave = () => {
-//     if (!isEditable || !telegramId) return;
-//     const [first = '', last = ''] = fullName.split(' ');
-//     onChangeFullName?.(first, last);
-//     onSaveClick?.();
-//   };
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-//   const handleSubscribe = async () => {
-//     if (!telegramId || !onSubscribe) return;
-//     setIsSubscribing(true);
-//     try {
-//       await onSubscribe(telegramId, isSubscribed);
-//     } catch (error) {
-//       console.error('Error subscribing:', error);
-//     } finally {
-//       setIsSubscribing(false);
-//     }
-//   };
+const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete, isOwnProfile }) => {
+  const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise
+  const [isMounted, setIsMounted] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [localPromise, setLocalPromise] = useState<PromiseData>(promise)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
-//   const tabs = [
-//     { id: 'navtabs1', label: 'Подписчики', count: subscribers },
-//     { id: 'navtabs2', label: 'Обещания', count: promises },
-//     { id: 'navtabs3', label: 'Выполнено', count: promisesDone },
-//     { id: 'navtabs4', label: 'Звезды', count: stars },
-//   ];
+  useEffect(() => {
+    setIsMounted(true)
 
-//   return (
-//     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">
-//       <div
-//         className="hero-img card-body p-0 rounded-xxxl overflow-hidden m-3"
-//         style={{
-//           height: '150px',
-//           position: 'relative',
-//           cursor: isEditable ? 'pointer' : 'default',
-//         }}
-//         onClick={isEditable ? onHeroClick : undefined}
-//       >
-//         <img
-//           src={heroImgUrl}
-//           alt="hero"
-//           className="d-block w-100 h-100"
-//           style={{
-//             objectFit: 'cover',
-//             objectPosition: 'center',
-//           }}
-//         />
-//       </div>
+    if (!id) {
+      console.error('Promise ID is undefined')
+      return
+    }
 
-//       <div className="card-body p-0 position-relative">
-//         <figure
-//           className="avatar position-absolute z-index-1"
-//           style={{
-//             top: '-40px',
-//             left: '30px',
-//             cursor: isEditable ? 'pointer' : 'default',
-//             width: '100px',
-//             height: '100px',
-//           }}
-//           onClick={isEditable ? onAvatarClick : undefined}
-//         >
-//           <img
-//             src={avatarUrl}
-//             alt="avatar"
-//             className="p-1 bg-white rounded-circle w-100 h-100"
-//             style={{
-//               objectFit: 'cover',
-//               objectPosition: 'center',
-//             }}
-//           />
-//         </figure>
+    const subscription = supabase
+      .channel(`promise-update-${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'promises', filter: `id=eq.${id}` },
+        (payload) => {
+          const updatedPromise = payload.new as PromiseData
+          setLocalPromise(updatedPromise)
+          if (onUpdate) onUpdate(updatedPromise)
+        }
+      )
+      .subscribe()
 
-//         {isEditable && (
-//           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
-//             <button
-//               onClick={handleSave}
-//               className={`btn btn-primary ${!isDirty ? 'opacity-50' : ''}`}
-//               disabled={!isDirty || isSavingText || isSavingImage}
-//             >
-//               {(isSavingText || isSavingImage) ? 'Сохранение...' : 'Сохранить'}
-//             </button>
-//           </div>
-//         )}
+    // Принудительная остановка видео при монтировании
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+      videoRef.current.muted = true // Отключаем звук для предотвращения автозапуска
+      videoRef.current.controls = false // Убираем стандартные контролы до старта
+    }
 
-//         {!isOwnProfile && (
-//           <div className="mt-3">
-//             <h4 className="fw-500 font-sm mt-0 mb-0" style={{ paddingLeft: '140px' }}>
-//               {fullName || 'Не указано'}
-//               <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
-//             </h4>
-//           </div>
-//         )}
-//       </div>
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [id, onUpdate])
 
-//       {!isEditable && (
-//         <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
-//           <ul
-//             className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
-//             id="pills-tab"
-//             role="tablist"
-//           >
-//             {tabs.map(({ label, count }, i) => (
-//               <li
-//                 key={i}
-//                 className="flex-fill d-flex flex-column align-items-center justify-content-center text-center me-0"
-//               >
-//                 <div className="fw-400 font-xss mb-0">{count}</div>
-//                 <div className="fw-400 font-xssss text-dark">{label}</div>
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       )}
+  if (!isMounted) {
+    return null
+  }
 
-//       {!isOwnProfile && (
-//         <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
-//           <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
-//             <button
-//               onClick={handleSubscribe}
-//               className="btn btn-outline-primary me-2"
-//               disabled={isLoading}
-//             >
-//               {isSubscribing ? 'Обработка...' : isSubscribed ? 'Отписаться' : 'Подписаться'}
-//             </button>
-//             {onToggleDetail && (
-//               <button
-//                 onClick={onToggleDetail}
-//                 className="bg-greylight rounded-circle p-2 d-flex align-items-center justify-content-center border-0"
-//                 title="Toggle Profile Detail"
-//               >
-//                 {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-//               </button>
-//             )}
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
+  if (!localPromise) {
+    return <div className="text-center p-2">Данные не загружены</div>
+  }
 
-// export default ProfilecardThree;
+  const statusText = localPromise.is_completed ? 'Завершено' : 'Активно'
+  const Icon = localPromise.is_completed ? CircleStop : CirclePlay
+  const iconColor = localPromise.is_completed ? 'text-accent' : 'text-primary'
+  const PublicIcon = localPromise.is_public ? Globe : GlobeLock
+  const publicText = localPromise.is_public ? 'Публичное' : 'Личное'
+
+  const handleComplete = async () => {
+    if (!id || !isOwnProfile) {
+      console.error('Cannot complete promise: ID is undefined or not own profile')
+      return
+    }
+    const { error } = await supabase
+      .from('promises')
+      .update({ is_completed: true })
+      .eq('id', id)
+    if (error) console.error('Error completing promise:', error)
+    setMenuOpen(false)
+  }
+
+  const copyLink = () => {
+    if (!id) {
+      console.error('Cannot copy link: ID is undefined')
+      return
+    }
+    const link = `${window.location.origin}/promise/${id}`
+    navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована!'))
+    setMenuOpen(false)
+  }
+
+  const share = () => {
+    if (!id) {
+      console.error('Cannot share: ID is undefined')
+      return
+    }
+    const shareData = {
+      title: localPromise.title,
+      text: localPromise.content,
+      url: `${window.location.origin}/promise/${id}`,
+    }
+    if (navigator.share) {
+      navigator.share(shareData).catch((error) => console.error('Error sharing:', error))
+    } else {
+      alert('Поделиться недоступно на этом устройстве')
+    }
+    setMenuOpen(false)
+  }
+
+  const handleDelete = async () => {
+    if (!id || !isOwnProfile) {
+      console.error('Cannot delete promise: ID is undefined or not own profile')
+      return
+    }
+    if (confirm('Вы уверены, что хотите удалить это обещание?')) {
+      const { error } = await supabase
+        .from('promises')
+        .delete()
+        .eq('id', id)
+      if (error) {
+        console.error('Error deleting promise:', error)
+      } else {
+        setMenuOpen(false)
+        if (onDelete) onDelete(id) // Уведомляем родителя об удалении
+      }
+    }
+  }
+
+  const handlePlay = () => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((error) => console.error('Error playing video:', error))
+      videoRef.current.muted = false // Включаем звук после старта
+      videoRef.current.controls = true // Включаем контролы после старта
+      setIsPlaying(true)
+    }
+  }
+
+  const handlePause = () => {
+    if (videoRef.current) {
+      videoRef.current.pause()
+      setIsPlaying(false)
+    }
+  }
+
+  return (
+    <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
+      <div className="card-body p-0 d-flex flex-column">
+        <div className="flex-grow-1">
+          <span className="text-dark font-xs mb-1">{title}</span>
+          {isOwnProfile && (
+            <div className="d-flex justify-content-end align-items-center mb-1">
+              <span className="text-muted font-xssss me-1">{publicText}</span>
+              <PublicIcon className="w-2 h-2 text-muted" />
+            </div>
+          )}
+        </div>
+        <div className="d-flex justify-content-between align-items-center">
+          <span className="text-muted font-xsss">Дэдлайн: {new Date(deadline).toLocaleString([], {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          })}</span>
+          <div className="d-flex align-items-center text-nowrap">
+            <span className="text-muted font-xssss me-1">{statusText}</span>
+            <Icon className={`w-2 h-2 ${iconColor}`} />
+          </div>
+        </div>
+      </div>
+      {isOpen && (
+        <div className="mt-3">
+          <p className="text-muted lh-sm small mb-2">{content}</p>
+          {media_url && (
+            <div className="mb-3 position-relative" onClick={(e) => e.stopPropagation()}>
+              {media_url.endsWith('.mp4') || media_url.endsWith('.mov') ? (
+                <div>
+                  {!isPlaying && (
+                    <button
+                      onClick={handlePlay}
+                      className="position-absolute top-50 start-50 translate-middle btn btn-primary rounded-circle p-2"
+                      style={{ transform: 'translate(-50%, -50%)', zIndex: 1 }}
+                    >
+                      <CirclePlay className="w-6 h-6" />
+                    </button>
+                  )}
+                  <video
+                    ref={videoRef}
+                    className="w-100 rounded"
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  >
+                    <source src={media_url} type={media_url.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} />
+                  </video>
+                </div>
+              ) : (
+                <img src={media_url} alt="Attached media" className="w-100 rounded" />
+              )}
+            </div>
+          )}
+          <span className="text-muted small">Создано: {new Date(created_at).toLocaleString([], {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          })}</span>
+          <div className="position-absolute bottom-0 end-0 mb-3 me-4">
+            <Ellipsis
+              className="cursor-pointer text-muted"
+              size={20}
+              onClick={(e) => {
+                e.stopPropagation()
+                setMenuOpen(!menuOpen)
+              }}
+            />
+            {menuOpen && (
+              <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
+                {isOwnProfile && !localPromise.is_completed && (
+                  <button className="dropdown-item text-accent" onClick={handleComplete}>
+                    Завершить обещание
+                  </button>
+                )}
+                <button className="dropdown-item" onClick={copyLink}>
+                  Скопировать ссылку
+                </button>
+                <button className="dropdown-item" onClick={share}>
+                  Отправить
+                </button>
+                {isOwnProfile && (
+                  <button className="dropdown-item text-danger" onClick={handleDelete}>
+                    Удалить обещание
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+// рабочий вариант
+export default Postview

@@ -1,9 +1,12 @@
+// frontend/src/components/Postview.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 import { PromiseData } from '@/types'
+import videojs from 'video.js'
+import 'video.js/dist/video-js.css'
 
 interface PostviewProps {
   promise: PromiseData
@@ -24,8 +27,9 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   const [isMounted, setIsMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [localPromise, setLocalPromise] = useState<PromiseData>(promise)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const videoNode = useRef<HTMLVideoElement | null>(null)
+  const playerRef = useRef<ReturnType<typeof videojs> | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -48,16 +52,34 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
       )
       .subscribe()
 
-    if (videoRef.current) {
-      videoRef.current.pause()
-      videoRef.current.currentTime = 0
-      videoRef.current.controls = false
-    }
-
     return () => {
       supabase.removeChannel(subscription)
     }
   }, [id, onUpdate])
+
+  useEffect(() => {
+    if (videoNode.current && media_url) {
+      playerRef.current = videojs(videoNode.current, {
+        controls: true,
+        autoplay: false,
+        muted: false,
+        preload: 'metadata',
+        playsinline: true,
+        fluid: true,
+        sources: [
+          {
+            src: media_url,
+            type: media_url.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime',
+          },
+        ],
+      })
+
+      return () => {
+        playerRef.current?.dispose()
+        playerRef.current = null
+      }
+    }
+  }, [media_url])
 
   if (!isMounted) return null
   if (!localPromise) return <div className="text-center p-2">Данные не загружены</div>
@@ -116,22 +138,6 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
     }
   }
 
-  const handlePlay = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = false
-      videoRef.current.controls = true
-      videoRef.current.play().catch((error) => console.error('Error playing video:', error))
-      setIsPlaying(true)
-    }
-  }
-
-  const handlePause = () => {
-    if (videoRef.current) {
-      videoRef.current.pause()
-      setIsPlaying(false)
-    }
-  }
-
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
       <div className="card-body p-0 d-flex flex-column">
@@ -166,36 +172,17 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
         <div className="mt-3">
           <p className="text-muted lh-sm small mb-2">{content}</p>
           {media_url && (
-            <div className="mb-3 position-relative" onClick={(e) => e.stopPropagation()}>
-              {media_url.endsWith('.mp4') || media_url.endsWith('.mov') ? (
-                <div>
-                  {!isPlaying && (
-                    <button
-                      onClick={handlePlay}
-                      className="position-absolute top-50 start-50 translate-middle btn btn-primary rounded-circle p-2"
-                      style={{ transform: 'translate(-50%, -50%)', zIndex: 1 }}
-                    >
-                      <CirclePlay className="w-6 h-6" />
-                    </button>
-                  )}
-                  <video
-                    ref={videoRef}
-                    className="w-100 rounded"
-                    autoPlay={false}
-                    muted={false}
-                    controls={false}
-                    playsInline
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                  >
-                    <source src={media_url} type={media_url.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} />
-                  </video>
-                </div>
-              ) : (
-                <img src={media_url} alt="Attached media" className="w-100 rounded" />
-              )}
+            <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+              <video
+                src={media_url}
+                controls
+                preload="metadata"
+                className="w-100 rounded"
+                style={{ backgroundColor: '#000' }}
+              />
             </div>
           )}
+
           <span className="text-muted small">Создано: {new Date(created_at).toLocaleString([], {
             year: '2-digit',
             month: '2-digit',
@@ -240,5 +227,5 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
     </div>
   )
 }
-
+// рабочий вариант. Chrome - привью видео есть, iOS - нет.
 export default Postview
