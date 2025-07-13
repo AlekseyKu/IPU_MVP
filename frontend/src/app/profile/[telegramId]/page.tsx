@@ -4,13 +4,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
-import { createClient } from '@supabase/supabase-js'; // Импорт Supabase клиента
+import { createClient } from '@supabase/supabase-js';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
 import Load from '@/components/Load';
-import { AnimatePresence, motion } from 'framer-motion'; // Импорт для анимации
+import { AnimatePresence, motion } from 'framer-motion';
 import { UserData, PromiseData } from '@/types';
 import Postview from '@/components/Postview';
 
@@ -29,7 +29,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false); // Локальное состояние для деталей
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const isEditable = currentUserId === telegramId;
   const isOwnProfile = currentUserId === telegramId;
 
@@ -66,8 +66,8 @@ export default function ProfilePage() {
           setPromises(promisesResponse.data || []);
         }
 
-        // Загрузка статуса подписки только если пользователь авторизован
-        if (currentUserId) {
+        // Загрузка статуса подписки только если пользователь авторизован и это не собственный профиль
+        if (currentUserId && !isOwnProfile) {
           const subscriptionResponse = await fetch(`/api/subscriptions?follower_id=${currentUserId}&followed_id=${telegramId}`);
           const subscriptionData = await subscriptionResponse.json();
           setIsSubscribed(!!subscriptionData.length);
@@ -84,7 +84,7 @@ export default function ProfilePage() {
     if (telegramId) {
       fetchData();
     }
-  }, [telegramId, currentUserId]);
+  }, [telegramId, currentUserId, isOwnProfile]);
 
   // Реальное время обновление обещаний
   useEffect(() => {
@@ -129,9 +129,9 @@ export default function ProfilePage() {
   }, [telegramId]);
 
   const handleSubscribe = async (telegramId: number, isSubscribed: boolean) => {
-    if (!currentUserId) {
-      setError('User not authenticated');
-      throw new Error('User not authenticated');
+    if (!currentUserId || isOwnProfile) {
+      setError('Cannot subscribe to own profile');
+      throw new Error('Cannot subscribe to own profile');
     }
 
     try {
@@ -145,12 +145,10 @@ export default function ProfilePage() {
         throw new Error('Subscription action failed');
       }
 
-      // Обновление статуса подписки
       setIsSubscribed(!isSubscribed);
 
-      // Обновление поля subscribers в таблице users
       const updateSubscribers = isSubscribed ? -1 : 1;
-      const currentSubscribers = userData?.subscribers ?? 0; // Безопасное получение значения
+      const currentSubscribers = userData?.subscribers ?? 0;
       const { error: updateError } = await supabase
         .from('users')
         .update({ subscribers: currentSubscribers + updateSubscribers })
@@ -160,7 +158,6 @@ export default function ProfilePage() {
         throw new Error('Failed to update subscribers count');
       }
 
-      // Обновление локального состояния
       setUserData((prev) => prev ? {
         ...prev,
         subscribers: isSubscribed
@@ -202,7 +199,7 @@ export default function ProfilePage() {
                   avatarUrl={userData.avatar_img_url || '/assets/images/ipu/avatar.png'}
                   isEditable={isEditable}
                   isOwnProfile={isOwnProfile}
-                  onSubscribe={currentUserId ? handleSubscribe : undefined}
+                  onSubscribe={!isOwnProfile ? handleSubscribe : undefined} // Передаём только для чужих профилей
                   isSubscribed={isSubscribed}
                 />
               </div>

@@ -2,11 +2,13 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react'
+import { CirclePlay, CircleStop, Ellipsis, CircleEllipsis, Globe, GlobeLock } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 import { PromiseData } from '@/types'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface PostviewProps {
   promise: PromiseData
@@ -15,6 +17,10 @@ interface PostviewProps {
   onUpdate: (updatedPromise: PromiseData) => void
   onDelete: (id: string) => void
   isOwnProfile: boolean
+  isList?: boolean
+  avatarUrl?: string
+  userId?: number
+  userName?: string
 }
 
 const supabase = createClient(
@@ -22,11 +28,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete, isOwnProfile }) => {
+const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate, onDelete, isOwnProfile, isList = false, avatarUrl, userId, userName }) => {
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise
   const [isMounted, setIsMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [localPromise, setLocalPromise] = useState<PromiseData>(promise)
+  const router = useRouter()
 
   const videoNode = useRef<HTMLVideoElement | null>(null)
   const playerRef = useRef<ReturnType<typeof videojs> | null>(null)
@@ -140,6 +147,21 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
 
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
+      {isList && userId && (
+        <div className="d-flex align-items-center mb-2">
+          <Link href={`/profile/${userId}`} onClick={(e) => e.stopPropagation()}>
+            <img
+              src={avatarUrl || '/assets/images/defaultAvatar.png'}
+              alt="avatar"
+              width={32}
+              height={32}
+              className="rounded-circle me-2"
+            />
+          </Link>
+          <span className="text-dark font-xsss">{userName || 'Guest'}</span>
+          
+        </div>
+      )}
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{title}</span>
@@ -192,10 +214,10 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
             hour12: false,
           })}</span>
 
-          <div className="position-absolute bottom-0 end-0 mb-3 me-4">
+          <div className="position-absolute bottom-0 end-0 mb-3 me-3">
             <Ellipsis
               className="cursor-pointer text-muted"
-              size={20}
+              size={24}
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(!menuOpen)
@@ -203,6 +225,11 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
             />
             {menuOpen && (
               <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
+                {isList && !isOwnProfile && (
+                  <button className="dropdown-item" onClick={() => router.push(`/profile/${userId}`)}>
+                    Посмотреть профиль
+                  </button>
+                )}
                 {isOwnProfile && !localPromise.is_completed && (
                   <button className="dropdown-item text-accent" onClick={handleComplete}>
                     Завершить обещание

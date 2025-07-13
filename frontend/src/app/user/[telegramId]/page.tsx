@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useUserData } from '@/hooks/useUserData';
 import Header from '@/components/Header';
-import Leftnav from '@/components/Leftnav';
+// import Leftnav from '@/components/Leftnav';
 import Appfooter from '@/components/Appfooter';
 import Postview from '@/components/Postview';
 import ProfilecardThree from '@/components/ProfilecardThree';
@@ -233,7 +233,7 @@ export default function UserProfile() {
   return (
     <>
       <Header />
-      <Leftnav />
+      {/* <Leftnav /> */}
       <div className="main-content">
         {error && <div className="alert alert-danger">{error}</div>}
         <div className="middle-sidebar-bottom">

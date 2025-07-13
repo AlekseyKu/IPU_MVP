@@ -11,6 +11,7 @@ import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
+import Postview from '@/components/Postview'; // Импортируем компонент
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -166,8 +167,9 @@ export default function ListPage() {
               <div className="col-12">
                 <AnimatePresence>
                   {filteredPromises.map((promise) => {
-                    const user = users[promise.user_id] || { first_name: '', last_name: '', username: '' };
+                    const user = users[promise.user_id] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
                     const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || 'Guest';
+                    const isOwnProfile = currentUserId === promise.user_id;
 
                     return (
                       <motion.div
@@ -176,94 +178,19 @@ export default function ListPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
-                        className="card w-100 shadow-sm rounded-xxl border-0 px-4 py-3 mb-3 position-relative"
-                        onClick={() => toggleOpen(promise.id)}
                       >
-                        <div className="card-body p-0 d-flex flex-column">
-                          <div className="d-flex align-items-center mb-2">
-                            <Link href={`/profile/${promise.user_id}`}>
-                              <img
-                                src={user.avatar_img_url || '/assets/images/defaultAvatar.png'}
-                                alt="avatar"
-                                width={32}
-                                height={32}
-                                className="rounded-circle me-2"
-                              />
-                            </Link>
-                            <span className="text-dark font-xsss">{fullName}</span>
-                          </div>
-
-                          <div className="flex-grow-1">
-                            <span className="text-dark font-xs mb-1">{promise.title}</span>
-                          </div>
-                          <div className="d-flex justify-content-between align-items-center">
-                            <span className="text-muted font-xsss">Дэдлайн: {new Date(promise.deadline).toLocaleString([], {
-                              year: '2-digit',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false,
-                            })}</span>
-                            <div className="d-flex align-items-center text-nowrap">
-                              <span className="text-muted font-xsss me-1">
-                                {promise.is_completed ? 'Завершено' : 'Активно'}
-                              </span>
-                              {promise.is_completed ? (
-                                <CircleStop className="w-3 h-3 text-accent" />
-                              ) : (
-                                <CirclePlay className="w-3 h-3 text-primary" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {isOpen[promise.id] && (
-                          <div className="mt-3">
-                            <p className="text-muted lh-sm small mb-2">{promise.content}</p>
-                            {promise.media_url && (
-                              <div className="mb-3">
-                                {promise.media_url.endsWith('.mp4') ? (
-                                  <video controls className="w-100 rounded">
-                                    <source src={promise.media_url} type="video/mp4" />
-                                  </video>
-                                ) : (
-                                  <img src={promise.media_url} alt="Attached media" className="w-100 rounded" />
-                                )}
-                              </div>
-                            )}
-                            <span className="text-muted small">Создано: {new Date(promise.created_at).toLocaleString([], {
-                              year: '2-digit',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false,
-                            })}</span>
-                            <div className="position-absolute bottom-0 end-0 mb-3 me-4">
-                              <Ellipsis
-                                className="cursor-pointer text-muted"
-                                size={20}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleMenu(promise.id);
-                                }}
-                              />
-                              {isOpen[promise.id] && menuOpen[promise.id] && (
-                                <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
-                                  <button className="dropdown-item" onClick={() => router.push(`/profile/${promise.user_id}`)}>
-                                    Посмотреть профиль
-                                  </button>
-                                  <button className="dropdown-item" onClick={() => copyLink(promise.id)}>
-                                    Скопировать ссылку
-                                  </button>
-                                  <button className="dropdown-item" onClick={() => share(promise)}>
-                                    Отправить
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        <Postview
+                          promise={promise}
+                          onToggle={() => toggleOpen(promise.id)}
+                          isOpen={!!isOpen[promise.id]}
+                          onUpdate={() => {}} // Пустая функция по умолчанию
+                          onDelete={() => {}} // Пустая функция по умолчанию
+                          isOwnProfile={isOwnProfile}
+                          isList={true} // Указываем, что это список
+                          avatarUrl={user.avatar_img_url}
+                          userId={promise.user_id}
+                          userName={fullName}
+                        />
                       </motion.div>
                     );
                   })}
