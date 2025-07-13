@@ -1,11 +1,8 @@
-// frontend/src/components/Postview.tsx
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
-
-// Импорт общих типов
 import { PromiseData } from '@/types'
 
 interface PostviewProps {
@@ -27,6 +24,8 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   const [isMounted, setIsMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [localPromise, setLocalPromise] = useState<PromiseData>(promise)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -49,18 +48,19 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
       )
       .subscribe()
 
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+      videoRef.current.controls = false
+    }
+
     return () => {
       supabase.removeChannel(subscription)
     }
   }, [id, onUpdate])
 
-  if (!isMounted) {
-    return null
-  }
-
-  if (!localPromise) {
-    return <div className="text-center p-2">Данные не загружены</div>
-  }
+  if (!isMounted) return null
+  if (!localPromise) return <div className="text-center p-2">Данные не загружены</div>
 
   const statusText = localPromise.is_completed ? 'Завершено' : 'Активно'
   const Icon = localPromise.is_completed ? CircleStop : CirclePlay
@@ -69,10 +69,7 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   const publicText = localPromise.is_public ? 'Публичное' : 'Личное'
 
   const handleComplete = async () => {
-    if (!id || !isOwnProfile) {
-      console.error('Cannot complete promise: ID is undefined or not own profile')
-      return
-    }
+    if (!id || !isOwnProfile) return
     const { error } = await supabase
       .from('promises')
       .update({ is_completed: true })
@@ -82,20 +79,14 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   }
 
   const copyLink = () => {
-    if (!id) {
-      console.error('Cannot copy link: ID is undefined')
-      return
-    }
+    if (!id) return
     const link = `${window.location.origin}/promise/${id}`
     navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована!'))
     setMenuOpen(false)
   }
 
   const share = () => {
-    if (!id) {
-      console.error('Cannot share: ID is undefined')
-      return
-    }
+    if (!id) return
     const shareData = {
       title: localPromise.title,
       text: localPromise.content,
@@ -110,10 +101,7 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
   }
 
   const handleDelete = async () => {
-    if (!id || !isOwnProfile) {
-      console.error('Cannot delete promise: ID is undefined or not own profile')
-      return
-    }
+    if (!id || !isOwnProfile) return
     if (confirm('Вы уверены, что хотите удалить это обещание?')) {
       const { error } = await supabase
         .from('promises')
@@ -123,47 +111,86 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
         console.error('Error deleting promise:', error)
       } else {
         setMenuOpen(false)
-        if (onDelete) onDelete(id) // Уведомляем родителя об удалении
+        if (onDelete) onDelete(id)
       }
     }
   }
 
+  const handlePlay = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = false
+      videoRef.current.controls = true
+      videoRef.current.play().catch((error) => console.error('Error playing video:', error))
+      setIsPlaying(true)
+    }
+  }
+
+  const handlePause = () => {
+    if (videoRef.current) {
+      videoRef.current.pause()
+      setIsPlaying(false)
+    }
+  }
+
   return (
-    <div className="card w-100 shadow-sm rounded-xxl border-0 px-4 py-3 mb-3 position-relative" onClick={onToggle}>
+    <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{title}</span>
           {isOwnProfile && (
             <div className="d-flex justify-content-end align-items-center mb-1">
-              <span className="text-muted font-xsss me-1">{publicText}</span>
-              <PublicIcon className="w-3 h-3 text-muted" />
+              <span className="text-muted font-xssss me-1">{publicText}</span>
+              <PublicIcon className="w-2 h-2 text-muted" />
             </div>
           )}
         </div>
         <div className="d-flex justify-content-between align-items-center">
-          <span className="text-muted font-xsss">Дэдлайн: {new Date(deadline).toLocaleString([], {
-            year: '2-digit',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          })}</span>
+          <span className="text-muted font-xsss">
+            Дэдлайн: {new Date(deadline).toLocaleString([], {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })}
+          </span>
           <div className="d-flex align-items-center text-nowrap">
-            <span className="text-muted font-xsss me-1">{statusText}</span>
-            <Icon className={`w-3 h-3 ${iconColor}`} />
+            <span className="text-muted font-xssss me-1">{statusText}</span>
+            <Icon className={`w-2 h-2 ${iconColor}`} />
           </div>
         </div>
       </div>
+
       {isOpen && (
         <div className="mt-3">
           <p className="text-muted lh-sm small mb-2">{content}</p>
           {media_url && (
-            <div className="mb-3">
-              {media_url.endsWith('.mp4') ? (
-                <video controls className="w-100 rounded">
-                  <source src={media_url} type="video/mp4" />
-                </video>
+            <div className="mb-3 position-relative" onClick={(e) => e.stopPropagation()}>
+              {media_url.endsWith('.mp4') || media_url.endsWith('.mov') ? (
+                <div>
+                  {!isPlaying && (
+                    <button
+                      onClick={handlePlay}
+                      className="position-absolute top-50 start-50 translate-middle btn btn-primary rounded-circle p-2"
+                      style={{ transform: 'translate(-50%, -50%)', zIndex: 1 }}
+                    >
+                      <CirclePlay className="w-6 h-6" />
+                    </button>
+                  )}
+                  <video
+                    ref={videoRef}
+                    className="w-100 rounded"
+                    autoPlay={false}
+                    muted={false}
+                    controls={false}
+                    playsInline
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  >
+                    <source src={media_url} type={media_url.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} />
+                  </video>
+                </div>
               ) : (
                 <img src={media_url} alt="Attached media" className="w-100 rounded" />
               )}
@@ -177,6 +204,7 @@ const Postview: React.FC<PostviewProps> = ({ promise, onToggle, isOpen, onUpdate
             minute: '2-digit',
             hour12: false,
           })}</span>
+
           <div className="position-absolute bottom-0 end-0 mb-3 me-4">
             <Ellipsis
               className="cursor-pointer text-muted"

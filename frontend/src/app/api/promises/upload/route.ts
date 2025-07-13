@@ -20,10 +20,10 @@ export async function POST(request: Request) {
   if (!telegramId) {
     return NextResponse.json({ detail: 'Missing telegramId' }, { status: 400 });
   }
-  if (file.size > 10 * 1024 * 1024) { // Увеличен лимит до 10MB
-    return NextResponse.json({ detail: 'File size exceeds 10MB limit' }, { status: 400 });
+  if (file.size > 30 * 1024 * 1024) { // Увеличен лимит до 30MB
+    return NextResponse.json({ detail: 'File size exceeds 30MB limit' }, { status: 400 });
   }
-  const validTypes = ['image/png', 'image/jpeg', 'video/mp4'];
+  const validTypes = ['image/png', 'image/jpeg', 'video/mp4', 'video/avi', 'video/quicktime'];
   if (!validTypes.includes(file.type)) {
     console.error('Invalid file type:', file.type, 'Allowed types:', validTypes);
     return NextResponse.json({ detail: `Invalid file type, only ${validTypes.join(', ')} are allowed` }, { status: 400 });

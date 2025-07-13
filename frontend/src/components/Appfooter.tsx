@@ -4,7 +4,7 @@
 import React from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser, useCreatePostModal } from '@/context/UserContext'
-import { Home, User, CirclePlus, BarChart2, List, ShoppingCart } from 'lucide-react'
+import { Home, House, User, CirclePlus, BarChart2, List, ShoppingCart } from 'lucide-react'
 
 const Appfooter: React.FC = () => {
   const pathname = usePathname()
@@ -19,7 +19,7 @@ const Appfooter: React.FC = () => {
       onClick: () => router.push(telegramId ? `/user/${telegramId}` : '/')
     },
     {
-      icon: List,
+      icon: House,
       getHref: () => '/list',
       onClick: () => router.push('/list')
     },

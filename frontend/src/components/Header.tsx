@@ -60,6 +60,7 @@ const Header: React.FC = () => {
             width={157}
             height={50}
             className="me-3"
+            priority
           />
         </Link>
 
