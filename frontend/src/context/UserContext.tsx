@@ -15,8 +15,14 @@ interface CreatePostModalContextType {
   setIsCreatePostOpen: (open: boolean) => void;
 }
 
+interface CreateChallengeModalContextType {
+  isCreateChallengeOpen: boolean;
+  setIsCreateChallengeOpen: (open: boolean) => void;
+}
+
 const UserContext = createContext<UserContextType | undefined>(undefined);
 const CreatePostModalContext = createContext<CreatePostModalContextType | undefined>(undefined);
+const CreateChallengeModalContext = createContext<CreateChallengeModalContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [telegramId, setTelegramIdState] = useState<number | null>(null);
@@ -64,6 +70,16 @@ export function CreatePostModalProvider({ children }: { children: ReactNode }) {
   );
 }
 
+export function CreateChallengeModalProvider({ children }: { children: ReactNode }) {
+  const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
+
+  return (
+    <CreateChallengeModalContext.Provider value={{ isCreateChallengeOpen, setIsCreateChallengeOpen }}>
+      {children}
+    </CreateChallengeModalContext.Provider>
+  );
+}
+
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (context === undefined) {
@@ -76,6 +92,14 @@ export const useCreatePostModal = (): CreatePostModalContextType => {
   const context = useContext(CreatePostModalContext);
   if (context === undefined) {
     throw new Error('useCreatePostModal must be used within a CreatePostModalProvider');
+  }
+  return context;
+}
+
+export const useCreateChallengeModal = (): CreateChallengeModalContextType => {
+  const context = useContext(CreateChallengeModalContext);
+  if (context === undefined) {
+    throw new Error('useCreateChallengeModal must be used within a CreateChallengeModalProvider');
   }
   return context;
 }

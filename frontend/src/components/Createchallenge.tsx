@@ -1,49 +1,49 @@
-// frontend\src\components\Createpost.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { useCreatePostModal } from '@/context/UserContext'
+import { useCreateChallengeModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useUser } from '@/context/UserContext'
 
-const Createpost: React.FC = () => {
-  const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
+const CreateChallenge: React.FC = () => {
+  const { isCreateChallengeOpen, setIsCreateChallengeOpen } = useCreateChallengeModal()
   const { telegramId } = useUser()
+
   const [title, setTitle] = useState('')
-  const [deadline, setDeadline] = useState('')
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [totalReports, setTotalReports] = useState<string>('') // empty for placeholder
+  const [totalReportsError, setTotalReportsError] = useState<string | null>(null)
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [isPublic, setIsPublic] = useState(true)
-  const [deadlineError, setDeadlineError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (isCreatePostOpen) {
+    if (isCreateChallengeOpen) {
       setTitle('')
-      setDeadline('')
+      setFrequency('daily')
+      setTotalReports('')
       setContent('')
       setMedia(null)
       setPreviewUrl(null)
-      setIsPublic(true)
-      setDeadlineError(null)
+      setTotalReportsError(null)
     }
-  }, [isCreatePostOpen])
+  }, [isCreateChallengeOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telegramId) return
 
-    const now = new Date()
-    if (new Date(deadline) <= now) {
-      setDeadlineError('Дедлайн должен быть в будущем.')
+    const numericReports = Number(totalReports)
+    if (isNaN(numericReports) || numericReports < 1) {
+      setTotalReportsError('Количество отчетов должно быть не менее 1.')
       return
     }
 
-    setDeadlineError(null)
+    setTotalReportsError(null)
     setLoading(true)
     try {
       let mediaUrl = null
@@ -51,7 +51,7 @@ const Createpost: React.FC = () => {
         const formData = new FormData()
         formData.append('file', media)
         formData.append('telegramId', telegramId.toString())
-        const response = await fetch('/api/promises/upload', {
+        const response = await fetch('/api/challenges/upload', {
           method: 'POST',
           body: formData,
         })
@@ -60,21 +60,21 @@ const Createpost: React.FC = () => {
         mediaUrl = data.url
       }
 
-      const { error } = await supabase.from('promises').insert({
+      const { error } = await supabase.from('challenges').insert({
         user_id: telegramId,
         title,
-        deadline,
+        frequency,
+        total_reports: numericReports,
         content,
         media_url: mediaUrl,
         created_at: new Date().toISOString(),
-        is_completed: false,
-        is_public: isPublic
+        is_public: true,
       })
 
       if (error) throw error
-      setIsCreatePostOpen(false)
+      setIsCreateChallengeOpen(false)
     } catch (error) {
-      console.error('Error saving promise:', error)
+      console.error('Error saving challenge:', error)
     } finally {
       setLoading(false)
     }
@@ -97,10 +97,10 @@ const Createpost: React.FC = () => {
   }
 
   const handleClose = () => {
-    setIsCreatePostOpen(false)
+    setIsCreateChallengeOpen(false)
   }
 
-  if (!isCreatePostOpen || typeof window === 'undefined') return null
+  if (!isCreateChallengeOpen || typeof window === 'undefined') return null
 
   return ReactDOM.createPortal(
     <div
@@ -140,11 +140,12 @@ const Createpost: React.FC = () => {
             background: 'none',
             border: 'none',
           }}
+          aria-label="Закрыть"
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Создать обещание</h2>
-        <p className="text-muted mb-3">Опишите свое обещание и установите дедлайн при необходимости</p>
+        <h2 className="fw-bold mb-3">Создать челлендж</h2>
+        <p className="text-muted mb-3">Опишите свой челлендж, установите частоту и количество отчетов</p>
 
         {previewUrl && (
           <div className="mb-2 position-relative">
@@ -159,6 +160,7 @@ const Createpost: React.FC = () => {
               onClick={handleRemoveMedia}
               className="btn btn-sm btn-danger position-absolute"
               style={{ top: '5px', right: '5px' }}
+              aria-label="Удалить медиа"
             >
               <X className="w-4 h-4" />
             </button>
@@ -167,55 +169,57 @@ const Createpost: React.FC = () => {
 
         <form onSubmit={handleSubmit}>
           <input
+            id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Название обещания"
+            placeholder="Название челленджа"
             className="form-control mb-2"
             required
           />
 
-          <div className="form-check form-switch mb-2">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              id="isPublic"
-            />
-            <label className="form-check-label font-xsss" htmlFor="isPublic">
-              {isPublic ? 'Публичное' : 'Личное'}
-            </label>
-          </div>
+          <select
+            id="frequency"
+            value={frequency}
+            onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
+            className="form-control mb-2"
+            required
+            style={{ lineHeight: 1.5 }}
+            // style={{ height: '48px', display: 'flex', alignItems: 'center' }}
+          >
+            <option value="daily">Ежедневно</option>
+            <option value="weekly">Еженедельно</option>
+            <option value="monthly">Ежемесячно</option>
+          </select>
 
           <input
-            type="datetime-local"
-            value={deadline}
-            onChange={(e) => {
-              setDeadline(e.target.value)
-              setDeadlineError(null)
-            }}
+            id="quantity-report"
+            type="number"
+            value={totalReports}
+            onChange={(e) => setTotalReports(e.target.value)}
+            placeholder="Количество отчетов"
             className="form-control mb-2"
+            min="1"
             required
           />
-          {deadlineError && (
-            <div className="text-danger font-xsss mb-2">
-              {deadlineError}
-            </div>
+          {totalReportsError && (
+            <div className="text-danger font-xsss mb-2">{totalReportsError}</div>
           )}
 
           <textarea
+            id="description"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Введите текст обещания"
-            className="form-control mb-3 lh-30"
+            placeholder="Введите описание челленджа"
+            className="form-control mb-2 lh-30"
             style={{ height: '200px' }}
             required
           />
 
           <div className="mb-3">
-            <label className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+            <label htmlFor="media-upload" className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
               <input
+                id="media-upload"
                 type="file"
                 accept="image/*,video/*"
                 onChange={handleFileChange}
@@ -242,4 +246,4 @@ const Createpost: React.FC = () => {
   )
 }
 
-export default Createpost
+export default CreateChallenge

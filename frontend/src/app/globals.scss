@@ -51,3 +51,38 @@ a {
 input[type="checkbox"] {
   border-radius: 6px !important; 
 }
+
+.modal-backdrop.show {
+  background-color: #000;
+  opacity: 0.5;
+}
+
+.modal-dialog {
+  position: fixed !important;
+  bottom: 50px !important;
+  // left: 50%;
+  // transform: translateX(-50%);
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  z-index: 2000;
+}
+
+// .popover-custom-op[role='tooltip'] {
+//   all: unset;
+//   position: fixed !important;   /* 💥 поверх всего */
+//   top: 70% !important;          /* 🔥 чуть выше центра */
+//   left: 50% !important;
+//   transform: translate(-50%, -50%) !important;
+//   z-index: 9999 !important;     /* выше модалки и backdrop */
+//   background: white;
+//   border-radius: 12px;
+//   padding: 12px 16px;
+//   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+//   font-size: 14px;
+//   // max-width: 280px;
+//   width: 100vw;
+//   text-align: center;
+//   box-sizing: border-box;
+// }
+
