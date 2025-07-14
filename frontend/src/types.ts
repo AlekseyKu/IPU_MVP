@@ -22,14 +22,23 @@ export interface User {
   avatar_img_url?: string;
 }
 
-export interface PromiseData {
+export interface PostData {
   id: string;
   user_id: number;
   title: string;
   deadline: string;
   content: string;
   media_url?: string;
-  is_completed: boolean;
   created_at: string;
   is_public: boolean;
+}
+
+export interface PromiseData extends PostData {
+  is_completed: boolean;
+}
+
+export interface ChallengeData extends PostData {
+  frequency: 'daily' | 'weekly' | 'monthly';
+  total_reports: number;
+  completed_reports: number;
 }

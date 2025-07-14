@@ -240,5 +240,5 @@ const Createpost: React.FC = () => {
     document.body
   )
 }
-
+// рабочий варинт, но без роута
 export default Createpost

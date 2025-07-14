@@ -1,5 +1,5 @@
+// frontend/src/app/list/page.tsx
 'use client'
-// frontend\src\app\list\page.tsx
 
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
@@ -8,32 +8,28 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import Postview from '@/components/Postview';
+import ChallengeView from '@/components/ChallengeView';
+import { PromiseData, ChallengeData } from '@/types'
 
 export default function ListPage() {
   const { telegramId: currentUserId } = useUser();
-  const { promises, users, subscriptions, isLoading } = usePublicPromises(currentUserId);
-  // const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
+  const { posts, users, subscriptions, isLoading } = usePublicPromises(currentUserId); // Изменен promises на posts
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
-
   const [showSubscribedOnly, setShowSubscribedOnly] = useState(false);
 
   if (isLoading) {
     return <div className="text-center p-5">Loading...</div>;
   }
 
-  // const toggleOpen = (id: string) => {
-  //   setIsOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-  // };
-
   const toggleOpen = (id: string) => {
-  setOpenPromiseId((prevId) => (prevId === id ? null : id));
-};
+    setOpenPromiseId((prevId) => (prevId === id ? null : id));
+  };
 
   const noop = () => {};
 
-  const filteredPromises = showSubscribedOnly && currentUserId
-    ? promises.filter((p) => subscriptions.includes(p.user_id))
-    : promises;
+  const filteredPosts = showSubscribedOnly && currentUserId
+    ? posts.filter((p) => subscriptions.includes(p.user_id))
+    : posts;
 
   return (
     <>
@@ -59,32 +55,47 @@ export default function ListPage() {
               </div>
               <div className="col-12">
                 <AnimatePresence>
-                  {filteredPromises.map((promise) => {
-                    const user = users[promise.user_id] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
+                  {filteredPosts.map((post) => {
+                    const user = users[post.user_id] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
                     const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || 'Guest';
-                    const isOwnProfile = currentUserId === promise.user_id;
+                    const isOwnProfile = currentUserId === post.user_id;
+                    const isPromise = 'is_completed' in post;
 
                     return (
                       <motion.div
-                        key={promise.id}
+                        key={post.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                        <Postview
-                          promise={promise}
-                          onToggle={() => toggleOpen(promise.id)}
-                          // isOpen={!!isOpen[promise.id]}
-                          isOpen={openPromiseId === promise.id}
-                          onUpdate={noop}
-                          onDelete={noop}
-                          isOwnProfile={isOwnProfile}
-                          isList={true}
-                          avatarUrl={user.avatar_img_url}
-                          userId={promise.user_id}
-                          userName={fullName}
-                        />
+                        {isPromise ? (
+                          <Postview
+                            promise={post as PromiseData}
+                            onToggle={() => toggleOpen(post.id)}
+                            isOpen={openPromiseId === post.id}
+                            onUpdate={noop}
+                            onDelete={noop}
+                            isOwnProfile={isOwnProfile}
+                            isList={true}
+                            avatarUrl={user.avatar_img_url}
+                            userId={post.user_id}
+                            userName={fullName}
+                          />
+                        ) : (
+                          <ChallengeView
+                            challenge={post as ChallengeData}
+                            onToggle={() => toggleOpen(post.id)}
+                            isOpen={openPromiseId === post.id}
+                            onUpdate={noop}
+                            onDelete={noop}
+                            isOwnProfile={isOwnProfile}
+                            isList={true}
+                            avatarUrl={user.avatar_img_url}
+                            userId={post.user_id}
+                            userName={fullName}
+                          />
+                        )}
                       </motion.div>
                     );
                   })}

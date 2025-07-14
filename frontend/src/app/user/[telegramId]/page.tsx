@@ -1,5 +1,5 @@
+// frontend/src/app/user/[telegramId]/page.tsx
 'use client'
-// frontend\src\app\user\[telegramId]\page.tsx
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -8,11 +8,12 @@ import { supabase } from '@/lib/supabaseClient';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import Postview from '@/components/Postview';
+import ChallengeView from '@/components/ChallengeView';
 import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
 import Load from '@/components/Load';
 import { AnimatePresence, motion } from 'framer-motion';
-import { UserData, PromiseData } from '@/types';
+import { UserData, PromiseData, ChallengeData } from '@/types';
 import { useUserData } from '@/hooks/useUserData';
 import usePromiseActions from '@/hooks/usePromiseActions';
 
@@ -26,7 +27,7 @@ export default function UserProfile() {
   );
 
   const [showProfileDetail, setShowProfileDetail] = useState(false);
-  const [promises, setPromises] = useState<PromiseData[]>([]);
+  const [allPosts, setAllPosts] = useState<(PromiseData | ChallengeData)[]>([]);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -58,22 +59,28 @@ export default function UserProfile() {
       setTelegramId(telegramId);
 
       try {
-        const { data: promisesData, error: promisesError } = await supabase
-          .from('promises')
-          .select('*')
-          .eq('user_id', telegramId)
-          .order('created_at', { ascending: false });
+        const [promisesResult, challengesResult] = await Promise.all([
+          supabase
+            .from('promises')
+            .select('*')
+            .eq('user_id', telegramId)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('challenges')
+            .select('*')
+            .eq('user_id', telegramId)
+            .order('created_at', { ascending: false }),
+        ]);
 
-        if (promisesError) throw promisesError;
-        setPromises(promisesData || []);
+        if (promisesResult.error) throw promisesResult.error;
+        if (challengesResult.error) throw challengesResult.error;
 
-        const { data: subscriptionData } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('follower_id', contextTelegramId)
-          .eq('followed_id', telegramId);
+        const allPosts = [
+          ...(promisesResult.data || []),
+          ...(challengesResult.data || []),
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        setIsSubscribed(!!subscriptionData?.length);
+        setAllPosts(allPosts);
       } catch (error) {
         console.error(error);
         setError('General error occurred');
@@ -89,17 +96,14 @@ export default function UserProfile() {
     if (!telegramId) return;
 
     const channel = supabase
-      .channel(`promises-${telegramId}`)
+      .channel(`posts-${telegramId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'promises' }, (payload) => {
         const updatedPromise = payload.new as PromiseData;
-
-        if (payload.eventType === 'INSERT') {
-          setPromises((prev) => [updatedPromise, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setPromises((prev) => prev.map((p) => (p.id === updatedPromise.id ? updatedPromise : p)));
-        } else if (payload.eventType === 'DELETE') {
-          setPromises((prev) => prev.filter((p) => p.id !== payload.old.id));
-        }
+        updatePosts(updatedPromise, payload.eventType, payload.old);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenges' }, (payload) => {
+        const updatedChallenge = payload.new as ChallengeData;
+        updatePosts(updatedChallenge, payload.eventType, payload.old);
       })
       .subscribe();
 
@@ -108,13 +112,35 @@ export default function UserProfile() {
     };
   }, [telegramId]);
 
+  // Функция для обновления списка постов
+  const updatePosts = (updatedPost: PromiseData | ChallengeData, eventType: string, old?: { id?: string }) => {
+    setAllPosts((prev) => {
+      let newPosts = [...prev];
+      if (eventType === 'INSERT') {
+        newPosts = [updatedPost, ...newPosts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      } else if (eventType === 'UPDATE') {
+        newPosts = newPosts.map((p) => (p.id === updatedPost.id ? updatedPost : p)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      } else if (eventType === 'DELETE' && old?.id) {
+        newPosts = newPosts.filter((p) => p.id !== old.id);
+      }
+      return newPosts;
+    });
+  };
+
+  // Функция onUpdate для челленджей
+  const handleChallengeUpdate = (updatedChallenge: ChallengeData) => {
+    updatePosts(updatedChallenge, 'UPDATE');
+  };
+
   if (isLoading || userLoading || !localUserData) {
     return <Load />;
   }
 
   const fullName = `${localUserData.first_name || ''} ${localUserData.last_name || ''}`.trim();
-  const promisesCount = promises.length;
-  const promisesDoneCount = promises.filter((p) => p.is_completed).length;
+  const promisesCount = allPosts.filter((p): p is PromiseData => 'is_completed' in p).length;
+  const promisesDoneCount = allPosts.filter((p): p is PromiseData => 'is_completed' in p && p.is_completed).length;
+  const challengesCount = allPosts.filter((p): p is ChallengeData => 'frequency' in p).length;
+  const challengesDoneCount = allPosts.filter((p): p is ChallengeData => 'frequency' in p && p.completed_reports === p.total_reports).length;
 
   return (
     <>
@@ -133,8 +159,8 @@ export default function UserProfile() {
                   lastName={localUserData.last_name || ''}
                   telegramId={localUserData.telegram_id}
                   subscribers={localUserData.subscribers || 0}
-                  promises={promisesCount}
-                  promisesDone={promisesDoneCount}
+                  promises={promisesCount + challengesCount}
+                  promisesDone={promisesDoneCount + challengesDoneCount}
                   stars={localUserData.stars || 0}
                   heroImgUrl={localUserData.hero_img_url || defaultHeroImg}
                   avatarUrl={localUserData.avatar_img_url || defaultAvatarImg}
@@ -166,24 +192,46 @@ export default function UserProfile() {
               </div>
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <AnimatePresence>
-                  {promises.map((promise) => (
-                    <motion.div
-                      key={promise.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3, ease: 'easeOut' }}
-                    >
-                      <Postview
-                        promise={promise}
-                        onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
-                        isOpen={openPromiseId === promise.id}
-                        onUpdate={handleUpdate}
-                        onDelete={handleDelete}
-                        isOwnProfile={isOwnProfile}
-                      />
-                    </motion.div>
-                  ))}
+                  {allPosts.map((post) => {
+                    const isPromise = 'is_completed' in post;
+                    return (
+                      <motion.div
+                        key={post.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                      >
+                        {isPromise ? (
+                          <Postview
+                            promise={post as PromiseData}
+                            onToggle={() => setOpenPromiseId(openPromiseId === post.id ? null : post.id)}
+                            isOpen={openPromiseId === post.id}
+                            onUpdate={handleUpdate}
+                            onDelete={handleDelete}
+                            isOwnProfile={isOwnProfile}
+                            avatarUrl={localUserData.avatar_img_url || defaultAvatarImg}
+                            userId={telegramId}
+                            userName={localUserData.username || fullName}
+                            isList
+                          />
+                        ) : (
+                          <ChallengeView
+                            challenge={post as ChallengeData}
+                            onToggle={() => setOpenPromiseId(openPromiseId === post.id ? null : post.id)}
+                            isOpen={openPromiseId === post.id}
+                            onUpdate={handleChallengeUpdate}
+                            onDelete={handleDelete}
+                            isOwnProfile={isOwnProfile}
+                            avatarUrl={localUserData.avatar_img_url || defaultAvatarImg}
+                            userId={telegramId}
+                            userName={localUserData.username || fullName}
+                            isList
+                          />
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>
