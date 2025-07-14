@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { useCreateChallengeModal } from '@/context/UserContext'
+import { useUser, useCreateChallengeModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
-import { useUser } from '@/context/UserContext'
 
 const CreateChallenge: React.FC = () => {
   const { isCreateChallengeOpen, setIsCreateChallengeOpen } = useCreateChallengeModal()

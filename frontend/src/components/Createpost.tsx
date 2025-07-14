@@ -3,10 +3,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { useCreatePostModal } from '@/context/UserContext'
+import { useUser, useCreatePostModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
-import { useUser } from '@/context/UserContext'
 
 const Createpost: React.FC = () => {
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()

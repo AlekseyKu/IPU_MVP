@@ -1,4 +1,4 @@
-// frontend/src/app/api/users/[telegramId]/upload/route.ts
+// frontend\src\app\api\users\[telegramId]\upload\route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 

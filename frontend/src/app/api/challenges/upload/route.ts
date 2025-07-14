@@ -1,4 +1,4 @@
-// frontend\src\app\api\promises\upload\route.ts
+// frontend/src/app/api/challenges/upload/route.ts
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -6,8 +6,6 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const file = formData.get('file') as File;
   const telegramId = formData.get('telegramId') as string;
-
-  console.log('Received file:', file?.name, 'Type:', file?.type, 'Size:', file?.size);
 
   if (!file) {
     return NextResponse.json({ detail: 'Missing file' }, { status: 400 });
@@ -28,7 +26,7 @@ export async function POST(request: Request) {
 
   try {
     const cleanFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `promises/${telegramId}/${Date.now()}_${cleanFilename}`;
+    const fileName = `challenges/${telegramId}/${Date.now()}_${cleanFilename}`;
 
     const { error: uploadError } = await supabase.storage
       .from('user-images')
