@@ -81,8 +81,8 @@ export default function UserProfile() {
             .order('created_at', { ascending: false }),
         ]);
 
-        console.log('Promises data:', promisesResult.data); // Добавляем лог
-        console.log('Challenges data:', challengesResult.data); // Добавляем лог
+        // console.log('Promises data:', promisesResult.data);
+        // console.log('Challenges data:', challengesResult.data);
 
         if (promisesResult.error) throw promisesResult.error;
         if (challengesResult.error) throw challengesResult.error;
@@ -205,7 +205,7 @@ export default function UserProfile() {
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <AnimatePresence>
                   {allPosts.map((post) => {
-                    console.log('Post data:', post);
+                    // console.log('Post data:', post);
                     if (isPromiseData(post)) {
                       const promise = post as PromiseData;
                       return (
@@ -225,8 +225,9 @@ export default function UserProfile() {
                             isOwnProfile={isOwnProfile}
                             avatarUrl={localUserData.avatar_img_url || defaultAvatarImg}
                             userId={telegramId}
-                            userName={localUserData.username || fullName}
-                            isList
+                            userName={fullName}
+                            isList={true}
+                            isProfilePage={true}
                           />
                         </motion.div>
                       );
@@ -249,8 +250,9 @@ export default function UserProfile() {
                             isOwnProfile={isOwnProfile}
                             avatarUrl={localUserData.avatar_img_url || defaultAvatarImg}
                             userId={telegramId}
-                            userName={localUserData.username || fullName}
-                            isList
+                            userName={fullName}
+                            isList={true}
+                            isProfilePage={true}
                           />
                         </motion.div>
                       );

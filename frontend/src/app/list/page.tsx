@@ -9,11 +9,20 @@ import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import Postview from '@/components/Postview';
 import ChallengeView from '@/components/ChallengeView';
-import { PromiseData, ChallengeData } from '@/types'
+import { PromiseData, ChallengeData } from '@/types';
+
+// Функции для проверки типов
+function isPromiseData(post: any): post is PromiseData {
+  return 'is_completed' in post && 'deadline' in post;
+}
+
+function isChallengeData(post: any): post is ChallengeData {
+  return 'frequency' in post && 'total_reports' in post && 'completed_reports' in post;
+}
 
 export default function ListPage() {
   const { telegramId: currentUserId } = useUser();
-  const { posts, users, subscriptions, isLoading } = usePublicPromises(currentUserId); // Изменен promises на posts
+  const { posts, users, subscriptions, isLoading } = usePublicPromises(currentUserId);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [showSubscribedOnly, setShowSubscribedOnly] = useState(false);
 
@@ -59,11 +68,11 @@ export default function ListPage() {
                     const user = users[post.user_id] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
                     const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || 'Guest';
                     const isOwnProfile = currentUserId === post.user_id;
-                    const isPromise = 'is_completed' in post;
+                    const isPromise = isPromiseData(post); // Используем функцию проверки
 
                     return (
                       <motion.div
-                        key={post.id}
+                        key={post.id} // Типизация гарантирует наличие id
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}

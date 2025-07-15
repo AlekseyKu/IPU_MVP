@@ -1,4 +1,4 @@
-// frontend/src/components/ChallengeView.tsx
+// frontend\src\components\ChallengeView.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,14 +9,22 @@ import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// Маппинг для перевода частоты
+const frequencyMap: Record<string, string> = {
+  daily: 'Ежедневно',
+  weekly: 'Еженедельно',
+  monthly: 'Ежемесячно',
+};
+
 interface ChallengeViewProps {
   challenge: ChallengeData;
   onToggle: () => void;
   isOpen: boolean;
-  onUpdate: (updatedChallenge: ChallengeData) => void; // Изменен тип на ChallengeData
+  onUpdate: (updatedChallenge: ChallengeData) => void;
   onDelete: (id: string) => void;
   isOwnProfile: boolean;
   isList?: boolean;
+  isProfilePage?: boolean;
   avatarUrl?: string;
   userId?: number;
   userName?: string;
@@ -30,6 +38,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
   onDelete,
   isOwnProfile,
   isList = false,
+  isProfilePage = false,
   avatarUrl,
   userId,
   userName
@@ -37,6 +46,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
   const { id, title, content, media_url, created_at, is_public, frequency, total_reports, completed_reports, is_completed } = challenge;
   const [menuOpen, setMenuOpen] = useState(false);
   const [localChallenge, setLocalChallenge] = useState<ChallengeData>(challenge);
+  const [activeTab, setActiveTab] = useState<'progress' | 'participants'>('progress');
   const router = useRouter();
 
   useEffect(() => {
@@ -137,22 +147,17 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
           )}
           {frequency && total_reports && (
             <div className="text-muted font-xssss mb-1">
-              Частота: {frequency}, Прогресс: {completed_reports}/{total_reports}
+              Частота: {frequencyMap[frequency]}, Прогресс: {completed_reports}/{total_reports}
             </div>
           )}
         </div>
-        {/* <div className="d-flex justify-content-between align-items-center">
-          <span className="text-muted font-xsss">
-            Дэдлайн: {formatDateTime(deadline)}
-          </span>
-        </div> */}
       </div>
 
       {isOpen && (
-        <div className="mt-3">
+        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
           <p className="text-muted lh-sm small mb-2">{content}</p>
           {media_url && (
-            <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3">
               {mediaType?.startsWith('video') ? (
                 <video src={media_url} controls className="w-100 rounded" style={{ backgroundColor: '#000' }} />
               ) : (
@@ -160,6 +165,36 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
               )}
             </div>
           )}
+
+          <div className="d-flex justify-content-between mb-3">
+            <button className="btn w-50 btn-outline-primary me-2">Чек дня</button>
+            <button className="btn w-50 btn-outline-success" disabled>Завершить</button>
+          </div>
+
+          <div className="mb-2 ">
+            <div className="d-flex justify-content-around border-bottom">
+              <button
+                className={`btn btn-sm p-2 ${activeTab === 'progress' ? 'text-primary' : 'text-muted'}`}
+                onClick={() => setActiveTab('progress')}
+              >
+                Трекер прогресса
+              </button>
+              <button
+                className={`btn btn-sm p-2 ${activeTab === 'participants' ? 'text-primary' : 'text-muted'}`}
+                onClick={() => setActiveTab('participants')}
+              >
+                Участники
+              </button>
+            </div>
+            <div className="p-2">
+              {activeTab === 'progress' && (
+                <div className="text-muted font-xsss">Трекер прогресса (пусто)</div>
+              )}
+              {activeTab === 'participants' && (
+                <div className="text-muted font-xsss">Участники (пусто)</div>
+              )}
+            </div>
+          </div>
 
           <span className="text-muted small">Создано: {formatDateTime(created_at)}</span>
 
@@ -184,7 +219,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
                 )}
                 <button className="dropdown-item" onClick={copyLink}>Скопировать ссылку</button>
                 <button className="dropdown-item" onClick={share}>Отправить</button>
-                {isOwnProfile && (
+                {isOwnProfile && isProfilePage && (
                   <button className="dropdown-item text-danger" onClick={handleDelete}>
                     Удалить челлендж
                   </button>

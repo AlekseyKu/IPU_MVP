@@ -1,57 +1,65 @@
-// frontend\src\components\Postview.tsx
+// frontend\src\components\ChallengeView.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
-import { PromiseData } from '@/types';
+import { Ellipsis, Globe, GlobeLock } from 'lucide-react';
+import { ChallengeData } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-interface PostviewProps {
-  promise: PromiseData;
+// Маппинг для перевода частоты
+const frequencyMap: Record<string, string> = {
+  daily: 'Ежедневно',
+  weekly: 'Еженедельно',
+  monthly: 'Ежемесячно',
+};
+
+interface ChallengeViewProps {
+  challenge: ChallengeData;
   onToggle: () => void;
   isOpen: boolean;
-  onUpdate: (updatedPromise: PromiseData) => void;
+  onUpdate: (updatedChallenge: ChallengeData) => void;
   onDelete: (id: string) => void;
   isOwnProfile: boolean;
   isList?: boolean;
-  isProfilePage?: boolean; // Новый проп
+  isProfilePage?: boolean;
   avatarUrl?: string;
   userId?: number;
   userName?: string;
+  
 }
 
-const Postview: React.FC<PostviewProps> = ({
-  promise,
+const ChallengeView: React.FC<ChallengeViewProps> = ({
+  challenge,
   onToggle,
   isOpen,
   onUpdate,
   onDelete,
   isOwnProfile,
   isList = false,
-  isProfilePage = false, // Значение по умолчанию
+  isProfilePage = false,
   avatarUrl,
   userId,
   userName
 }) => {
-  const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise;
+  const { id, title, content, media_url, created_at, is_public, frequency, total_reports, completed_reports, is_completed } = challenge;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [localPromise, setLocalPromise] = useState<PromiseData>(promise);
+  const [localChallenge, setLocalChallenge] = useState<ChallengeData>(challenge);
   const router = useRouter();
 
   useEffect(() => {
     const subscription = supabase
-      .channel(`promise-update-${id}`)
+      .channel(`challenge-update-${id}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
-        table: 'promises',
+        table: 'challenges',
         filter: `id=eq.${id}`,
       }, (payload) => {
-        const updated = payload.new as PromiseData;
-        setLocalPromise(updated);
+        const updated = payload.new as ChallengeData;
+        setLocalChallenge(updated);
         onUpdate(updated);
       })
       .subscribe();
@@ -61,45 +69,30 @@ const Postview: React.FC<PostviewProps> = ({
     };
   }, [id, onUpdate]);
 
-  const handleComplete = async () => {
-    if (!id || !isOwnProfile) return;
-    const { error } = await supabase
-      .from('promises')
-      .update({ is_completed: true })
-      .eq('id', id);
-    if (!error) {
-      setLocalPromise({ ...localPromise, is_completed: true });
-      onUpdate({ ...localPromise, is_completed: true });
-    } else {
-      console.error('Error completing promise:', error);
-    }
-    setMenuOpen(false);
-  };
-
   const handleDelete = async () => {
     if (!id || !isOwnProfile) return;
-    if (confirm('Вы уверены, что хотите удалить это обещание?')) {
-      const { error } = await supabase.from('promises').delete().eq('id', id);
+    if (confirm('Вы уверены, что хотите удалить этот челлендж?')) {
+      const { error } = await supabase.from('challenges').delete().eq('id', id);
       if (!error) {
         onDelete(id);
         setMenuOpen(false);
       } else {
-        console.error('Error deleting promise:', error);
+        console.error('Error deleting challenge:', error);
       }
     }
   };
 
   const copyLink = () => {
-    const link = `${window.location.origin}/promise/${id}`;
+    const link = `${window.location.origin}/challenge/${id}`;
     navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована!'));
     setMenuOpen(false);
   };
 
   const share = () => {
     const shareData = {
-      title: localPromise.title,
-      text: localPromise.content,
-      url: `${window.location.origin}/promise/${id}`,
+      title: localChallenge.title,
+      text: localChallenge.content,
+      url: `${window.location.origin}/challenge/${id}`,
     };
     if (navigator.share) {
       navigator.share(shareData).catch((error) => console.error('Error sharing:', error));
@@ -109,10 +102,7 @@ const Postview: React.FC<PostviewProps> = ({
     setMenuOpen(false);
   };
 
-  const statusText = localPromise.is_completed ? 'Завершено' : 'Активно';
-  const Icon = localPromise.is_completed ? CircleStop : CirclePlay;
-  const iconColor = localPromise.is_completed ? 'text-grey' : 'text-primary';
-  const PublicIcon = localPromise.is_public ? Globe : GlobeLock;
+  const PublicIcon = localChallenge.is_public ? Globe : GlobeLock;
 
   const [mediaType, setMediaType] = useState<string | null>(null);
 
@@ -149,29 +139,30 @@ const Postview: React.FC<PostviewProps> = ({
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{title}</span>
-          {isOwnProfile && isProfilePage && ( // Показываем только на странице профиля
+          {isOwnProfile && !isList && (
             <div className="d-flex justify-content-end align-items-center mb-1">
-              <span className="text-muted font-xssss me-1">{localPromise.is_public ? 'Публичное' : 'Личное'}</span>
+              <span className="text-muted font-xssss me-1">{localChallenge.is_public ? 'Публичное' : 'Личное'}</span>
               <PublicIcon className="w-2 h-2 text-muted" />
             </div>
           )}
+          {frequency && total_reports && (
+            <div className="text-muted font-xssss mb-1">
+              Частота: {frequencyMap[frequency]}, Прогресс: {completed_reports}/{total_reports}
+            </div>
+          )}
         </div>
-        <div className="d-flex justify-content-between align-items-center">
+        {/* <div className="d-flex justify-content-between align-items-center">
           <span className="text-muted font-xsss">
             Дэдлайн: {formatDateTime(deadline)}
           </span>
-          <div className="d-flex align-items-center text-nowrap">
-            <span className="text-muted font-xssss me-1">{statusText}</span>
-            <Icon className={`w-2 h-2 ${iconColor}`} />
-          </div>
-        </div>
+        </div> */}
       </div>
 
       {isOpen && (
-        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-3">
           <p className="text-muted lh-sm small mb-2">{content}</p>
           {media_url && (
-            <div className="mb-3">
+            <div className="mb-3" onClick={(e) => e.stopPropagation()}>
               {mediaType?.startsWith('video') ? (
                 <video src={media_url} controls className="w-100 rounded" style={{ backgroundColor: '#000' }} />
               ) : (
@@ -201,16 +192,11 @@ const Postview: React.FC<PostviewProps> = ({
                     Посмотреть профиль
                   </button>
                 )}
-                {isOwnProfile && isProfilePage && !localPromise.is_completed && (
-                  <button className="dropdown-item text-accent" onClick={handleComplete}>
-                    Завершить обещание
-                  </button>
-                )}
                 <button className="dropdown-item" onClick={copyLink}>Скопировать ссылку</button>
                 <button className="dropdown-item" onClick={share}>Отправить</button>
                 {isOwnProfile && isProfilePage && (
                   <button className="dropdown-item text-danger" onClick={handleDelete}>
-                    Удалить обещание
+                    Удалить челлендж
                   </button>
                 )}
               </div>
@@ -222,4 +208,4 @@ const Postview: React.FC<PostviewProps> = ({
   );
 };
 
-export default Postview;
+export default ChallengeView;

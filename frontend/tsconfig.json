@@ -28,5 +28,6 @@
     ]
   },
   "include": ["src", "src/types.ts", ".next/types/**/*.ts", "next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files", "src/app/setup/[telegramId]/page.tsx"]
+  "exclude": ["node_modules", "src/components/old", "src/components/template", "src/old_page_files", 
+  "src/app/setup/[telegramId]/page.tsx", "src/app/todo", "src/app/backup"]
 }

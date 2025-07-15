@@ -1,150 +1,45 @@
 // 'use client'
 
-// import React, { useRef, useState } from 'react'
-// import { usePathname, useRouter } from 'next/navigation'
-// import { useUser, useCreatePostModal } from '@/context/UserContext'
-// import {
-//   House,
-//   User,
-//   CirclePlus,
-//   BarChart2,
-//   ShoppingCart,
-//   Info
-// } from 'lucide-react'
-// import { Modal, Button, OverlayTrigger, Popover } from 'react-bootstrap'
+// import { useEffect } from 'react';
+// import { useRouter } from 'next/navigation';
+// import { useUser } from '@/context/UserContext';
 
-// const Appfooter: React.FC = () => {
-//   const pathname = usePathname()
-//   const router = useRouter()
-//   const { telegramId } = useUser()
-//   const { setIsCreatePostOpen } = useCreatePostModal()
-//   const [showModal, setShowModal] = useState(false)
+// export default function Page() {
+//   const router = useRouter();
+//   const { telegramId, initData, setTelegramId, setInitData } = useUser();
 
-//   // 👇 Ref на модальное тело
-//   const modalContentRef = useRef<HTMLDivElement | null>(null)
-
-//   const links = [
-//     {
-//       icon: User,
-//       getHref: () => (telegramId ? `/user/${telegramId}` : '/'),
-//       onClick: () => router.push(telegramId ? `/user/${telegramId}` : '/')
-//     },
-//     {
-//       icon: House,
-//       getHref: () => '/list',
-//       onClick: () => router.push('/list')
-//     },
-//     {
-//       icon: CirclePlus,
-//       getHref: () => '#',
-//       onClick: () => setShowModal(true)
-//     },
-//     {
-//       icon: BarChart2,
-//       getHref: () => '/leaders',
-//       onClick: () => router.push('/leaders')
-//     },
-//     {
-//       icon: ShoppingCart,
-//       getHref: () => '/shop',
-//       onClick: () => router.push('/shop')
+//   useEffect(() => {
+//     if (telegramId) {
+//       router.replace(`/user/${telegramId}`);
+//       return;
 //     }
-//   ]
 
-//   const CustomPopover = ({ id, children }: { id: string; children: React.ReactNode }) => (
-//     <Popover id={id} className="popover-custom-op border-0 shadow-lg bg-white rounded">
-//       <Popover.Body>{children}</Popover.Body>
-//     </Popover>
-//   )
+//     const extractUserId = (data: string): number | null => {
+//       try {
+//         const user = JSON.parse(decodeURIComponent(data.split('&user=')[1]?.split('&')[0] || ''));
+//         return user?.id ?? null;
+//       } catch {
+//         return null;
+//       }
+//     };
 
-//   return (
-//     <>
-//       <div className="app-footer border-0 shadow-lg bg-white d-flex justify-content-around align-items-center py-3">
-//         {links.map(({ icon: Icon, getHref, onClick }, idx) => {
-//           const href = getHref()
-//           const isActive = pathname === href
+//     const hashParams = new URLSearchParams(window.location.hash.substring(1));
+//     let tgWebAppData = hashParams.get('tgWebAppData');
 
-//           return (
-//             <button
-//               key={idx}
-//               onClick={(e) => {
-//                 e.preventDefault()
-//                 onClick()
-//               }}
-//               className="nav-content-bttn nav-center bg-transparent border-0 p-0"
-//             >
-//               <Icon
-//                 style={{ color: isActive ? '#0066ff' : '#A0AEC0' }}
-//                 className="w-6 h-6"
-//               />
-//             </button>
-//           )
-//         })}
-//       </div>
+//     if (!tgWebAppData && window.Telegram?.WebApp?.initData) {
+//       tgWebAppData = window.Telegram.WebApp.initData;
+//     }
 
-//       <Modal
-//         show={showModal}
-//         onHide={() => setShowModal(false)}
-//         dialogClassName="modal-bottom modal-overflow-visible p-3"
-//         contentClassName="w-100"
-//       >
-//         <Modal.Body ref={modalContentRef}>
-//           <div className="d-flex align-items-center mb-2">
-//             <Button
-//               variant="outline-primary"
-//               className="w-100 me-2"
-//               onClick={() => {
-//                 setIsCreatePostOpen(true)
-//                 setShowModal(false)
-//               }}
-//             >
-//               Создать обещание
-//             </Button>
-//             {/* <OverlayTrigger
-//               placement="top"
-//               trigger={['hover', 'click']}
-//               containerPadding={20}
-//               container={modalContentRef.current ?? undefined}
-//               rootClose
-//               overlay={
-//                 <CustomPopover id="popover-create-post">
-//                   Создайте личное обещание, чтобы делиться прогрессом.
-//                 </CustomPopover>
-//               }
-//             >
-//               <div className="d-inline-block">
-//                 <Info className="w-4 h-4 text-muted cursor-pointer" />
-//               </div>
-//             </OverlayTrigger> */}
-//           </div>
+//     const id = tgWebAppData ? extractUserId(tgWebAppData) : null;
+//     if (id && tgWebAppData) {
+//       setTelegramId(id);
+//       setInitData(tgWebAppData);
+//       router.replace(`/user/${id}`);
+//     } else {
+//       console.warn('No telegramId found, redirecting to root');
+//       router.replace('/');
+//     }
+//   }, [telegramId, setTelegramId, setInitData, router]);
 
-//           <div className="d-flex align-items-center">
-//             <Button
-//               variant="outline-primary"
-//               className="w-100 me-2"
-//               onClick={() => router.push('/create-challenge')}
-//             >
-//               Создать челлендж
-//             </Button>
-//             {/* <OverlayTrigger
-//               // placement="top"
-//               trigger={['hover', 'click']}
-//               // containerPadding={20}
-//               // container={modalContentRef.current ?? undefined}
-//               rootClose
-//               overlay={
-//                 <CustomPopover id="popover-create-challenge">
-//                   Создайте публичный челлендж с отчетами и участниками.
-//                 </CustomPopover>
-//               }
-//             >
-//               <Info className="w-4 h-4 text-muted cursor-pointer" />
-//             </OverlayTrigger> */}
-//           </div>
-//         </Modal.Body>
-//       </Modal>
-//     </>
-//   )
+//   return <div className="text-center p-5">Redirecting...</div>;
 // }
-
-// export default Appfooter
