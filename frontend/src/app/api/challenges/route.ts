@@ -11,12 +11,11 @@ export async function POST(request: Request) {
       title,
       frequency,
       total_reports,
-      deadline,
       content,
       media_url,
     } = body;
 
-    if (!user_id || !title || !frequency || !total_reports || !deadline) {
+    if (!user_id || !title || !frequency || !total_reports) {
       return NextResponse.json({ detail: 'Missing required fields' }, { status: 400 });
     }
 
@@ -28,21 +27,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: 'Total reports must be at least 1' }, { status: 400 });
     }
 
-    const now = new Date();
-    if (new Date(deadline) <= now) {
-      return NextResponse.json({ detail: 'Deadline must be in the future' }, { status: 400 });
-    }
-
     const { error } = await supabase.from('challenges').insert({
       user_id: Number(user_id),
       title,
       frequency,
       total_reports: Number(total_reports),
-      deadline,
       content,
       media_url,
       created_at: new Date().toISOString(),
       is_public: true,
+      is_completed: false, // Добавлено с начальным значением
     });
 
     if (error) {

@@ -13,9 +13,18 @@ import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
 import Load from '@/components/Load';
 import { AnimatePresence, motion } from 'framer-motion';
-import { UserData, PromiseData, ChallengeData } from '@/types';
+import { UserData, PromiseData, ChallengeData, PostData } from '@/types';
 import { useUserData } from '@/hooks/useUserData';
 import usePromiseActions from '@/hooks/usePromiseActions';
+
+// Типизация для проверки
+function isPromiseData(post: PostData): post is PromiseData {
+  return 'is_completed' in post && 'deadline' in post;
+}
+
+function isChallengeData(post: PostData): post is ChallengeData {
+  return 'frequency' in post && 'total_reports' in post && 'completed_reports' in post;
+}
 
 export default function UserProfile() {
   const { telegramId: paramTelegramId } = useParams();
@@ -72,6 +81,9 @@ export default function UserProfile() {
             .order('created_at', { ascending: false }),
         ]);
 
+        console.log('Promises data:', promisesResult.data); // Добавляем лог
+        console.log('Challenges data:', challengesResult.data); // Добавляем лог
+
         if (promisesResult.error) throw promisesResult.error;
         if (challengesResult.error) throw challengesResult.error;
 
@@ -113,7 +125,7 @@ export default function UserProfile() {
   }, [telegramId]);
 
   // Функция для обновления списка постов
-  const updatePosts = (updatedPost: PromiseData | ChallengeData, eventType: string, old?: { id?: string }) => {
+  const updatePosts = (updatedPost: PromiseData | ChallengeData, eventType: string, old?: Partial<PostData>) => {
     setAllPosts((prev) => {
       let newPosts = [...prev];
       if (eventType === 'INSERT') {
@@ -193,20 +205,21 @@ export default function UserProfile() {
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <AnimatePresence>
                   {allPosts.map((post) => {
-                    const isPromise = 'is_completed' in post;
-                    return (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                      >
-                        {isPromise ? (
+                    console.log('Post data:', post);
+                    if (isPromiseData(post)) {
+                      const promise = post as PromiseData;
+                      return (
+                        <motion.div
+                          key={promise.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
                           <Postview
-                            promise={post as PromiseData}
-                            onToggle={() => setOpenPromiseId(openPromiseId === post.id ? null : post.id)}
-                            isOpen={openPromiseId === post.id}
+                            promise={promise}
+                            onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
+                            isOpen={openPromiseId === promise.id}
                             onUpdate={handleUpdate}
                             onDelete={handleDelete}
                             isOwnProfile={isOwnProfile}
@@ -215,11 +228,22 @@ export default function UserProfile() {
                             userName={localUserData.username || fullName}
                             isList
                           />
-                        ) : (
+                        </motion.div>
+                      );
+                    } else if (isChallengeData(post)) {
+                      const challenge = post as ChallengeData;
+                      return (
+                        <motion.div
+                          key={challenge.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
                           <ChallengeView
-                            challenge={post as ChallengeData}
-                            onToggle={() => setOpenPromiseId(openPromiseId === post.id ? null : post.id)}
-                            isOpen={openPromiseId === post.id}
+                            challenge={challenge}
+                            onToggle={() => setOpenPromiseId(openPromiseId === challenge.id ? null : challenge.id)}
+                            isOpen={openPromiseId === challenge.id}
                             onUpdate={handleChallengeUpdate}
                             onDelete={handleDelete}
                             isOwnProfile={isOwnProfile}
@@ -228,10 +252,13 @@ export default function UserProfile() {
                             userName={localUserData.username || fullName}
                             isList
                           />
-                        )}
-                      </motion.div>
-                    );
+                        </motion.div>
+                      );
+                    }
+
+                    return null; // Fallback to satisfy TS
                   })}
+
                 </AnimatePresence>
               </div>
             </div>

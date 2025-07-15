@@ -26,7 +26,6 @@ export interface PostData {
   id: string;
   user_id: number;
   title: string;
-  deadline: string;
   content: string;
   media_url?: string;
   created_at: string;
@@ -35,10 +34,12 @@ export interface PostData {
 
 export interface PromiseData extends PostData {
   is_completed: boolean;
+  deadline: string;
 }
 
 export interface ChallengeData extends PostData {
   frequency: 'daily' | 'weekly' | 'monthly';
   total_reports: number;
   completed_reports: number;
+  is_completed: boolean;
 }

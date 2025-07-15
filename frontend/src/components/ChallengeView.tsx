@@ -34,7 +34,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
   userId,
   userName
 }) => {
-  const { id, title, deadline, content, media_url, created_at, is_public, frequency, total_reports, completed_reports } = challenge;
+  const { id, title, content, media_url, created_at, is_public, frequency, total_reports, completed_reports, is_completed } = challenge;
   const [menuOpen, setMenuOpen] = useState(false);
   const [localChallenge, setLocalChallenge] = useState<ChallengeData>(challenge);
   const router = useRouter();
