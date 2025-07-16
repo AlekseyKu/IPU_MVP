@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useUser } from '@/context/UserContext';
 
-// Маппинг для перевода частоты
 const frequencyMap: Record<string, string> = {
   daily: 'Ежедневный',
   weekly: 'Еженедельный',
@@ -43,7 +43,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
   userId,
   userName
 }) => {
-  const { id, title, content, media_url, created_at, is_public, frequency, total_reports, completed_reports, is_completed } = challenge;
+  const { telegramId: currentUserId } = useUser();
+  const { id, title, content, media_url, created_at, is_public, frequency, total_reports, completed_reports, is_completed, start_at, report_periods, deadline_period } = challenge;
   const [menuOpen, setMenuOpen] = useState(false);
   const [localChallenge, setLocalChallenge] = useState<ChallengeData>(challenge);
   const [activeTab, setActiveTab] = useState<'progress' | 'participants'>('progress');
@@ -119,6 +120,123 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
       });
   }, [media_url]);
 
+  const now = new Date('2025-07-17T00:06:00+07:00'); // Текущая дата и время
+  const isStarted = !!start_at && new Date(start_at) <= now;
+  const frequencyInterval = { daily: 1, weekly: 7, monthly: 30 }[frequency || 'daily'];
+
+  const generateReportPeriods = (start: Date, totalReports: number, interval: number): string[] => {
+    const periods = [];
+    let currentStart = new Date(start);
+    for (let i = 0; i < totalReports; i++) {
+      const periodEnd = new Date(currentStart);
+      periodEnd.setDate(currentStart.getDate() + interval - 1);
+      periods.push(`${currentStart.toISOString().split('T')[0]}/${periodEnd.toISOString().split('T')[0]}`);
+      currentStart.setDate(currentStart.getDate() + interval);
+    }
+    return periods;
+  };
+
+  const handleStart = async () => {
+    if (!isOwnProfile || !currentUserId || isStarted) return;
+
+    const startDate = now;
+    const newReportPeriods = generateReportPeriods(startDate, total_reports, frequencyInterval);
+    const newDeadlinePeriod = newReportPeriods[newReportPeriods.length - 1];
+
+    const { error: reportError } = await supabase.from('challenge_reports').insert({
+      user_id: Number(currentUserId),
+      challenge_id: id,
+      report_date: startDate.toISOString(),
+    });
+
+    if (reportError) {
+      console.error('Error inserting report:', reportError);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('challenges')
+      .update({
+        start_at: startDate.toISOString(),
+        report_periods: newReportPeriods,
+        deadline_period: newDeadlinePeriod,
+        completed_reports: 1,
+      })
+      .eq('id', id);
+
+    if (!error) {
+      const updated = { ...localChallenge, start_at: startDate.toISOString(), report_periods: newReportPeriods, deadline_period: newDeadlinePeriod, completed_reports: 1 };
+      setLocalChallenge(updated);
+      onUpdate(updated);
+    }
+  };
+
+  const isCheckDayActive = isStarted && report_periods?.some((period: string, index: number) => {
+    const [start, end] = period.split('/');
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const nowDateOnly = new Date(now.toISOString().split('T')[0]);
+    return nowDateOnly >= startDate && nowDateOnly <= endDate && index >= completed_reports;
+  });
+
+  const isLastPeriod = isStarted && deadline_period && (() => {
+    const [start, end] = deadline_period.split('/');
+    if (!start || !end) return false;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const nowDateOnly = new Date(now.toISOString().split('T')[0]);
+    const endDateOnly = new Date(endDate.toISOString().split('T')[0]);
+    const currentPeriodIndex = report_periods ? report_periods.findIndex(p => p === deadline_period) : -1;
+    return currentPeriodIndex === (report_periods?.length ?? 0) - 1 && nowDateOnly >= startDate && nowDateOnly <= endDateOnly;
+  })();
+
+  const nextPeriod = isStarted && report_periods?.find((period: string, index: number) => {
+    const [start] = period.split('/');
+    const startDate = new Date(start);
+    return startDate > now && index === completed_reports;
+  });
+
+  const formattedNextPeriod = nextPeriod
+    ? (() => {
+        const [start, end] = nextPeriod.split('/');
+        const startDate = new Date(start).toLocaleDateString('ru-RU');
+        const endDate = new Date(end).toLocaleDateString('ru-RU');
+        return startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+      })()
+    : null;
+
+  const handleCheckDay = async () => {
+    if (!isOwnProfile || !currentUserId || !isCheckDayActive) return;
+
+    const response = await fetch(`/api/challenges?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUserId, action: 'check_day' }),
+    });
+
+    if (response.ok) {
+      const updated = { ...localChallenge, completed_reports: localChallenge.completed_reports + 1 };
+      setLocalChallenge(updated);
+      onUpdate(updated);
+    }
+  };
+
+  const handleFinish = async () => {
+    if (!isOwnProfile || !isLastPeriod) return;
+
+    const response = await fetch(`/api/challenges?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUserId, action: 'finish', final_check: true }),
+    });
+
+    if (response.ok) {
+      const updated = { ...localChallenge, completed_reports: localChallenge.completed_reports + 1, is_completed: true };
+      setLocalChallenge(updated);
+      onUpdate(updated);
+    }
+  };
+
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
       {isList && userId && (
@@ -146,7 +264,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
             </div>
           )}
           {frequency && total_reports && (
-            <div className="text-muted font-xssss mb-1">
+            <div className="text-muted font-xsss mb-1">
               {frequencyMap[frequency]} челлендж, Прогресс: {completed_reports}/{total_reports}
             </div>
           )}
@@ -166,12 +284,50 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
             </div>
           )}
 
-          <div className="d-flex justify-content-between mb-3">
-            <button className="btn w-50 btn-outline-primary me-2">Чек дня</button>
-            <button className="btn w-50 btn-outline-success" disabled>Завершить</button>
+          <div className="d-flex justify-content-center mb-2">
+            {!isStarted ? (
+              <button
+                className="btn w-50 btn-outline-primary me-2"
+                onClick={handleStart}
+                disabled={is_completed}
+              >
+                Начать
+              </button>
+            ) : (
+              <>
+                {!isLastPeriod && (
+                  <button
+                    className={`btn w-50 mt-3 ${
+                      !isCheckDayActive || completed_reports >= total_reports
+                      ? 'btn disabled' 
+                      : 'btn-outline-primary'
+                    }`}
+                    onClick={handleCheckDay}
+                    disabled={!isCheckDayActive || completed_reports >= total_reports}
+                  >
+                    Чек дня
+                  </button>
+                )}
+                {isLastPeriod && (
+                  <button
+                    className="btn w-50 btn-outline-primary"
+                    onClick={handleFinish}
+                    disabled={is_completed}
+                  >
+                    Завершить
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
-          <div className="mb-2 ">
+          {isStarted && nextPeriod && (
+            <div className="d-flex justify-content-center text-muted font-xsss mb-2">
+              Следующий Чек дня: {formattedNextPeriod}
+            </div>
+          )}
+
+          <div className="mb-2">
             <div className="d-flex justify-content-around border-bottom">
               <button
                 className={`btn btn-sm p-2 ${activeTab === 'progress' ? 'text-primary' : 'text-muted'}`}
