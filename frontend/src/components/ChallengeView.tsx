@@ -11,9 +11,9 @@ import Link from 'next/link';
 
 // Маппинг для перевода частоты
 const frequencyMap: Record<string, string> = {
-  daily: 'Ежедневно',
-  weekly: 'Еженедельно',
-  monthly: 'Ежемесячно',
+  daily: 'Ежедневный',
+  weekly: 'Еженедельный',
+  monthly: 'Ежемесячный',
 };
 
 interface ChallengeViewProps {
@@ -147,7 +147,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({
           )}
           {frequency && total_reports && (
             <div className="text-muted font-xssss mb-1">
-              Частота: {frequencyMap[frequency]}, Прогресс: {completed_reports}/{total_reports}
+              {frequencyMap[frequency]} челлендж, Прогресс: {completed_reports}/{total_reports}
             </div>
           )}
         </div>

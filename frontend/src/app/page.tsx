@@ -121,11 +121,9 @@ export default function Page() {
   return (
     <div className="fade-in p-5 text-center">
       <h1 className="text-2xl font-bold mb-4">Добро пожаловать!</h1>
-      <p className="mb-4">Это описание проекта. Можешь скрыть это приветствие 👇</p>
-      <label>
-        <input type="checkbox" onChange={handleCheckboxChange} />
-        {' '}Больше не показывать
-      </label>
+      <p className="mb-4"> IPU - это приложение, где обещания становятся реальными действиями. </p>
+      <p className="mb-4"> Дай обещание, выполни, получи очки доверия. </p>
+      <p className="mb-4 text-primary"> Стань тем, кто держит слово. </p>
       <div className="mt-4">
         <button
           onClick={handleContinue}
@@ -135,6 +133,10 @@ export default function Page() {
           {navigating ? 'Переход...' : 'Продолжить'}
         </button>
       </div>
+      <label>
+        <input type="checkbox" onChange={handleCheckboxChange} />
+        {' '}Больше не показывать
+      </label>
     </div>
   );
 }
