@@ -30,10 +30,10 @@ export interface PostData {
   media_url?: string;
   created_at: string;
   is_public: boolean;
+  is_completed: boolean;
 }
 
 export interface PromiseData extends PostData {
-  is_completed: boolean;
   deadline: string;
 }
 
@@ -41,7 +41,6 @@ export interface ChallengeData extends PostData {
   frequency: 'daily' | 'weekly' | 'monthly';
   total_reports: number;
   completed_reports: number;
-  is_completed: boolean;
   start_at?: string;           // Добавлено, nullable
   report_periods?: string[];   // Добавлено, массив строк вроде ["2025-01-01/2025-01-07"]
   deadline_period?: string;    // Добавлено, строка вроде "2025-01-21/2025-01-21"
