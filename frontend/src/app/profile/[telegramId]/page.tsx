@@ -1,3 +1,4 @@
+// frontend\src\app\profile\[telegramId]\page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -12,6 +13,7 @@ import PromiseView from '@/components/PromiseView';
 import Load from '@/components/Load';
 import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
+import ChallengeView from '@/components/ChallengeView';
 
 export default function ProfilePage() {
   const { telegramId: paramTelegramId } = useParams();
@@ -19,12 +21,14 @@ export default function ProfilePage() {
   const telegramId = Number(paramTelegramId);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
+  const [openChallengeId, setOpenChallengeId] = useState<string | null>(null);
 
   const noop = () => {};
 
   const {
     userData,
     promises,
+    challenges,
     isSubscribed,
     isLoading,
     error,
@@ -120,7 +124,7 @@ export default function ProfilePage() {
               </div>
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <AnimatePresence>
-                  {promises.map((promise) => (
+                  {promises.filter(p => p.is_public).map((promise) => (
                     <motion.div
                       key={promise.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -130,13 +134,30 @@ export default function ProfilePage() {
                     >
                       <PromiseView
                         promise={promise}
-                        onToggle={() =>
-                          setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)
-                        }
+                        onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
                         isOpen={openPromiseId === promise.id}
                         onUpdate={noop}
                         onDelete={noop}
                         isOwnProfile={isOwnProfile}
+                      />
+                    </motion.div>
+                  ))}
+                  {challenges.map((challenge) => (
+                    <motion.div
+                      key={challenge.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                    >
+                      <ChallengeView
+                        challenge={challenge}
+                        onToggle={() => setOpenChallengeId(openChallengeId === challenge.id ? null : challenge.id)}
+                        isOpen={openChallengeId === challenge.id}
+                        onUpdate={noop}
+                        onDelete={noop}
+                        isOwnProfile={isOwnProfile}
+                        isProfilePage={true}
                       />
                     </motion.div>
                   ))}

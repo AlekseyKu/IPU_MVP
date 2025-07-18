@@ -1,6 +1,7 @@
 // frontend\src\components\PromiseView.tsx
 'use client'
 
+// --- Импорты ---
 import React, { useState, useEffect } from 'react';
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
 import { PromiseData } from '@/types';
@@ -8,26 +9,28 @@ import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// --- Типы ---
 interface PostviewProps {
   promise: PromiseData;
   onToggle: () => void;
-  isOpen: boolean;
   onUpdate: (updatedPromise: PromiseData) => void;
   onDelete: (id: string) => void;
+  isOpen: boolean;
   isOwnProfile: boolean;
   isList?: boolean;
-  isProfilePage?: boolean; // Новый проп
+  isProfilePage?: boolean;
   avatarUrl?: string;
   userId?: number;
   userName?: string;
 }
 
+// --- Основной компонент ---
 const PromiseView: React.FC<PostviewProps> = ({
   promise,
   onToggle,
-  isOpen,
   onUpdate,
   onDelete,
+  isOpen,
   isOwnProfile,
   isList = false,
   isProfilePage = false,
@@ -35,18 +38,32 @@ const PromiseView: React.FC<PostviewProps> = ({
   userId,
   userName
 }) => {
+  // --- Состояния и хуки ---
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mediaType, setMediaType] = useState<string | null>(null);
   const router = useRouter();
 
-  // Определяем mediaType по расширению файла
-  // let mediaType: string | null = null;
-  // if (media_url) {
-  //   const ext = media_url.split('.').pop()?.toLowerCase();
-  //   if (ext && ['mp4', 'webm', 'ogg'].includes(ext)) mediaType = 'video';
-  //   else if (ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) mediaType = 'image';
-  // }
+  // --- Определение типа медиа ---
+  useEffect(() => {
+    if (!media_url) return;
+    fetch(media_url, { method: 'HEAD' })
+      .then((res) => {
+        const type = res.headers.get('Content-Type');
+        if (type) setMediaType(type);
+      })
+      .catch((err) => {
+        console.error('Error determining media type:', err);
+      });
+  }, [media_url]);
 
+  // --- Логика статуса и иконки ---
+  const statusText = is_completed ? 'Завершено' : 'Активно';
+  const Icon = is_completed ? CircleStop : CirclePlay;
+  const iconColor = is_completed ? 'text-grey' : 'text-primary';
+  // const PublicIcon = is_public ? Globe : GlobeLock;
+
+  // --- Обработчики ---
   const handleComplete = () => {
     if (!id || !isOwnProfile) return;
     onUpdate({ ...promise, is_completed: true });
@@ -81,29 +98,10 @@ const PromiseView: React.FC<PostviewProps> = ({
     setMenuOpen(false);
   };
 
-  const statusText = is_completed ? 'Завершено' : 'Активно';
-  const Icon = is_completed ? CircleStop : CirclePlay;
-  const iconColor = is_completed ? 'text-grey' : 'text-primary';
-  const PublicIcon = is_public ? Globe : GlobeLock;
-
-  const [mediaType, setMediaType] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!media_url) return;
-
-    fetch(media_url, { method: 'HEAD' })
-      .then((res) => {
-        const type = res.headers.get('Content-Type');
-        if (type) setMediaType(type);
-      })
-      .catch((err) => {
-        console.error('Error determining media type:', err);
-      });
-  }, [media_url]);
-
-
+  // --- JSX ---
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
+      {/* --- Заголовок и аватар --- */}
       {isList && userId && (
         <div className="d-flex align-items-center mb-2">
           <Link href={isOwnProfile ? `/user/${userId}` : `/profile/${userId}`} onClick={(e) => e.stopPropagation()}>
@@ -119,13 +117,19 @@ const PromiseView: React.FC<PostviewProps> = ({
           <span className="text-dark font-xsss">{userName || 'Guest'}</span>
         </div>
       )}
+
+      {/* --- Основная информация --- */}
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{title}</span>
-          {isOwnProfile && isProfilePage && ( // Показываем только на странице профиля
+          {isOwnProfile && isProfilePage && (
             <div className="d-flex justify-content-end align-items-center mb-1">
-              <span className="text-muted font-xssss me-1">{is_public ? 'Публичное' : 'Личное'}</span>
-              <PublicIcon className="w-2 h-2 text-muted" />
+              {!is_public && (
+                <>
+                  <span className="text-muted font-xssss me-1">Личное</span>
+                  <GlobeLock className="w-2 h-2 text-muted" />
+                </>
+              )}
             </div>
           )}
         </div>
@@ -140,6 +144,7 @@ const PromiseView: React.FC<PostviewProps> = ({
         </div>
       </div>
 
+      {/* --- Детали обещания --- */}
       {isOpen && (
         <div className="mt-3" onClick={(e) => e.stopPropagation()}>
           <p className="text-muted lh-sm small mb-2">{content}</p>
@@ -147,16 +152,15 @@ const PromiseView: React.FC<PostviewProps> = ({
             <div className="mb-3">
               {mediaType?.startsWith('video') ? (
                 <video src={media_url} controls className="w-100 rounded" style={{ backgroundColor: '#000' }} />
-
               ) : (
                 <img src={media_url} alt="media" className="w-100 rounded" style={{ objectFit: 'cover' }} />
               )}
             </div>
           )}
-
           <span className="text-muted small">Создано: {formatDateTime(created_at)}</span>
 
-          <div className="position-absolute bottom-0 end-0 mb-3 me-3">
+          {/* --- Меню --- */}
+          <div className="position-absolute top-0 end-0 mt-3 me-3">
             <Ellipsis
               className="cursor-pointer text-muted"
               size={24}

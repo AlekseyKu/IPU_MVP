@@ -1,8 +1,9 @@
 // frontend\src\components\ChallengeView.tsx
-'use client';
+'use client'
 
+// --- Импорты ---
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Ellipsis, Globe, GlobeLock, CirclePlay, CircleStop, } from 'lucide-react';
+import { Ellipsis, GlobeLock, CirclePlay, CircleStop } from 'lucide-react';
 import { ChallengeData } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
@@ -11,18 +12,20 @@ import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
 
+// --- Константы ---
 const frequencyMap: Record<string, string> = {
   daily: 'Ежедневный',
   weekly: 'Еженедельный',
   monthly: 'Ежемесячный',
 };
 
+// --- Типы ---
 interface ChallengeViewProps {
   challenge: ChallengeData;
   onToggle: () => void;
-  isOpen: boolean;
   onUpdate: (updatedChallenge: ChallengeData) => void;
   onDelete: (id: string) => void;
+  isOpen: boolean;
   isOwnProfile: boolean;
   isList?: boolean;
   isProfilePage?: boolean;
@@ -31,12 +34,13 @@ interface ChallengeViewProps {
   userName?: string;
 }
 
+// --- Основной компонент ---
 const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   challenge,
   onToggle,
-  isOpen,
   onUpdate,
   onDelete,
+  isOpen,
   isOwnProfile,
   isList = false,
   isProfilePage = false,
@@ -44,6 +48,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   userId,
   userName,
 }) => {
+  // --- Хуки и состояния ---
   const { telegramId } = useUser();
   const router = useRouter();
   const renderCount = useRef(0);
@@ -53,11 +58,13 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const [showVideo, setShowVideo] = useState(false);
   const { handleDeleteChallenge } = useChallengeApi();
 
+  // --- Эффекты ---
   useEffect(() => {
     renderCount.current += 1;
-    console.log(`Render #${renderCount.current} with challenge id: ${challenge.id}, completed_reports: ${challenge.completed_reports}`);
+    // console.log(`Render #${renderCount.current} with challenge id: ${challenge.id}, completed_reports: ${challenge.completed_reports}`);
   }, [challenge.id, challenge.completed_reports]);
 
+  // Realtime подписка на обновления челленджа
   useEffect(() => {
     const subscription = supabase
       .channel(`challenge-update-${challenge.id}`)
@@ -68,38 +75,29 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
         }
       })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
+    return () => { supabase.removeChannel(subscription); };
   }, [challenge.id, onUpdate]);
 
+  // Определение типа медиа
   useEffect(() => {
     if (!challenge.media_url) return;
     fetch(challenge.media_url, { method: 'HEAD' })
-      .then((res) => {
-        const type = res.headers.get('Content-Type');
-        if (type) setMediaType(type);
-      })
-      .catch((err) => {
-        console.error('Error determining media type:', err);
-      });
+      .then((res) => { const type = res.headers.get('Content-Type'); if (type) setMediaType(type); })
+      .catch((err) => { console.error('Error determining media type:', err); });
   }, [challenge.media_url]);
 
-  useEffect(() => {
-    setShowVideo(false);
-  }, [challenge.media_url]);
+  // Сброс предпросмотра видео при смене медиа
+  useEffect(() => { setShowVideo(false); }, [challenge.media_url]);
 
+  // --- Вычисления статусов и иконок ---
   const now = useMemo(() => new Date(), []);
-
   const isStarted = challenge.start_at && new Date(challenge.start_at) <= now;
-
-  // статус челленджа
   const is_completed = challenge.is_completed;
   const statusText = is_completed ? 'Завершено' : 'Челлендж';
   const Icon = is_completed ? CircleStop : CirclePlay;
   const iconColor = is_completed ? 'text-grey' : 'text-secondary';
 
+  // --- Прогресс и периоды ---
   const isCheckDayActive = useMemo(() => {
     return isStarted && challenge.report_periods?.some((period, index) => {
       const [start, end] = period.split('/');
@@ -132,6 +130,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     return startDate === endDate ? startDate : `${startDate} - ${endDate}`;
   }, [nextPeriod]);
 
+  // --- Действия ---
   const handleStart = useCallback(async () => {
     if (!isOwnProfile || !userId || isStarted) return;
     const response = await fetch(`/api/challenges?id=${challenge.id}`, {
@@ -183,8 +182,10 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   };
 
+  // --- JSX ---
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
+      {/* --- Заголовок и аватар --- */}
       {isList && userId && (
         <div className="d-flex align-items-center mb-2">
           <Link href={isOwnProfile ? `/user/${userId}` : `/profile/${userId}`} onClick={e => e.stopPropagation()}>
@@ -193,24 +194,33 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           <span className="text-dark font-xsss">{userName || 'Guest'}</span>
         </div>
       )}
+
+      {/* --- Основная информация --- */}
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{challenge.title}</span>
-          {isOwnProfile && !isList && <div className="d-flex justify-content-end align-items-center mb-1"><span className="text-muted font-xssss me-1">{challenge.is_public ? 'Публичное' : 'Личное'}</span><GlobeLock className="w-2 h-2 text-muted" /></div>}
-          {challenge.frequency && challenge.total_reports && 
+          {isOwnProfile && !isList && (
+            <div className="d-flex justify-content-end align-items-center mb-1">
+              <span className="text-muted font-xssss me-1">{challenge.is_public ? 'Публичное' : 'Личное'}</span>
+              <GlobeLock className="w-2 h-2 text-muted" />
+            </div>
+          )}
+          {challenge.frequency && challenge.total_reports && (
             <div className="d-flex justify-content-between align-items-center">
               <div className="text-muted font-xsss mb-1">
-              {frequencyMap[challenge.frequency]} <br /> 
-              Прогресс: {challenge.completed_reports}/{challenge.total_reports}
+                {frequencyMap[challenge.frequency]} <br />
+                Прогресс: {challenge.completed_reports}/{challenge.total_reports}
               </div>
               <div className="d-flex align-items-center align-self-end text-nowrap ms-2">
                 <span className="text-muted font-xssss me-1">{statusText}</span>
                 <Icon className={`w-2 h-2 ${iconColor}`} />
               </div>
             </div>
-          }
+          )}
         </div>
       </div>
+
+      {/* --- Детали челленджа --- */}
       {isOpen && (
         <div className="mt-3" onClick={e => e.stopPropagation()}>
           <p className="text-muted lh-sm small mb-2">{challenge.content}</p>
@@ -223,33 +233,70 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
               )}
             </div>
           )}
-          <div className="d-flex justify-content-center mb-2">
-            {!isStarted ? (
-              <button className="btn w-50 btn-outline-primary" onClick={handleStart} disabled={challenge.is_completed}>Начать</button>
-            ) : (
-              <>
-                {!isLastPeriod && <button className={`btn w-50 ${!isCheckDayActive || challenge.completed_reports >= challenge.total_reports ? 'btn disabled' : 'btn-outline-primary'}`} onClick={handleCheckDay} disabled={!isCheckDayActive || challenge.completed_reports >= challenge.total_reports}>Чек дня</button>}
-                {isLastPeriod && <button className="btn w-50 btn-outline-primary" onClick={handleFinish} disabled={challenge.is_completed}>Завершить</button>}
-              </>
-            )}
-          </div>
-          {isStarted && formattedNextPeriod && <div className="d-flex justify-content-center text-muted font-xsss mb-2">Следующий Чек дня: {formattedNextPeriod}</div>}
+
+          {/* --- Кнопки управления --- */}
+          {isOwnProfile && isProfilePage && (
+            <div className="d-flex justify-content-center mb-2">
+              {!isStarted ? (
+                <button className="btn w-50 btn-outline-primary" onClick={handleStart} disabled={challenge.is_completed}>Начать</button>
+              ) : (
+                <>
+                  {!isLastPeriod && (
+                    <button
+                      className={`btn w-50 ${!isCheckDayActive || challenge.completed_reports >= challenge.total_reports ? 'btn disabled' : 'btn-outline-primary'}`}
+                      onClick={handleCheckDay}
+                      disabled={!isCheckDayActive || challenge.completed_reports >= challenge.total_reports}
+                    >
+                      Чек дня
+                    </button>
+                  )}
+                  {isLastPeriod && (
+                    <button className="btn w-50 btn-outline-primary" onClick={handleFinish} disabled={challenge.is_completed}>
+                      Завершить
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* --- Следующий чек --- */}
+          {isStarted && formattedNextPeriod && (
+            <div className="d-flex justify-content-center text-muted font-xsss mb-2">
+              Следующий Чек дня: {formattedNextPeriod}
+            </div>
+          )}
+
+          {/* --- Вкладки --- */}
           <div className="mb-2">
             <div className="d-flex justify-content-around border-bottom">
               <button className={`btn btn-sm p-2 ${activeTab === 'progress' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('progress')}>Трекер прогресса</button>
               <button className={`btn btn-sm p-2 ${activeTab === 'participants' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('participants')}>Участники</button>
             </div>
-            <div className="p-2">{activeTab === 'progress' ? <div className="text-muted font-xsss">Трекер прогресса (пусто)</div> : <div className="text-muted font-xsss">Участники (пусто)</div>}</div>
+            <div className="p-2">
+              {activeTab === 'progress'
+                ? <div className="text-muted font-xsss">Трекер прогресса (пусто)</div>
+                : <div className="text-muted font-xsss">Участники (пусто)</div>
+              }
+            </div>
           </div>
+
+          {/* --- Дата создания и меню --- */}
           <span className="text-muted small">Создано: {formatDateTime(challenge.created_at)}</span>
-          <div className="position-absolute bottom-0 end-0 mb-3 me-3">
+          <div className="position-absolute top-0 end-0 mt-3 me-3">
             <Ellipsis className="cursor-pointer text-muted" size={24} onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }} />
             {menuOpen && (
               <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
-                {isList && !isOwnProfile && <button className="dropdown-item" onClick={() => router.push(isOwnProfile ? `/user/${userId}` : `/profile/${userId}`)}>Посмотреть профиль</button>}
+                {isList && !isOwnProfile && (
+                  <button className="dropdown-item" onClick={() => router.push(isOwnProfile ? `/user/${userId}` : `/profile/${userId}`)}>
+                    Посмотреть профиль
+                  </button>
+                )}
                 <button className="dropdown-item" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/challenge/${challenge.id}`).then(() => alert('Ссылка скопирована!')); setMenuOpen(false);}}>Скопировать ссылку</button>
                 <button className="dropdown-item" onClick={() => {if (navigator.share) {navigator.share({ title: challenge.title, text: challenge.content, url: `${window.location.origin}/challenge/${challenge.id}` }).catch(console.error);} else alert('Поделиться недоступно'); setMenuOpen(false);}}>Отправить</button>
-                {isOwnProfile && isProfilePage && <button className="dropdown-item text-danger" onClick={handleDelete}>Удалить челлендж</button>}
+                {isOwnProfile && isProfilePage && (
+                  <button className="dropdown-item text-danger" onClick={handleDelete}>Удалить челлендж</button>
+                )}
               </div>
             )}
           </div>
