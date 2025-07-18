@@ -3,8 +3,8 @@ import './globals.scss';
 import type { Metadata, Viewport } from 'next';
 import { UserProvider, CreatePostModalProvider, CreateChallengeModalProvider } from '@/context/UserContext';
 import TelegramExpand from '@/components/TelegramExpand';
-import Createpost from '@/components/Createpost';
-import CreateChallenge from '@/components/Createchallenge';
+import CreatePromise from '@/components/CreatePromise';
+import CreateChallenge from '@/components/CreateChallenge';
 
 export const metadata: Metadata = {
   title: 'IPU App',
@@ -26,10 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <UserProvider>
           <CreatePostModalProvider>
+            <CreatePromise />
             <CreateChallengeModalProvider>
               <TelegramExpand />
               {children}
-              <Createpost />
               <CreateChallenge />
             </CreateChallengeModalProvider>
           </CreatePostModalProvider>

@@ -4,6 +4,7 @@
 // import { useState } from 'react'
 // import { CreateModalState, useCreateModal } from '@/hooks/useCreateModal'
 // import { X } from 'lucide-react'
+// import CreatePromise from '../CreatePromise';
 
 // interface Props {
 //   onSubmit: (post: any) => void

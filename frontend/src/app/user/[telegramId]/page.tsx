@@ -7,7 +7,7 @@ import { useUser } from '@/context/UserContext'
 import { supabase } from '@/lib/supabaseClient'
 import Header from '@/components/Header'
 import Appfooter from '@/components/Appfooter'
-import Postview from '@/components/Postview'
+import PromiseView from '@/components/PromiseView'
 import ChallengeView from '@/components/ChallengeView'
 import ProfilecardThree from '@/components/ProfilecardThree'
 import Profiledetail from '@/components/Profiledetail'
@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { UserData, PromiseData, ChallengeData, PostData } from '@/types'
 import { useUserData } from '@/hooks/useUserData'
 import usePromiseActions from '@/hooks/usePromiseActions'
+import { usePromiseApi } from '@/hooks/usePromiseApi';
 
 // type guards
 function isPromiseData(post: PostData): post is PromiseData {
@@ -44,11 +45,36 @@ export default function UserProfile() {
   const { userData, isLoading: userLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId)
   const isOwn = ctxId === telegramId
 
-  const { handleSubscribe, handleDelete, handleUpdate } = usePromiseActions(
+  const updatePosts = (
+    post: PromiseData | ChallengeData,
+    eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+  ) => {
+    setAllPosts((prev) => {
+      let list = [...prev]
+
+      if (eventType === 'INSERT') {
+        list = [post, ...list]
+      } else if (eventType === 'UPDATE') {
+        list = list.map((p) => (p.id === post.id ? post : p))
+      } else {
+        list = list.filter((p) => p.id !== post.id)
+      }
+
+      return list.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      )
+    })
+  }
+
+  const { handleSubscribe } = usePromiseActions(
     telegramId,
     setLocalUser,
     setError
   )
+
+  const { handleDelete, handleUpdate } = usePromiseApi(updatePosts, setError);
 
   useEffect(() => {
     if (userData) setLocalUser(userData)
@@ -140,29 +166,6 @@ export default function UserProfile() {
     }
   }, [telegramId])
 
-  const updatePosts = (
-    post: PromiseData | ChallengeData,
-    eventType: 'INSERT' | 'UPDATE' | 'DELETE'
-  ) => {
-    setAllPosts((prev) => {
-      let list = [...prev]
-
-      if (eventType === 'INSERT') {
-        list = [post, ...list]
-      } else if (eventType === 'UPDATE') {
-        list = list.map((p) => (p.id === post.id ? post : p))
-      } else {
-        list = list.filter((p) => p.id !== post.id)
-      }
-
-      return list.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() -
-          new Date(a.created_at).getTime()
-      )
-    })
-  }
-
   const handleChallengeUpdate = (updated: ChallengeData) => {
     updatePosts(updated, 'UPDATE')
   }
@@ -240,7 +243,7 @@ export default function UserProfile() {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                        <Postview
+                        <PromiseView
                           promise={post}
                           onToggle={() =>
                             setOpenPostId(openPostId === post.id ? null : post.id)

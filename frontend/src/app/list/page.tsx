@@ -7,7 +7,7 @@ import { usePublicPromises } from '@/hooks/usePublicPromises';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
-import Postview from '@/components/Postview';
+import PromiseView from '@/components/PromiseView';
 import ChallengeView from '@/components/ChallengeView';
 import { PromiseData, ChallengeData } from '@/types';
 
@@ -79,7 +79,7 @@ export default function ListPage() {
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
                         {isPromise ? (
-                          <Postview
+                          <PromiseView
                             promise={post as PromiseData}
                             onToggle={() => toggleOpen(post.id)}
                             isOpen={openPromiseId === post.id}

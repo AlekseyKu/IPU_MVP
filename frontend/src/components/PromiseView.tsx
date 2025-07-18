@@ -1,10 +1,9 @@
-// frontend\src\components\Postview.tsx
+// frontend\src\components\PromiseView.tsx
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
 import { PromiseData } from '@/types';
-import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -23,7 +22,7 @@ interface PostviewProps {
   userName?: string;
 }
 
-const Postview: React.FC<PostviewProps> = ({
+const PromiseView: React.FC<PostviewProps> = ({
   promise,
   onToggle,
   isOpen,
@@ -31,61 +30,34 @@ const Postview: React.FC<PostviewProps> = ({
   onDelete,
   isOwnProfile,
   isList = false,
-  isProfilePage = false, // Значение по умолчанию
+  isProfilePage = false,
   avatarUrl,
   userId,
   userName
 }) => {
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [localPromise, setLocalPromise] = useState<PromiseData>(promise);
   const router = useRouter();
 
-  useEffect(() => {
-    const subscription = supabase
-      .channel(`promise-update-${id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'promises',
-        filter: `id=eq.${id}`,
-      }, (payload) => {
-        const updated = payload.new as PromiseData;
-        setLocalPromise(updated);
-        onUpdate(updated);
-      })
-      .subscribe();
+  // Определяем mediaType по расширению файла
+  // let mediaType: string | null = null;
+  // if (media_url) {
+  //   const ext = media_url.split('.').pop()?.toLowerCase();
+  //   if (ext && ['mp4', 'webm', 'ogg'].includes(ext)) mediaType = 'video';
+  //   else if (ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) mediaType = 'image';
+  // }
 
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [id, onUpdate]);
-
-  const handleComplete = async () => {
+  const handleComplete = () => {
     if (!id || !isOwnProfile) return;
-    const { error } = await supabase
-      .from('promises')
-      .update({ is_completed: true })
-      .eq('id', id);
-    if (!error) {
-      setLocalPromise({ ...localPromise, is_completed: true });
-      onUpdate({ ...localPromise, is_completed: true });
-    } else {
-      console.error('Error completing promise:', error);
-    }
+    onUpdate({ ...promise, is_completed: true });
     setMenuOpen(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id || !isOwnProfile) return;
     if (confirm('Вы уверены, что хотите удалить это обещание?')) {
-      const { error } = await supabase.from('promises').delete().eq('id', id);
-      if (!error) {
-        onDelete(id);
-        setMenuOpen(false);
-      } else {
-        console.error('Error deleting promise:', error);
-      }
+      onDelete(id);
+      setMenuOpen(false);
     }
   };
 
@@ -97,8 +69,8 @@ const Postview: React.FC<PostviewProps> = ({
 
   const share = () => {
     const shareData = {
-      title: localPromise.title,
-      text: localPromise.content,
+      title: promise.title,
+      text: promise.content,
       url: `${window.location.origin}/promise/${id}`,
     };
     if (navigator.share) {
@@ -109,10 +81,10 @@ const Postview: React.FC<PostviewProps> = ({
     setMenuOpen(false);
   };
 
-  const statusText = localPromise.is_completed ? 'Завершено' : 'Активно';
-  const Icon = localPromise.is_completed ? CircleStop : CirclePlay;
-  const iconColor = localPromise.is_completed ? 'text-grey' : 'text-primary';
-  const PublicIcon = localPromise.is_public ? Globe : GlobeLock;
+  const statusText = is_completed ? 'Завершено' : 'Активно';
+  const Icon = is_completed ? CircleStop : CirclePlay;
+  const iconColor = is_completed ? 'text-grey' : 'text-primary';
+  const PublicIcon = is_public ? Globe : GlobeLock;
 
   const [mediaType, setMediaType] = useState<string | null>(null);
 
@@ -128,6 +100,7 @@ const Postview: React.FC<PostviewProps> = ({
         console.error('Error determining media type:', err);
       });
   }, [media_url]);
+
 
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
@@ -151,7 +124,7 @@ const Postview: React.FC<PostviewProps> = ({
           <span className="text-dark font-xs mb-1">{title}</span>
           {isOwnProfile && isProfilePage && ( // Показываем только на странице профиля
             <div className="d-flex justify-content-end align-items-center mb-1">
-              <span className="text-muted font-xssss me-1">{localPromise.is_public ? 'Публичное' : 'Личное'}</span>
+              <span className="text-muted font-xssss me-1">{is_public ? 'Публичное' : 'Личное'}</span>
               <PublicIcon className="w-2 h-2 text-muted" />
             </div>
           )}
@@ -174,6 +147,7 @@ const Postview: React.FC<PostviewProps> = ({
             <div className="mb-3">
               {mediaType?.startsWith('video') ? (
                 <video src={media_url} controls className="w-100 rounded" style={{ backgroundColor: '#000' }} />
+
               ) : (
                 <img src={media_url} alt="media" className="w-100 rounded" style={{ objectFit: 'cover' }} />
               )}
@@ -201,7 +175,7 @@ const Postview: React.FC<PostviewProps> = ({
                     Посмотреть профиль
                   </button>
                 )}
-                {isOwnProfile && isProfilePage && !localPromise.is_completed && (
+                {isOwnProfile && isProfilePage && !is_completed && (
                   <button className="dropdown-item text-accent" onClick={handleComplete}>
                     Завершить обещание
                   </button>
@@ -222,4 +196,4 @@ const Postview: React.FC<PostviewProps> = ({
   );
 };
 
-export default Postview;
+export default PromiseView;

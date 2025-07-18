@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
 import ProfilecardThree from '@/components/ProfilecardThree';
 import Profiledetail from '@/components/Profiledetail';
-import Postview from '@/components/Postview';
+import PromiseView from '@/components/PromiseView';
 import Load from '@/components/Load';
 import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
@@ -128,7 +128,7 @@ export default function ProfilePage() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
-                      <Postview
+                      <PromiseView
                         promise={promise}
                         onToggle={() =>
                           setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)

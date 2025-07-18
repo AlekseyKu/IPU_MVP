@@ -36,44 +36,5 @@ export default function usePromiseActions(
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase.from('promises').delete().eq('id', id);
-      if (error) throw error;
-
-      setUserData((prev) =>
-        prev ? { ...prev, promises: Math.max(0, (prev.promises ?? 0) - 1) } : prev
-      );
-    } catch (error) {
-      setError('Error updating promises in DB');
-      console.error('Error:', error);
-    }
-  };
-
-  const handleUpdate = async (updatedPromise: PromiseData) => {
-    try {
-      const { error } = await supabase
-        .from('promises')
-        .update(updatedPromise)
-        .eq('id', updatedPromise.id);
-
-      if (error) throw error;
-
-      setUserData((prev) =>
-        prev
-          ? {
-              ...prev,
-              promises_done: updatedPromise.is_completed
-                ? (prev.promises_done ?? 0) + 1
-                : Math.max(0, (prev.promises_done ?? 1) - 1),
-            }
-          : prev
-      );
-    } catch (error) {
-      setError('Error updating promises_done in DB');
-      console.error('Error:', error);
-    }
-  };
-
-  return { handleSubscribe, handleDelete, handleUpdate };
+  return { handleSubscribe };
 }

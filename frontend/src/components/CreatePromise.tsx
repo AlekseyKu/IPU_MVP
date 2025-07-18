@@ -1,48 +1,67 @@
+// frontend\src\components\CreatePromise.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { useUser, useCreateChallengeModal } from '@/context/UserContext'
+import { useUser, useCreatePostModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { usePromiseApi } from '@/hooks/usePromiseApi';
 
-const CreateChallenge: React.FC = () => {
-  const { isCreateChallengeOpen, setIsCreateChallengeOpen } = useCreateChallengeModal()
+const CreatePromise: React.FC = () => {
+  const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
   const { telegramId } = useUser()
-
   const [title, setTitle] = useState('')
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
-  const [totalReports, setTotalReports] = useState<string>('') // empty for placeholder
-  const [totalReportsError, setTotalReportsError] = useState<string | null>(null)
+  const [deadline, setDeadline] = useState('')
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isPublic, setIsPublic] = useState(true)
+  const [deadlineError, setDeadlineError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [mediaType, setMediaType] = useState<string | null>(null);
+
+  // Локальный updatePosts-заглушка, если компонент используется отдельно
+  const updatePosts = () => {};
+  const setError = (msg: string) => { console.error(msg); };
+  const { handleCreate } = usePromiseApi(updatePosts, setError);
 
   useEffect(() => {
-    if (isCreateChallengeOpen) {
+    if (isCreatePostOpen) {
       setTitle('')
-      setFrequency('daily')
-      setTotalReports('')
+      setDeadline('')
       setContent('')
       setMedia(null)
       setPreviewUrl(null)
-      setTotalReportsError(null)
+      setIsPublic(true)
+      setDeadlineError(null)
     }
-  }, [isCreateChallengeOpen])
+  }, [isCreatePostOpen])
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    fetch(previewUrl, { method: 'HEAD' })
+      .then((res) => {
+        const type = res.headers.get('Content-Type');
+        if (type) setMediaType(type);
+      })
+      .catch((err) => {
+        console.error('Error determining media type:', err);
+      });
+  }, [previewUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telegramId) return
 
-    const numericReports = Number(totalReports)
-    if (isNaN(numericReports) || numericReports < 1) {
-      setTotalReportsError('Количество отчетов должно быть не менее 1.')
+    const now = new Date()
+    if (new Date(deadline) <= now) {
+      setDeadlineError('Дедлайн должен быть в будущем.')
       return
     }
 
-    setTotalReportsError(null)
+    setDeadlineError(null)
     setLoading(true)
     try {
       let mediaUrl = null
@@ -50,7 +69,7 @@ const CreateChallenge: React.FC = () => {
         const formData = new FormData()
         formData.append('file', media)
         formData.append('telegramId', telegramId.toString())
-        const response = await fetch('/api/challenges/upload', {
+        const response = await fetch('/api/promises/upload', {
           method: 'POST',
           body: formData,
         })
@@ -59,21 +78,17 @@ const CreateChallenge: React.FC = () => {
         mediaUrl = data.url
       }
 
-      const { error } = await supabase.from('challenges').insert({
+      const created = await handleCreate({
         user_id: telegramId,
         title,
-        frequency,
-        total_reports: numericReports,
+        deadline,
         content,
         media_url: mediaUrl,
-        created_at: new Date().toISOString(),
-        is_public: true,
-      })
-
-      if (error) throw error
-      setIsCreateChallengeOpen(false)
+        is_public: isPublic
+      });
+      if (created) setIsCreatePostOpen(false)
     } catch (error) {
-      console.error('Error saving challenge:', error)
+      console.error('Error saving promise:', error)
     } finally {
       setLoading(false)
     }
@@ -96,10 +111,10 @@ const CreateChallenge: React.FC = () => {
   }
 
   const handleClose = () => {
-    setIsCreateChallengeOpen(false)
+    setIsCreatePostOpen(false)
   }
 
-  if (!isCreateChallengeOpen || typeof window === 'undefined') return null
+  if (!isCreatePostOpen || typeof window === 'undefined') return null
 
   return ReactDOM.createPortal(
     <div
@@ -139,18 +154,17 @@ const CreateChallenge: React.FC = () => {
             background: 'none',
             border: 'none',
           }}
-          aria-label="Закрыть"
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Создать челлендж</h2>
-        <p className="text-muted mb-3">Опишите свой челлендж, установите частоту и количество отчетов</p>
+        <h2 className="fw-bold mb-3">Создать обещание</h2>
+        <p className="text-muted mb-3">Опишите свое обещание и установите дедлайн при необходимости</p>
 
         {previewUrl && (
           <div className="mb-2 position-relative">
-            {previewUrl.endsWith('.mp4') ? (
+            {mediaType?.startsWith('video') ? (
               <video controls className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }}>
-                <source src={previewUrl} type="video/mp4" />
+                <source src={previewUrl} type={mediaType} />
               </video>
             ) : (
               <img src={previewUrl} alt="Preview" className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }} />
@@ -159,7 +173,6 @@ const CreateChallenge: React.FC = () => {
               onClick={handleRemoveMedia}
               className="btn btn-sm btn-danger position-absolute"
               style={{ top: '5px', right: '5px' }}
-              aria-label="Удалить медиа"
             >
               <X className="w-4 h-4" />
             </button>
@@ -168,57 +181,55 @@ const CreateChallenge: React.FC = () => {
 
         <form onSubmit={handleSubmit}>
           <input
-            id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Название челленджа"
+            placeholder="Название обещания"
             className="form-control mb-2"
             required
           />
 
-          <select
-            id="frequency"
-            value={frequency}
-            onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
-            className="form-control mb-2"
-            required
-            style={{ lineHeight: 1.5 }}
-            // style={{ height: '48px', display: 'flex', alignItems: 'center' }}
-          >
-            <option value="daily">Ежедневно</option>
-            <option value="weekly">Еженедельно</option>
-            <option value="monthly">Ежемесячно</option>
-          </select>
+          <div className="form-check form-switch mb-2">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              id="isPublic"
+            />
+            <label className="form-check-label font-xsss" htmlFor="isPublic">
+              {isPublic ? 'Публичное' : 'Личное'}
+            </label>
+          </div>
 
           <input
-            id="quantity-report"
-            type="number"
-            value={totalReports}
-            onChange={(e) => setTotalReports(e.target.value)}
-            placeholder="Количество отчетов"
+            type="datetime-local"
+            value={deadline}
+            onChange={(e) => {
+              setDeadline(e.target.value)
+              setDeadlineError(null)
+            }}
             className="form-control mb-2"
-            min="1"
             required
           />
-          {totalReportsError && (
-            <div className="text-danger font-xsss mb-2">{totalReportsError}</div>
+          {deadlineError && (
+            <div className="text-danger font-xsss mb-2">
+              {deadlineError}
+            </div>
           )}
 
           <textarea
-            id="description"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Введите описание челленджа"
-            className="form-control mb-2 lh-30"
+            placeholder="Введите текст обещания"
+            className="form-control mb-3 lh-30"
             style={{ height: '200px' }}
             required
           />
 
           <div className="mb-3">
-            <label htmlFor="media-upload" className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+            <label className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
               <input
-                id="media-upload"
                 type="file"
                 accept="image/*,video/*"
                 onChange={handleFileChange}
@@ -245,4 +256,4 @@ const CreateChallenge: React.FC = () => {
   )
 }
 
-export default CreateChallenge
+export default CreatePromise;
