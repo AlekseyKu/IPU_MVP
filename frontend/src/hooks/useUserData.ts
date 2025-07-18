@@ -1,26 +1,7 @@
 // frontend/src/hooks/useUserData.ts
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-interface UserData {
-  telegram_id: number;
-  username: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  subscribers?: number;
-  promises?: number;
-  promises_done?: number;
-  stars?: number;
-  hero_img_url?: string;
-  avatar_img_url?: string;
-  about?: string;
-  address?: string;
-}
+import { supabase } from '@/lib/supabaseClient';
+import { UserData } from '@/types';
 
 export const useUserData = (telegramId: number) => {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -38,7 +19,8 @@ export const useUserData = (telegramId: number) => {
       }
 
       try {
-        console.log(`Fetching user data for telegramId: ${telegramId}`);
+        // Можно оставить только для отладки
+        // console.log(`Fetching user data for telegramId: ${telegramId}`);
         const { data, error } = await supabase
           .from('users')
           .select('telegram_id, username, first_name, last_name, subscribers, promises, promises_done, stars, hero_img_url, avatar_img_url, about, address')
@@ -49,7 +31,6 @@ export const useUserData = (telegramId: number) => {
           console.error('Error fetching user data:', error.message);
           setUserData(null);
         } else if (data) {
-          console.log('Fetched user data:', data);
           setUserData({
             telegram_id: data.telegram_id,
             username: data.username || '',

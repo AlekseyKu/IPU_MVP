@@ -1,9 +1,9 @@
-// frontend/src/hooks/usePublicPromises.ts
+// frontend/src/hooks/usePublicPosts.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { PromiseData, ChallengeData, User } from '@/types';
 
-export function usePublicPromises(currentUserId: number | null) {
+export function usePublicPosts(currentUserId: number | null) {
   const [posts, setPosts] = useState<(PromiseData | ChallengeData)[]>([]); // Объединяем promises и challenges
   const [users, setUsers] = useState<Record<number, User>>({});
   const [subscriptions, setSubscriptions] = useState<number[]>([]);

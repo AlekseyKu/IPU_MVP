@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
-import { usePublicPromises } from '@/hooks/usePublicPromises';
+import { usePublicPosts } from '@/hooks/usePublicPosts';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
@@ -22,7 +22,7 @@ function isChallengeData(post: any): post is ChallengeData {
 
 export default function ListPage() {
   const { telegramId: currentUserId } = useUser();
-  const { posts, users, subscriptions, isLoading } = usePublicPromises(currentUserId);
+  const { posts, users, subscriptions, isLoading } = usePublicPosts(currentUserId);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [showSubscribedOnly, setShowSubscribedOnly] = useState(false);
 

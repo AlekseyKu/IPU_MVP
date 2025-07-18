@@ -2,13 +2,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Ellipsis, Globe, GlobeLock } from 'lucide-react';
+import { Ellipsis, Globe, GlobeLock, CirclePlay, CircleStop, } from 'lucide-react';
 import { ChallengeData } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
+import { useChallengeApi } from '@/hooks/useChallengeApi';
 
 const frequencyMap: Record<string, string> = {
   daily: 'Ежедневный',
@@ -48,6 +49,9 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const renderCount = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'progress' | 'participants'>('progress');
+  const [mediaType, setMediaType] = useState<string | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
+  const { handleDeleteChallenge } = useChallengeApi();
 
   useEffect(() => {
     renderCount.current += 1;
@@ -70,9 +74,31 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     };
   }, [challenge.id, onUpdate]);
 
+  useEffect(() => {
+    if (!challenge.media_url) return;
+    fetch(challenge.media_url, { method: 'HEAD' })
+      .then((res) => {
+        const type = res.headers.get('Content-Type');
+        if (type) setMediaType(type);
+      })
+      .catch((err) => {
+        console.error('Error determining media type:', err);
+      });
+  }, [challenge.media_url]);
+
+  useEffect(() => {
+    setShowVideo(false);
+  }, [challenge.media_url]);
+
   const now = useMemo(() => new Date(), []);
 
   const isStarted = challenge.start_at && new Date(challenge.start_at) <= now;
+
+  // статус челленджа
+  const is_completed = challenge.is_completed;
+  const statusText = is_completed ? 'Завершено' : 'Челлендж';
+  const Icon = is_completed ? CircleStop : CirclePlay;
+  const iconColor = is_completed ? 'text-grey' : 'text-secondary';
 
   const isCheckDayActive = useMemo(() => {
     return isStarted && challenge.report_periods?.some((period, index) => {
@@ -145,6 +171,18 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   }, [challenge, isOwnProfile, userId, isLastPeriod, onUpdate]);
 
+  const handleDelete = async () => {
+    if (!isOwnProfile || !isProfilePage) return;
+    if (confirm('Вы уверены, что хотите удалить этот челлендж?')) {
+      const result = await handleDeleteChallenge(challenge.id);
+      if (result.success) {
+        onDelete(challenge.id);
+      } else {
+        alert(result.error);
+      }
+    }
+  };
+
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
       {isList && userId && (
@@ -159,19 +197,38 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{challenge.title}</span>
           {isOwnProfile && !isList && <div className="d-flex justify-content-end align-items-center mb-1"><span className="text-muted font-xssss me-1">{challenge.is_public ? 'Публичное' : 'Личное'}</span><GlobeLock className="w-2 h-2 text-muted" /></div>}
-          {challenge.frequency && challenge.total_reports && <div className="text-muted font-xsss mb-1">{frequencyMap[challenge.frequency]} челлендж, Прогресс: {challenge.completed_reports}/{challenge.total_reports}</div>}
+          {challenge.frequency && challenge.total_reports && 
+            <div className="d-flex justify-content-between align-items-center">
+              <div className="text-muted font-xsss mb-1">
+              {frequencyMap[challenge.frequency]} <br /> 
+              Прогресс: {challenge.completed_reports}/{challenge.total_reports}
+              </div>
+              <div className="d-flex align-items-center align-self-end text-nowrap ms-2">
+                <span className="text-muted font-xssss me-1">{statusText}</span>
+                <Icon className={`w-2 h-2 ${iconColor}`} />
+              </div>
+            </div>
+          }
         </div>
       </div>
       {isOpen && (
         <div className="mt-3" onClick={e => e.stopPropagation()}>
           <p className="text-muted lh-sm small mb-2">{challenge.content}</p>
-          {challenge.media_url && <div className="mb-3"><img src={challenge.media_url} alt="media" className="w-100 rounded" /></div>}
+          {challenge.media_url && (
+            <div className="mb-2">
+              {mediaType?.startsWith('video') ? (
+                <video src={challenge.media_url} controls className="w-100 rounded" style={{ backgroundColor: '#000' }} />
+              ) : (
+                <img src={challenge.media_url} alt="media" className="w-100 rounded" />
+              )}
+            </div>
+          )}
           <div className="d-flex justify-content-center mb-2">
             {!isStarted ? (
-              <button className="btn w-50 btn-outline-primary me-2" onClick={handleStart} disabled={challenge.is_completed}>Начать</button>
+              <button className="btn w-50 btn-outline-primary" onClick={handleStart} disabled={challenge.is_completed}>Начать</button>
             ) : (
               <>
-                {!isLastPeriod && <button className={`btn w-50 mt-3 ${!isCheckDayActive || challenge.completed_reports >= challenge.total_reports ? 'btn disabled' : 'btn-outline-primary'}`} onClick={handleCheckDay} disabled={!isCheckDayActive || challenge.completed_reports >= challenge.total_reports}>Чек дня</button>}
+                {!isLastPeriod && <button className={`btn w-50 ${!isCheckDayActive || challenge.completed_reports >= challenge.total_reports ? 'btn disabled' : 'btn-outline-primary'}`} onClick={handleCheckDay} disabled={!isCheckDayActive || challenge.completed_reports >= challenge.total_reports}>Чек дня</button>}
                 {isLastPeriod && <button className="btn w-50 btn-outline-primary" onClick={handleFinish} disabled={challenge.is_completed}>Завершить</button>}
               </>
             )}
@@ -192,7 +249,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                 {isList && !isOwnProfile && <button className="dropdown-item" onClick={() => router.push(isOwnProfile ? `/user/${userId}` : `/profile/${userId}`)}>Посмотреть профиль</button>}
                 <button className="dropdown-item" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/challenge/${challenge.id}`).then(() => alert('Ссылка скопирована!')); setMenuOpen(false);}}>Скопировать ссылку</button>
                 <button className="dropdown-item" onClick={() => {if (navigator.share) {navigator.share({ title: challenge.title, text: challenge.content, url: `${window.location.origin}/challenge/${challenge.id}` }).catch(console.error);} else alert('Поделиться недоступно'); setMenuOpen(false);}}>Отправить</button>
-                {isOwnProfile && isProfilePage && <button className="dropdown-item text-danger" onClick={() => {if (confirm('Вы уверены, что хотите удалить этот челлендж?')) {fetch(`/api/challenges?id=${challenge.id}`, {method: 'DELETE'}).then(() => onDelete(challenge.id)); setMenuOpen(false);}}}>Удалить челлендж</button>}
+                {isOwnProfile && isProfilePage && <button className="dropdown-item text-danger" onClick={handleDelete}>Удалить челлендж</button>}
               </div>
             )}
           </div>

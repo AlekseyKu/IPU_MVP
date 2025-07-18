@@ -15,7 +15,7 @@ import Load from '@/components/Load'
 import { AnimatePresence, motion } from 'framer-motion'
 import { UserData, PromiseData, ChallengeData, PostData } from '@/types'
 import { useUserData } from '@/hooks/useUserData'
-import usePromiseActions from '@/hooks/usePromiseActions'
+import useUserSubscription from '@/hooks/useUserSubscription'
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 
 // type guards
@@ -68,7 +68,7 @@ export default function UserProfile() {
     })
   }
 
-  const { handleSubscribe } = usePromiseActions(
+  const { handleSubscribe } = useUserSubscription(
     telegramId,
     setLocalUser,
     setError

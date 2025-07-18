@@ -1,3 +1,4 @@
+// frontend\src\components\ChallengeCreate.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -5,8 +6,9 @@ import ReactDOM from 'react-dom'
 import { useUser, useCreateChallengeModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { useChallengeApi } from '@/hooks/useChallengeApi';
 
-const CreateChallenge: React.FC = () => {
+const ChallengeCreate: React.FC = () => {
   const { isCreateChallengeOpen, setIsCreateChallengeOpen } = useCreateChallengeModal()
   const { telegramId } = useUser()
 
@@ -19,6 +21,8 @@ const CreateChallenge: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { handleCreateChallenge } = useChallengeApi();
 
   useEffect(() => {
     if (isCreateChallengeOpen) {
@@ -59,19 +63,15 @@ const CreateChallenge: React.FC = () => {
         mediaUrl = data.url
       }
 
-      const { error } = await supabase.from('challenges').insert({
+      const result = await handleCreateChallenge({
         user_id: telegramId,
         title,
         frequency,
         total_reports: numericReports,
         content,
         media_url: mediaUrl,
-        created_at: new Date().toISOString(),
-        is_public: true,
-      })
-
-      if (error) throw error
-      setIsCreateChallengeOpen(false)
+      });
+      if (result.success) setIsCreateChallengeOpen(false)
     } catch (error) {
       console.error('Error saving challenge:', error)
     } finally {
@@ -245,4 +245,4 @@ const CreateChallenge: React.FC = () => {
   )
 }
 
-export default CreateChallenge
+export default ChallengeCreate

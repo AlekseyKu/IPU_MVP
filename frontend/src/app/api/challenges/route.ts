@@ -57,11 +57,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: 'Challenge with this title already exists' }, { status: 400 });
     }
 
-    const now = new Date('2025-07-17T14:06:00+07:00');
+    const now = new Date();
     const frequencyInterval = { daily: 1, weekly: 7, monthly: 30 } as const;
     const interval = frequencyInterval[frequency as keyof typeof frequencyInterval];
-    const newReportPeriods = generateReportPeriods(now, total_reports, interval);
-    const newDeadlinePeriod = newReportPeriods[newReportPeriods.length - 1];
+    // Убираем генерацию report_periods, deadline_period, start_at
+    // const newReportPeriods = generateReportPeriods(now, total_reports, interval);
+    // const newDeadlinePeriod = newReportPeriods[newReportPeriods.length - 1];
 
     const { data, error: insertError } = await supabase.from('challenges').insert({
       user_id,
@@ -72,9 +73,9 @@ export async function POST(request: Request) {
       content,
       media_url,
       created_at: now.toISOString(),
-      start_at: now.toISOString(),
-      report_periods: newReportPeriods,
-      deadline_period: newDeadlinePeriod,
+      // start_at: null, // если поле не nullable, можно явно указать null
+      // report_periods: null,
+      // deadline_period: null,
       completed_reports: 0,
       is_public: true,
       is_completed: false,
@@ -85,9 +86,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: 'Challenge created successfully',
       id: data.id,
-      start_at: now.toISOString(),
-      report_periods: newReportPeriods,
-      deadline_period: newDeadlinePeriod,
+      // start_at, report_periods, deadline_period не возвращаем
       completed_reports: 0,
     }, { status: 201 });
   } catch (error: unknown) {
@@ -117,7 +116,7 @@ export async function PUT(request: Request) {
     if (challenge.error) return NextResponse.json({ detail: 'Challenge not found' }, { status: 404 });
     if (challenge.data.user_id !== user_id) return NextResponse.json({ detail: 'Unauthorized' }, { status: 403 });
 
-    const now = new Date('2025-07-17T14:06:00+07:00');
+    const now = new Date();
 
     if (action === 'start') {
       if (challenge.data.start_at) return NextResponse.json({ detail: 'Challenge already started' }, { status: 400 });
@@ -219,4 +218,20 @@ export async function PUT(request: Request) {
     return NextResponse.json({ detail: `Server error: ${message}` }, { status: 500 });
   }
   // БАЗА
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ detail: 'Missing challenge id' }, { status: 400 });
+
+    const { error } = await supabase.from('challenges').delete().eq('id', id);
+    if (error) throw error;
+
+    return NextResponse.json({ message: 'Challenge deleted successfully' }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ detail: `Server error: ${message}` }, { status: 500 });
+  }
 }

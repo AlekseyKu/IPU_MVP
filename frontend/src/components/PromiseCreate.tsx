@@ -1,14 +1,14 @@
-// frontend\src\components\CreatePromise.tsx
+// frontend\src\components\PromiseCreate.tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { useUser, useCreatePostModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
+// import { supabase } from '@/lib/supabaseClient'
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 
-const CreatePromise: React.FC = () => {
+const PromiseCreate: React.FC = () => {
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
   const { telegramId } = useUser()
   const [title, setTitle] = useState('')
@@ -78,10 +78,13 @@ const CreatePromise: React.FC = () => {
         mediaUrl = data.url
       }
 
+      // Преобразуем deadline в UTC-строку
+      const utcDeadline = new Date(deadline).toISOString();
+
       const created = await handleCreate({
         user_id: telegramId,
         title,
-        deadline,
+        deadline: utcDeadline,
         content,
         media_url: mediaUrl,
         is_public: isPublic
@@ -163,7 +166,7 @@ const CreatePromise: React.FC = () => {
         {previewUrl && (
           <div className="mb-2 position-relative">
             {mediaType?.startsWith('video') ? (
-              <video controls className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }}>
+              <video controls preload="none" className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }}>
                 <source src={previewUrl} type={mediaType} />
               </video>
             ) : (
@@ -256,4 +259,4 @@ const CreatePromise: React.FC = () => {
   )
 }
 
-export default CreatePromise;
+export default PromiseCreate;

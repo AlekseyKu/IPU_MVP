@@ -1,9 +1,9 @@
-// hooks/usePromiseActions.ts
+// hooks/useUserSubscription.ts
 import { supabase } from '@/lib/supabaseClient';
 import { Dispatch, SetStateAction } from 'react';
 import { UserData, PromiseData } from '@/types';
 
-export default function usePromiseActions(
+export default function useUserSubscription(
   telegramId: number,
   setUserData: Dispatch<SetStateAction<UserData | null>>,
   setError: Dispatch<SetStateAction<string | null>>
