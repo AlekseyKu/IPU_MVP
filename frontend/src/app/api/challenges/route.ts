@@ -60,9 +60,6 @@ export async function POST(request: Request) {
     const now = new Date();
     const frequencyInterval = { daily: 1, weekly: 7, monthly: 30 } as const;
     const interval = frequencyInterval[frequency as keyof typeof frequencyInterval];
-    // Убираем генерацию report_periods, deadline_period, start_at
-    // const newReportPeriods = generateReportPeriods(now, total_reports, interval);
-    // const newDeadlinePeriod = newReportPeriods[newReportPeriods.length - 1];
 
     const { data, error: insertError } = await supabase.from('challenges').insert({
       user_id,
@@ -73,9 +70,6 @@ export async function POST(request: Request) {
       content,
       media_url,
       created_at: now.toISOString(),
-      // start_at: null, // если поле не nullable, можно явно указать null
-      // report_periods: null,
-      // deadline_period: null,
       completed_reports: 0,
       is_public: true,
       is_completed: false,
@@ -83,10 +77,12 @@ export async function POST(request: Request) {
 
     if (insertError) throw insertError;
 
+    // Увеличиваем счетчик promises
+    await supabase.rpc('increment_promises', { user_id });
+
     return NextResponse.json({
       message: 'Challenge created successfully',
       id: data.id,
-      // start_at, report_periods, deadline_period не возвращаем
       completed_reports: 0,
     }, { status: 201 });
   } catch (error: unknown) {
@@ -196,6 +192,8 @@ export async function PUT(request: Request) {
       }
 
       const newCompletedReports = challenge.data.completed_reports + (final_check ? 1 : 0);
+      const wasCompleted = challenge.data.is_completed;
+      
       await supabase
         .from('challenges')
         .update({
@@ -203,6 +201,11 @@ export async function PUT(request: Request) {
           is_completed: true,
         })
         .eq('id', id);
+
+      // Если челлендж стал выполненным, увеличиваем promises_done
+      if (!wasCompleted) {
+        await supabase.rpc('increment_promises_done', { user_id });
+      }
 
       return NextResponse.json({
         message: 'Challenge completed',
@@ -217,7 +220,6 @@ export async function PUT(request: Request) {
     console.error('Server error:', message);
     return NextResponse.json({ detail: `Server error: ${message}` }, { status: 500 });
   }
-  // БАЗА
 }
 
 export async function DELETE(request: Request) {
@@ -226,8 +228,28 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ detail: 'Missing challenge id' }, { status: 400 });
 
+    // Получаем user_id и is_completed по id
+    const { data: challengeData, error: selectError } = await supabase
+      .from('challenges')
+      .select('user_id, is_completed')
+      .eq('id', id)
+      .single();
+    
+    if (selectError || !challengeData) {
+      return NextResponse.json({ detail: 'Challenge not found' }, { status: 404 });
+    }
+    
+    const { user_id, is_completed } = challengeData;
+
     const { error } = await supabase.from('challenges').delete().eq('id', id);
     if (error) throw error;
+
+    // Уменьшаем счетчик promises
+    await supabase.rpc('decrement_promises', { user_id });
+    // Если челлендж был выполнен, уменьшаем promises_done
+    if (is_completed) {
+      await supabase.rpc('decrement_promises_done', { user_id });
+    }
 
     return NextResponse.json({ message: 'Challenge deleted successfully' }, { status: 200 });
   } catch (error: unknown) {

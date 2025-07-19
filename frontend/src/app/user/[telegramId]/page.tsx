@@ -174,15 +174,20 @@ export default function UserProfile() {
     return <Load />
   }
 
+  // клиентская обработка кол-ва обещаний/челленджей и выполненных обещаний/челленджей
   const fullName = `${localUser.first_name} ${localUser.last_name}`.trim()
   const promisesCount = allPosts.filter(isPromiseData).length
   const promisesDone = allPosts.filter((p) => isPromiseData(p) && p.is_completed).length
   const challengesCount = allPosts.filter(isChallengeData).length
-  const challengesDone = allPosts.filter(
-    (p) =>
-      isChallengeData(p) &&
-      p.completed_reports === p.total_reports
-  ).length
+  const challengesDone = allPosts.filter((p) => isChallengeData(p) && p.completed_reports === p.total_reports).length
+
+  // серверная обраборка кол-ва обещаний/челленджей и выполненных обещаний/челленджей
+  // можно внедрить после добавления челленджей как отдельное поле в БД
+  // добавить подписку на обновление на клиенте
+  // const promisesCount = userData?.promises || 0
+  // const promisesDone = userData?.promises_done || 0
+  // const challengesCount = 0
+  // const challengesDone = 0
 
   return (
     <>

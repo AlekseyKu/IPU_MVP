@@ -53,6 +53,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const router = useRouter();
   const renderCount = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'progress' | 'participants'>('progress');
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [showVideo, setShowVideo] = useState(false);
@@ -63,6 +64,20 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     renderCount.current += 1;
     // console.log(`Render #${renderCount.current} with challenge id: ${challenge.id}, completed_reports: ${challenge.completed_reports}`);
   }, [challenge.id, challenge.completed_reports]);
+
+  // --- Закрытие меню при клике вне него ---
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   // Realtime подписка на обновления челленджа
   useEffect(() => {
@@ -283,7 +298,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
 
           {/* --- Дата создания и меню --- */}
           <span className="text-muted small">Создано: {formatDateTime(challenge.created_at)}</span>
-          <div className="position-absolute top-0 end-0 mt-3 me-3">
+          <div ref={menuRef} className="position-absolute top-0 end-0 mt-3 me-3">
             <Ellipsis className="cursor-pointer text-muted" size={24} onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }} />
             {menuOpen && (
               <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">

@@ -2,7 +2,7 @@
 'use client'
 
 // --- Импорты ---
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
 import { PromiseData } from '@/types';
 import { formatDateTime } from '@/utils/formatDate';
@@ -41,8 +41,23 @@ const PromiseView: React.FC<PostviewProps> = ({
   // --- Состояния и хуки ---
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise;
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [mediaType, setMediaType] = useState<string | null>(null);
   const router = useRouter();
+
+  // --- Закрытие меню при клике вне него ---
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   // --- Определение типа медиа ---
   useEffect(() => {
@@ -160,7 +175,7 @@ const PromiseView: React.FC<PostviewProps> = ({
           <span className="text-muted small">Создано: {formatDateTime(created_at)}</span>
 
           {/* --- Меню --- */}
-          <div className="position-absolute top-0 end-0 mt-3 me-3">
+          <div ref={menuRef} className="position-absolute top-0 end-0 mt-3 me-3">
             <Ellipsis
               className="cursor-pointer text-muted"
               size={24}
