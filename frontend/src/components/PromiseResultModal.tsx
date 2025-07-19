@@ -1,5 +1,5 @@
 // frontend\src\components\PromiseResultModal.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Heart, Share2 } from 'lucide-react';
 
@@ -11,6 +11,9 @@ interface PromiseResultModalProps {
 }
 
 const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result_content, result_media_url, completed_at }) => {
+  
+  const [mediaType, setMediaType] = useState<string | null>(null);
+
   // Блокируем прокрутку body при открытом модале
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -30,6 +33,20 @@ const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result
     }
   };
 
+  // --- Определение типа медиа ---
+  useEffect(() => {
+    if (!result_media_url) return;
+    fetch(result_media_url, { method: 'HEAD' })
+      .then((res) => {
+        const type = res.headers.get('Content-Type');
+        if (type) setMediaType(type);
+      })
+      .catch((err) => {
+        console.error('Error determining media type:', err);
+      });
+  }, [result_media_url]);
+  
+  // --- JSX ---
   return ReactDOM.createPortal(
     <div style={{
       position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
@@ -63,10 +80,8 @@ const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result
         )}
         {result_media_url && (
           <div className="mb-3">
-            {result_media_url.endsWith('.mp4') ? (
-              <video controls className="w-100 rounded" style={{ maxHeight: '100vh', objectFit: 'cover' }}>
-                <source src={result_media_url} type="video/mp4" />
-              </video>
+            {mediaType?.startsWith('video') ? (
+              <video src={result_media_url} controls className="w-100 rounded" style={{ maxHeight: '100vh', objectFit: 'cover' }} />
             ) : (
               <img src={result_media_url} alt="Результат" className="w-100 rounded" style={{ maxHeight: '100vh', objectFit: 'cover' }} />
             )}

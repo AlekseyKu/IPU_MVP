@@ -89,7 +89,8 @@ const PromiseView: React.FC<PostviewProps> = ({
         });
         if (!response.ok) throw new Error('Ошибка загрузки файла');
         const data = await response.json();
-        result_media_url = data.url;
+        result_
+        _url = data.url;
       }
       // Завершаем обещание через handleCompletePromise
       const updated = await handleCompletePromise(
