@@ -184,12 +184,9 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   }, [challenge, isOwnProfile, userId, isLastPeriod, onUpdate]);
 
-  // handleDeleteChallenge теперь должен быть передан через пропсы или реализован в родителе
-  // Здесь оставляем вызов onDelete(challenge.id) после успешного удаления
   const handleDelete = async () => {
     if (!isOwnProfile || !isProfilePage) return;
     if (confirm('Вы уверены, что хотите удалить этот челлендж?')) {
-      // handleDeleteChallenge должен быть реализован в родителе и обновлять локальный стейт
       onDelete(challenge.id);
     }
   };

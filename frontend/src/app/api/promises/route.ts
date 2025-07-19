@@ -38,10 +38,18 @@ export async function PUT(request: NextRequest) {
     }
     // Получаем старое значение is_completed
     const { data: oldPromise } = await supabase.from('promises').select('is_completed, user_id').eq('id', updatedPromise.id).single();
-    const { error } = await supabase
+
+    // Формируем объект для обновления, поддерживая новые поля
+    const updateFields: any = { ...updatedPromise };
+    // Только разрешённые поля
+    const allowed = ['title','content','media_url','deadline','is_public','is_completed','result_content','result_media_url','completed_at'];
+    Object.keys(updateFields).forEach(key => { if (!allowed.includes(key)) delete updateFields[key]; });
+
+    const { error, data: updatedRows } = await supabase
       .from('promises')
-      .update(updatedPromise)
-      .eq('id', updatedPromise.id);
+      .update(updateFields)
+      .eq('id', updatedPromise.id)
+      .select();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -53,7 +61,7 @@ export async function PUT(request: NextRequest) {
     if (oldPromise && oldPromise.is_completed && !updatedPromise.is_completed) {
       await supabase.rpc('decrement_promises_done', { user_id: oldPromise.user_id });
     }
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, promise: updatedRows?.[0] });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }

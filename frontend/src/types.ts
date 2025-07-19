@@ -35,6 +35,9 @@ export interface PostData {
 
 export interface PromiseData extends PostData {
   deadline: string;
+  result_content?: string;      // завершение - текст
+  result_media_url?: string; // завершение - медиа
+  completed_at?: string;     // завершение - дата
 }
 
 export interface ChallengeData extends PostData {

@@ -56,5 +56,33 @@ export function usePromiseApi(
     }
   }; 
 
-  return { handleDelete, handleUpdate, handleCreate };
+  const handleCompletePromise = async (
+    id: string,
+    result_content: string,
+    result_media_url: string | null
+  ) => {
+    try {
+      const response = await fetch('/api/promises', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          is_completed: true,
+          result_content,
+          result_media_url,
+          completed_at: new Date().toISOString(),
+        }),
+      });
+      if (!response.ok) throw new Error('Ошибка завершения обещания');
+      const updated = await response.json();
+      updatePosts(updated.promise, 'UPDATE');
+      return updated.promise;
+    } catch (error) {
+      setError('Ошибка при завершении обещания');
+      console.error(error);
+      return null;
+    }
+  };
+
+  return { handleDelete, handleUpdate, handleCreate, handleCompletePromise };
 } 
