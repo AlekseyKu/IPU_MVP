@@ -17,6 +17,7 @@ import { UserData, PromiseData, ChallengeData, PostData } from '@/types'
 import { useUserData } from '@/hooks/useUserData'
 import useUserSubscription from '@/hooks/useUserSubscription'
 import { usePromiseApi } from '@/hooks/usePromiseApi';
+import { useChallengeApi } from '@/hooks/useChallengeApi';
 
 // type guards
 function isPromiseData(post: PostData): post is PromiseData {
@@ -75,6 +76,7 @@ export default function UserProfile() {
   )
 
   const { handleDelete, handleUpdate } = usePromiseApi(updatePosts, setError);
+  const { handleDeleteChallenge, handleUpdateChallenge } = useChallengeApi(updatePosts, setError);
 
   useEffect(() => {
     if (userData) setLocalUser(userData)
@@ -166,9 +168,9 @@ export default function UserProfile() {
     }
   }, [telegramId])
 
-  const handleChallengeUpdate = (updated: ChallengeData) => {
-    updatePosts(updated, 'UPDATE')
-  }
+  // const handleChallengeUpdate = (updated: ChallengeData) => {
+  //   updatePosts(updated, 'UPDATE')
+  // }
 
   if (isLoading || userLoading || !localUser) {
     return <Load />
@@ -278,8 +280,8 @@ export default function UserProfile() {
                             setOpenPostId(openPostId === post.id ? null : post.id)
                           }
                           isOpen={openPostId === post.id}
-                          onUpdate={handleChallengeUpdate}
-                          onDelete={handleDelete}
+                          onUpdate={handleUpdateChallenge}
+                          onDelete={handleDeleteChallenge}
                           isOwnProfile={isOwn}
                           avatarUrl={localUser.avatar_img_url || defaultAvatarImg}
                           userId={telegramId}

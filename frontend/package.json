@@ -1,6 +1,6 @@
 {
   "name": "react-bootstrap",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "private": true,
   "dependencies": {
     "@headlessui/react": "^2.2.2",

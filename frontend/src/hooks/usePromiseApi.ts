@@ -5,35 +5,6 @@ export function usePromiseApi(
   updatePosts: (post: PromiseData, eventType: 'INSERT' | 'UPDATE' | 'DELETE') => void,
   setError: (msg: string) => void
 ) {
-  const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch('/api/promises', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      if (!response.ok) throw new Error('Ошибка удаления');
-      updatePosts({ id } as PromiseData, 'DELETE');
-    } catch (error) {
-      setError('Ошибка при удалении обещания');
-      console.error('Error:', error);
-    }
-  };
-
-  const handleUpdate = async (updatedPromise: PromiseData) => {
-    try {
-      const response = await fetch('/api/promises', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedPromise),
-      });
-      if (!response.ok) throw new Error('Ошибка обновления');
-      updatePosts(updatedPromise, 'UPDATE');
-    } catch (error) {
-      setError('Ошибка при обновлении обещания');
-      console.error('Error:', error);
-    }
-  };
 
   const handleCreate = async (newPromise: Omit<PromiseData, 'id' | 'created_at' | 'is_completed'> & { media_url?: string }) => {
     try {
@@ -54,6 +25,36 @@ export function usePromiseApi(
       return null;
     }
   };
+
+  const handleUpdate = async (updatedPromise: PromiseData) => {
+    try {
+      const response = await fetch('/api/promises', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedPromise),
+      });
+      if (!response.ok) throw new Error('Ошибка обновления');
+      updatePosts(updatedPromise, 'UPDATE');
+    } catch (error) {
+      setError('Ошибка при обновлении обещания');
+      console.error('Error:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch('/api/promises', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (!response.ok) throw new Error('Ошибка удаления');
+      updatePosts({ id } as PromiseData, 'DELETE');
+    } catch (error) {
+      setError('Ошибка при удалении обещания');
+      console.error('Error:', error);
+    }
+  }; 
 
   return { handleDelete, handleUpdate, handleCreate };
 } 

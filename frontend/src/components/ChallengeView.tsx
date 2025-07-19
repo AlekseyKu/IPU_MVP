@@ -57,7 +57,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const [activeTab, setActiveTab] = useState<'progress' | 'participants'>('progress');
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [showVideo, setShowVideo] = useState(false);
-  const { handleDeleteChallenge } = useChallengeApi();
 
   // --- Эффекты ---
   useEffect(() => {
@@ -185,15 +184,13 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   }, [challenge, isOwnProfile, userId, isLastPeriod, onUpdate]);
 
+  // handleDeleteChallenge теперь должен быть передан через пропсы или реализован в родителе
+  // Здесь оставляем вызов onDelete(challenge.id) после успешного удаления
   const handleDelete = async () => {
     if (!isOwnProfile || !isProfilePage) return;
     if (confirm('Вы уверены, что хотите удалить этот челлендж?')) {
-      const result = await handleDeleteChallenge(challenge.id);
-      if (result.success) {
-        onDelete(challenge.id);
-      } else {
-        alert(result.error);
-      }
+      // handleDeleteChallenge должен быть реализован в родителе и обновлять локальный стейт
+      onDelete(challenge.id);
     }
   };
 

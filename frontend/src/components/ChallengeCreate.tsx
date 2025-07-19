@@ -22,7 +22,9 @@ const ChallengeCreate: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { handleCreateChallenge } = useChallengeApi();
+  const updateChallenges = () => {};
+  const setError = (msg: string) => { console.error(msg); };
+  const { handleCreateChallenge } = useChallengeApi(updateChallenges, setError);
 
   useEffect(() => {
     if (isCreateChallengeOpen) {
@@ -70,8 +72,19 @@ const ChallengeCreate: React.FC = () => {
         total_reports: numericReports,
         content,
         media_url: mediaUrl,
+        completed_reports: 0,
+        is_public: true,
       });
-      if (result.success) setIsCreateChallengeOpen(false)
+      if (result && result.id) {
+        setIsCreateChallengeOpen(false);
+        setTitle('');
+        setFrequency('daily');
+        setTotalReports('');
+        setContent('');
+        setMedia(null);
+        setPreviewUrl(null);
+        setTotalReportsError(null);
+      }
     } catch (error) {
       console.error('Error saving challenge:', error)
     } finally {
