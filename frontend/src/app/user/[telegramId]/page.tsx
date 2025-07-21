@@ -280,7 +280,7 @@ export default function UserProfile() {
                             setOpenPostId(openPostId === post.id ? null : post.id)
                           }
                           isOpen={openPostId === post.id}
-                          onUpdate={handleUpdateChallenge}
+                          onUpdate={updated => updatePosts(updated, 'UPDATE')}
                           onDelete={handleDeleteChallenge}
                           isOwnProfile={isOwn}
                           avatarUrl={localUser.avatar_img_url || defaultAvatarImg}
@@ -288,6 +288,9 @@ export default function UserProfile() {
                           userName={fullName}
                           isList
                           isProfilePage
+                          onStart={() => handleUpdateChallenge(post.id, telegramId, 'start')}
+                          onCheckDay={() => handleUpdateChallenge(post.id, telegramId, 'check_day')}
+                          onFinish={() => handleUpdateChallenge(post.id, telegramId, 'finish')}
                         />
                       </motion.div>
                     )

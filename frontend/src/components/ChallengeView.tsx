@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
+import ChallengeCheckModal from './ChallengeCheckModal';
 
 // --- Константы ---
 const frequencyMap: Record<string, string> = {
@@ -32,6 +33,9 @@ interface ChallengeViewProps {
   avatarUrl?: string;
   userId?: number;
   userName?: string;
+  onStart?: () => void;
+  onCheckDay?: () => void;
+  onFinish?: () => void;
 }
 
 // --- Основной компонент ---
@@ -47,6 +51,9 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   avatarUrl,
   userId,
   userName,
+  onStart,
+  onCheckDay,
+  onFinish,
 }) => {
   // --- Хуки и состояния ---
   const { telegramId } = useUser();
@@ -57,6 +64,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const [activeTab, setActiveTab] = useState<'progress' | 'participants'>('progress');
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [showVideo, setShowVideo] = useState(false);
+  const [isCheckModalOpen, setIsCheckModalOpen] = useState(false);
 
   // --- Эффекты ---
   useEffect(() => {
@@ -191,6 +199,40 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   };
 
+  const handleStartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsCheckModalOpen(true);
+  };
+
+  const handleCheckSubmit = async (text: string, file: File | null) => {
+    // 1. Стартуем челлендж
+    await handleStart();
+    // 2. Загружаем файл (если есть)
+    let mediaUrl = null;
+    if (file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('telegramId', String(userId));
+      const response = await fetch('/api/challenges/upload', { method: 'POST', body: formData });
+      if (response.ok) {
+        const data = await response.json();
+        mediaUrl = data.url;
+      }
+    }
+    // 3. Сохраняем первый отчет
+    await fetch('/api/challenges/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        challenge_id: challenge.id,
+        user_id: userId,
+        comment: text,
+        media_url: mediaUrl,
+      }),
+    });
+    // 4. UI обновится через realtime
+  };
+
   // --- JSX ---
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
@@ -247,20 +289,31 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           {isOwnProfile && isProfilePage && (
             <div className="d-flex justify-content-center py-2">
               {!isStarted ? (
-                <button className="btn w-50 btn-outline-primary" onClick={handleStart} disabled={challenge.is_completed}>Начать</button>
+                <>
+                  <button className="btn w-50 btn-outline-primary" onClick={() => setIsCheckModalOpen(true)} disabled={challenge.is_completed}>Начать</button>
+                  <ChallengeCheckModal
+                    isOpen={isCheckModalOpen}
+                    onClose={() => setIsCheckModalOpen(false)}
+                    onSubmit={async (text, file) => {
+                      await handleCheckSubmit(text, file);
+                      if (onStart) await onStart();
+                      setIsCheckModalOpen(false);
+                    }}
+                  />
+                </>
               ) : (
                 <>
                   {!isLastPeriod && (
                     <button
                       className={`btn w-50 ${!isCheckDayActive || challenge.completed_reports >= challenge.total_reports ? 'btn disabled' : 'btn-outline-primary'}`}
-                      onClick={handleCheckDay}
+                      onClick={onCheckDay}
                       disabled={!isCheckDayActive || challenge.completed_reports >= challenge.total_reports}
                     >
                       Чек дня
                     </button>
                   )}
                   {isLastPeriod && (
-                    <button className="btn w-50 btn-outline-primary" onClick={handleFinish} disabled={challenge.is_completed}>
+                    <button className="btn w-50 btn-outline-primary" onClick={onFinish} disabled={challenge.is_completed}>
                       Завершить
                     </button>
                   )}

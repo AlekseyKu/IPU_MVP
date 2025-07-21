@@ -127,6 +127,7 @@ export async function PUT(request: Request) {
           start_at: start_at || now.toISOString(),
           report_periods: newReportPeriods,
           deadline_period: newDeadlinePeriod,
+          completed_reports: 1, // Сразу учитываем первый отчет
         })
         .eq('id', id);
 
@@ -137,6 +138,7 @@ export async function PUT(request: Request) {
         start_at: start_at || now.toISOString(),
         report_periods: newReportPeriods,
         deadline_period: newDeadlinePeriod,
+        completed_reports: 1,
       }, { status: 200 });
     }
 

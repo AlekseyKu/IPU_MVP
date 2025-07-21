@@ -34,15 +34,24 @@ export function useChallengeApi(
     }
   };
 
-  const handleUpdateChallenge = async (updatedChallenge: ChallengeData) => {
+  const handleUpdateChallenge = async (
+    id: string,
+    userId: number,
+    action: 'start' | 'check_day' | 'finish',
+    extra?: Record<string, any>
+  ) => {
     try {
-      const response = await fetch('/api/challenges', {
+      const response = await fetch(`/api/challenges?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedChallenge),
+        body: JSON.stringify({
+          user_id: userId,
+          action,
+          ...extra,
+        }),
       });
       if (!response.ok) throw new Error('Ошибка обновления челленджа');
-      updateChallenges(updatedChallenge, 'UPDATE');
+      // Можно обновить локальный стейт, если нужно
     } catch (error) {
       setError('Ошибка при обновлении челленджа');
       console.error('Ошибка при обновлении челленджа:', error);
