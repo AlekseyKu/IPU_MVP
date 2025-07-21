@@ -67,6 +67,7 @@ const PromiseView: React.FC<PostviewProps> = ({
     const today = new Date();
     const deadlineDate = new Date(deadline);
     // Кнопка активна, если сегодня не позже дедлайна (включительно)
+    // TODO кнопка активна не ранее 6ч от даты старт (created_at)
     return today.setHours(0,0,0,0) <= deadlineDate.setHours(0,0,0,0);
   })();
 
@@ -89,8 +90,8 @@ const PromiseView: React.FC<PostviewProps> = ({
         });
         if (!response.ok) throw new Error('Ошибка загрузки файла');
         const data = await response.json();
-        result_
-        _url = data.url;
+        result_media_url
+        result_media_url = data.url;
       }
       // Завершаем обещание через handleCompletePromise
       const updated = await handleCompletePromise(
@@ -228,7 +229,7 @@ const PromiseView: React.FC<PostviewProps> = ({
           )}
           {/* --- Кнопка Завершить или Результат --- */}
           {isOwnProfile && isProfilePage && !is_completed && (
-            <div className="d-flex justify-content-center mb-2">
+            <div className="d-flex justify-content-center py-2">
               <button
                 className="btn w-50 btn-outline-primary"
                 onClick={handleComplete}
@@ -239,7 +240,7 @@ const PromiseView: React.FC<PostviewProps> = ({
             </div>
           )}
           {is_completed && (
-            <div className="d-flex justify-content-center mb-2">
+            <div className="d-flex justify-content-center py-2">
               <button
                 className="btn w-50 btn-outline-primary"
                 onClick={() => setIsResultModalOpen(true)}

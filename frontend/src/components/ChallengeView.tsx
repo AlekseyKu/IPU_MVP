@@ -245,7 +245,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
 
           {/* --- Кнопки управления --- */}
           {isOwnProfile && isProfilePage && (
-            <div className="d-flex justify-content-center mb-2">
+            <div className="d-flex justify-content-center py-2">
               {!isStarted ? (
                 <button className="btn w-50 btn-outline-primary" onClick={handleStart} disabled={challenge.is_completed}>Начать</button>
               ) : (

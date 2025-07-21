@@ -207,9 +207,18 @@ const ChallengeCreate: React.FC = () => {
           <input
             id="quantity-report"
             type="number"
+            inputMode="numeric"
             value={totalReports}
-            onChange={(e) => setTotalReports(e.target.value)}
-            placeholder="Количество отчетов"
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^\d{0,3}$/.test(val)) {
+                const num = parseInt(val, 10);
+                if (!val || (num >= 1 && num <= 100)) {
+                  setTotalReports(val);
+                }
+              }
+            }}
+            placeholder="Количество отчетов (1-100)"
             className="form-control mb-2"
             min="1"
             required
