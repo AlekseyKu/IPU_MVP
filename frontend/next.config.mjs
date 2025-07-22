@@ -27,7 +27,7 @@ const nextConfig = {
   //     },
   //   ]
   // },
-  allowedDevOrigins: ['https://b6d22e0f33e8.ngrok-free.app', '*.local-origin.dev'],
+  allowedDevOrigins: ['https://ad99110c6a0e.ngrok-free.app', '*.local-origin.dev'],
 }
 
 export default nextConfig

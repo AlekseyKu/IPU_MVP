@@ -50,6 +50,7 @@ export default function UserProfile() {
     post: PromiseData | ChallengeData,
     eventType: 'INSERT' | 'UPDATE' | 'DELETE'
   ) => {
+    console.log('[updatePosts]', eventType, post);
     setAllPosts((prev) => {
       let list = [...prev]
 
@@ -275,6 +276,7 @@ export default function UserProfile() {
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
                         <ChallengeView
+                          key={`${post.id}-${isChallengeData(post) ? post.completed_reports : ''}-${isChallengeData(post) ? post.start_at : ''}`}
                           challenge={post}
                           onToggle={() =>
                             setOpenPostId(openPostId === post.id ? null : post.id)

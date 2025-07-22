@@ -65,6 +65,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [isCheckModalOpen, setIsCheckModalOpen] = useState(false);
+  const [reports, setReports] = useState<{ report_date: string }[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   // --- Эффекты ---
   useEffect(() => {
@@ -92,9 +94,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
       .channel(`challenge-update-${challenge.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'challenges', filter: `id=eq.${challenge.id}` }, (payload) => {
         const updated = payload.new as ChallengeData;
-        if (updated.id === challenge.id) {
-          onUpdate(updated);
-        }
+        console.log('[realtime] onUpdate payload:', updated);
+        onUpdate(updated);
       })
       .subscribe();
     return () => { supabase.removeChannel(subscription); };
@@ -110,6 +111,36 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
 
   // Сброс предпросмотра видео при смене медиа
   useEffect(() => { setShowVideo(false); }, [challenge.media_url]);
+
+  // Загрузка отчетов при открытии деталей челленджа
+  useEffect(() => {
+    if (!isOpen || !userId) return;
+    setReportsLoading(true);
+    fetch(`/api/challenges/reports?challenge_id=${challenge.id}&user_id=${userId}`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setReports(data))
+      .catch(() => setReports([]))
+      .finally(() => setReportsLoading(false));
+  }, [isOpen, challenge.id, userId]);
+
+  // Найти текущий период (сегодня)
+  const today = new Date().toISOString().split('T')[0];
+  const currentPeriod = useMemo(() => {
+    if (!challenge.report_periods) return undefined;
+    return challenge.report_periods.find(period => {
+      const [start, end] = period.split('/');
+      return today >= start && today <= end;
+    });
+  }, [challenge.report_periods, today]);
+
+  // Проверить, есть ли отчет за этот период
+  const hasReportToday = useMemo(() => {
+    if (!currentPeriod || !reports.length) return false;
+    const [start, end] = currentPeriod.split('/');
+    return reports.some(r => {
+      const reportDay = r.report_date.split('T')[0];
+      return reportDay >= start && reportDay <= end;
+    });  }, [currentPeriod, reports]);
 
   // --- Вычисления статусов и иконок ---
   const now = useMemo(() => new Date(), []);
@@ -138,11 +169,11 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
 
   const nextPeriod = useMemo(() => {
     if (!isStarted || !challenge.report_periods) return undefined;
-    return challenge.report_periods.find((period, index) => {
+    return challenge.report_periods.find((period) => {
       const [start] = period.split('/');
-      return new Date(start) > now && index > challenge.completed_reports;
+      return new Date(start) > now;
     });
-  }, [isStarted, challenge.report_periods, challenge.completed_reports, now]);
+  }, [isStarted, challenge.report_periods, now]);
 
   const formattedNextPeriod = useMemo(() => {
     if (!nextPeriod) return undefined;
@@ -162,6 +193,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     });
     if (response.ok) {
       const updated = await response.json();
+      // console.log(updated)
       onUpdate({ ...challenge, ...updated, start_at: now.toISOString() });
     }
   }, [challenge, isOwnProfile, userId, isStarted, now, onUpdate]);
@@ -204,10 +236,9 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     setIsCheckModalOpen(true);
   };
 
-  const handleCheckSubmit = async (text: string, file: File | null) => {
-    // 1. Стартуем челлендж
-    await handleStart();
-    // 2. Загружаем файл (если есть)
+  const { handleFinishChallenge } = useChallengeApi(() => {}, () => {});
+
+  const handleCheckSubmit = async (text: string, file: File | null, customAction?: 'start' | 'check_day' | 'finish') => {
     let mediaUrl = null;
     if (file) {
       const formData = new FormData();
@@ -219,18 +250,49 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
         mediaUrl = data.url;
       }
     }
-    // 3. Сохраняем первый отчет
-    await fetch('/api/challenges/reports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        challenge_id: challenge.id,
-        user_id: userId,
-        comment: text,
-        media_url: mediaUrl,
-      }),
-    });
-    // 4. UI обновится через realtime
+    // Определяем action
+    let action: 'start' | 'check_day' | 'finish';
+    if (customAction) {
+      action = customAction;
+    } else {
+      action = isStarted ? 'check_day' : 'start';
+    }
+    if (action === 'finish') {
+      if (!userId) return;
+      const result = await handleFinishChallenge(challenge.id, userId, text, mediaUrl);
+      console.log('[handleCheckSubmit] finish result:', result);
+    } else if (action === 'start') {
+      const response = await fetch(`/api/challenges?id=${challenge.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          action,
+          comment: text,
+          media_url: mediaUrl,
+        }),
+      });
+      const result = await response.json();
+      console.log('[handleCheckSubmit] PUT result:', result);
+      if (result && typeof onUpdate === 'function') {
+        // result может быть { success, ...challengeFields }
+        // onUpdate({ ...challenge, ...result });
+        onUpdate(result);
+      }
+    } else {
+      const response = await fetch(`/api/challenges?id=${challenge.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          action,
+          comment: text,
+          media_url: mediaUrl,
+        }),
+      });
+      const result = await response.json();
+      console.log('[handleCheckSubmit] PUT result:', result);
+    }
   };
 
   // --- JSX ---
@@ -286,7 +348,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           )}
 
           {/* --- Кнопки управления --- */}
-          {isOwnProfile && isProfilePage && (
+          {isOwnProfile && isProfilePage && !is_completed && (
             <div className="d-flex justify-content-center py-2">
               {!isStarted ? (
                 <>
@@ -296,7 +358,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                     onClose={() => setIsCheckModalOpen(false)}
                     onSubmit={async (text, file) => {
                       await handleCheckSubmit(text, file);
-                      if (onStart) await onStart();
                       setIsCheckModalOpen(false);
                     }}
                   />
@@ -304,18 +365,44 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
               ) : (
                 <>
                   {!isLastPeriod && (
-                    <button
-                      className={`btn w-50 ${!isCheckDayActive || challenge.completed_reports >= challenge.total_reports ? 'btn disabled' : 'btn-outline-primary'}`}
-                      onClick={onCheckDay}
-                      disabled={!isCheckDayActive || challenge.completed_reports >= challenge.total_reports}
-                    >
-                      Чек дня
-                    </button>
+                    <>
+                      <button
+                        className={`btn w-50 ${!currentPeriod || hasReportToday || reportsLoading ? 'btn disabled' : 'btn-outline-primary'}`}
+                        onClick={() => setIsCheckModalOpen(true)}
+                        disabled={!currentPeriod || hasReportToday || reportsLoading}
+                      >
+                        Чек дня
+                      </button>
+                      <ChallengeCheckModal
+                        isOpen={isCheckModalOpen}
+                        onClose={() => setIsCheckModalOpen(false)}
+                        onSubmit={async (text, file) => {
+                          await handleCheckSubmit(text, file);
+                          setIsCheckModalOpen(false);
+                        }}
+                        title="Челлендж продолжается!"
+                        description="Вы на верном пути - сделайте отчет и вы будете еще на один шаг ближе к цели"
+                        buttonText="Чек дня"
+                      />
+                    </>
                   )}
                   {isLastPeriod && (
-                    <button className="btn w-50 btn-outline-primary" onClick={onFinish} disabled={challenge.is_completed}>
-                      Завершить
-                    </button>
+                    <>
+                      <button className="btn w-50 btn-outline-primary" onClick={() => setIsCheckModalOpen(true)} disabled={challenge.is_completed}>
+                        Завершить
+                      </button>
+                      <ChallengeCheckModal
+                        isOpen={isCheckModalOpen}
+                        onClose={() => setIsCheckModalOpen(false)}
+                        onSubmit={async (text, file) => {
+                          await handleCheckSubmit(text, file, 'finish');
+                          setIsCheckModalOpen(false);
+                        }}
+                        title="Финиш!"
+                        description="Поздравляем, вы дошли до конца челленджа. Оставьте финальный отчет!"
+                        buttonText="Завершить"
+                      />
+                    </>
                   )}
                 </>
               )}

@@ -72,5 +72,32 @@ export function useChallengeApi(
     }
   };
 
-  return { handleCreateChallenge, handleUpdateChallenge, handleDeleteChallenge };
+  const handleFinishChallenge = async (
+    id: string,
+    userId: number,
+    comment: string,
+    media_url: string | null
+  ) => {
+    try {
+      const response = await fetch(`/api/challenges?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          action: 'finish',
+          comment,
+          media_url,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || 'Ошибка завершения челленджа');
+      return result;
+    } catch (error) {
+      setError('Ошибка при завершении челленджа');
+      console.error('Ошибка при завершении челленджа:', error);
+      return null;
+    }
+  };
+
+  return { handleCreateChallenge, handleUpdateChallenge, handleDeleteChallenge, handleFinishChallenge };
 } 
