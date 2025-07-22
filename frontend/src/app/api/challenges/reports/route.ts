@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('challenge_reports')
-    .select('report_date')
+    .select('id, report_date, comment, media_url')
     .eq('challenge_id', challenge_id)
     .eq('user_id', user_id)
     .order('report_date', { ascending: true });

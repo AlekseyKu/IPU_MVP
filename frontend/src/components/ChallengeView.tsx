@@ -3,7 +3,7 @@
 
 // --- Импорты ---
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Ellipsis, GlobeLock, CirclePlay, CircleStop } from 'lucide-react';
+import { Ellipsis, GlobeLock, CirclePlay, CircleStop, ChevronDown, ChevronUp } from 'lucide-react';
 import { ChallengeData } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
@@ -65,8 +65,10 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [isCheckModalOpen, setIsCheckModalOpen] = useState(false);
-  const [reports, setReports] = useState<{ report_date: string }[]>([]);
+  type ChallengeReport = { id?: string; report_date: string; comment?: string; media_url?: string };
+  const [reports, setReports] = useState<ChallengeReport[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
 
   // --- Эффекты ---
   useEffect(() => {
@@ -423,10 +425,39 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
               <button className={`btn btn-sm p-2 ${activeTab === 'participants' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('participants')}>Участники</button>
             </div>
             <div className="p-2">
-              {activeTab === 'progress'
-                ? <div className="text-muted font-xsss">Трекер прогресса (пусто)</div>
-                : <div className="text-muted font-xsss">Участники (пусто)</div>
-              }
+              {activeTab === 'progress' ? (
+                <div>
+                  {reports.length === 0 && <div className="text-muted font-xsss">Нет отчетов</div>}
+                  {reports.map((report, idx) => (
+                    <div key={report.id || report.report_date + idx} className="mb-2">
+                      <div
+                        className="d-flex align-items-center justify-content-between cursor-pointer font-xsss px-2 py-1 bg-white"
+                        style={{ minHeight: 36 }}
+                        onClick={() => setExpandedReportId(expandedReportId === (report.id || report.report_date + idx) ? null : (report.id || report.report_date + idx))}
+                      >
+                        <span className="text-muted">
+                          {report.report_date ? formatDateTime(report.report_date) : 'Без даты'}
+                        </span>
+                        {expandedReportId === (report.id || report.report_date + idx)
+                          ? <ChevronUp className="ms-2 text-secondary" />
+                          : <ChevronDown className="ms-2 text-secondary" />}
+                      </div>
+                      {expandedReportId === (report.id || report.report_date + idx) && (
+                        <div className="p-2 border rounded bg-light font-xsss mt-1">
+                          {report.comment && <div className="mb-2">{report.comment}</div>}
+                          {report.media_url && (
+                            report.media_url.endsWith('.mp4') ?
+                              <video src={report.media_url} controls className="w-100 rounded" style={{ maxHeight: 200 }} /> :
+                              <img src={report.media_url} alt="media" className="w-100 rounded" style={{ maxHeight: 200 }} />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted font-xsss">Участники (пусто)</div>
+              )}
             </div>
           </div>
 
