@@ -55,6 +55,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   onCheckDay,
   onFinish,
 }) => {
+  
   // --- Хуки и состояния ---
   const { telegramId } = useUser();
   const router = useRouter();
