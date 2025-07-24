@@ -44,22 +44,11 @@ input[type="checkbox"] {
   z-index: 2000;
 }
 
-// .popover-custom-op[role='tooltip'] {
-//   all: unset;
-//   position: fixed !important;   /* 💥 поверх всего */
-//   top: 70% !important;          /* 🔥 чуть выше центра */
-//   left: 50% !important;
-//   transform: translate(-50%, -50%) !important;
-//   z-index: 9999 !important;     /* выше модалки и backdrop */
-//   background: white;
-//   border-radius: 12px;
-//   padding: 12px 16px;
-//   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-//   font-size: 14px;
-//   // max-width: 280px;
-//   width: 100vw;
-//   text-align: center;
-//   box-sizing: border-box;
+// .usersearch-overlay {
+//   position: fixed;
+//   top: 0; left: 0; right: 0; bottom: 0;
+//   background: rgba(0,0,0,0.1); /* или 0.2-0.3 для большего затемнения */
+//   z-index: 9998;
 // }
 
 @keyframes fadeIn {

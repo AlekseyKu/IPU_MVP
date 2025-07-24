@@ -27,6 +27,7 @@ import {
   Facebook,
   X,
 } from 'lucide-react'
+import UserSearch from './UserSearch';
 
 const Header: React.FC = () => {
   const [uiState, setUiState] = useState({
@@ -251,10 +252,17 @@ const Header: React.FC = () => {
 
 
       {/* Search bar overlay */}
-      <div className={`app-header-search ${uiState.isActive ? 'show' : ''}`}>
+      {uiState.isActive && (
+        <div
+          className="app-header-search-overlay"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9997 }}
+          onClick={() => toggleState('isActive')}
+        />
+      )}
+      <div className={`app-header-search ${uiState.isActive ? 'show' : ''}` } style={{ zIndex: 9998 }}>
         <form className="search-form">
           <div className="form-group searchbox mb-0 border-0 p-1">
-            <input type="text" className="form-control border-0" placeholder="Поиск..." />
+            <UserSearch />
             <span className="ms-1 mt-1 d-inline-block close searchbox-close cursor-pointer">
               <X className="w-4 h-4 me-2 mb-2" onClick={() => toggleState('isActive')} />
             </span>
