@@ -7,6 +7,7 @@ import { useUser, useCreateChallengeModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useChallengeApi } from '@/hooks/useChallengeApi';
+import { addHashtag, removeHashtag, getRandomPopularHashtags, MAX_HASHTAGS } from '@/utils/hashtags';
 
 const ChallengeCreate: React.FC = () => {
   const { isCreateChallengeOpen, setIsCreateChallengeOpen } = useCreateChallengeModal()
@@ -21,10 +22,33 @@ const ChallengeCreate: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [hashtagInput, setHashtagInput] = useState('');
+  const [randomPopular, setRandomPopular] = useState<string[]>([]);
 
   const updateChallenges = () => {};
   const setError = (msg: string) => { console.error(msg); };
   const { handleCreateChallenge } = useChallengeApi(updateChallenges, setError);
+
+  // --- Хештеги ---
+  const handleHashtagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHashtagInput(e.target.value);
+  };
+  const handleHashtagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["Enter", " ", ","].includes(e.key)) {
+      e.preventDefault();
+      if (hashtagInput.trim()) {
+        setHashtags(prev => addHashtag(prev, hashtagInput));
+        setHashtagInput('');
+      }
+    }
+  };
+  const handleRemoveHashtag = (tag: string) => {
+    setHashtags(prev => removeHashtag(prev, tag));
+  };
+  const handlePopularHashtagClick = (tag: string) => {
+    setHashtags(prev => addHashtag(prev, tag));
+  };
 
   useEffect(() => {
     if (isCreateChallengeOpen) {
@@ -37,6 +61,12 @@ const ChallengeCreate: React.FC = () => {
       setTotalReportsError(null)
     }
   }, [isCreateChallengeOpen])
+
+  useEffect(() => {
+    if (isCreateChallengeOpen) {
+      setRandomPopular(getRandomPopularHashtags([], 6));
+    }
+  }, [isCreateChallengeOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,7 +95,7 @@ const ChallengeCreate: React.FC = () => {
         mediaUrl = data.url
       }
 
-      const result = await handleCreateChallenge({
+      const challengeData = {
         user_id: telegramId,
         title,
         frequency,
@@ -74,8 +104,13 @@ const ChallengeCreate: React.FC = () => {
         media_url: mediaUrl,
         completed_reports: 0,
         is_public: true,
+      };
+
+      const created = await handleCreateChallenge({
+        ...challengeData, // остальные поля
+        hashtags // <--- добавляем хештеги
       });
-      if (result && result.id) {
+      if (created && created.id) {
         setIsCreateChallengeOpen(false);
         setTitle('');
         setFrequency('daily');
@@ -236,6 +271,43 @@ const ChallengeCreate: React.FC = () => {
             style={{ height: '200px' }}
             required
           />
+
+          {/* --- Хештеги --- */}
+          <div className="mb-2">
+            <label className="text-muted form-label">Хештеги (до {MAX_HASHTAGS}):</label>
+            <div className="mb-1">
+              {hashtags.map(tag => (
+                <span key={tag} className="badge bg-primary me-1 mb-1">
+                  #{tag}
+                  <button type="button" onClick={() => handleRemoveHashtag(tag)} className="btn btn-outline-primary text-white px-1 py-0" tabIndex={-1}>&times;</button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={hashtagInput}
+              onChange={handleHashtagInputChange}
+              onKeyDown={handleHashtagKeyDown}
+              placeholder="Введите хештег и нажмите Enter"
+              className="form-control mb-1"
+              disabled={hashtags.length >= MAX_HASHTAGS}
+              maxLength={30}
+            />
+            <div className="mt-1">
+              {/* <span className="text-muted font-xsss">Популярные хештеги:</span> */}
+              {randomPopular.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => handlePopularHashtagClick(tag)}
+                  disabled={hashtags.length >= MAX_HASHTAGS}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="mb-3">
             <label htmlFor="media-upload" className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">

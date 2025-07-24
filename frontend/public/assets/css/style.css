@@ -12537,7 +12537,7 @@ strong,
     padding: 9px;
     height: auto;
     position: fixed;
-    top: env(safe-area-inset-top);
+    top: env(safe-area-inset-top, 0);
     left: 0;
     right: 0;
     z-index: 999;
@@ -13035,7 +13035,7 @@ strong,
   transition: 0.2s all ease-in-out;
 }
 .app-header-search.show {
-  top: env(safe-area-inset-top);
+  top: env(safe-area-inset-top, 0);
   transition: 0.3s all;
 }
 

@@ -192,6 +192,13 @@ const PromiseView: React.FC<PostviewProps> = ({
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{title}</span>
+          {promise.hashtags && promise.hashtags.length > 0 && (
+            <div className="mb-2">
+              {promise.hashtags.map(tag => (
+                <span key={tag} className="badge bg-secondary me-1">#{tag}</span>
+              ))}
+            </div>
+          )}
           {isOwnProfile && isProfilePage && (
             <div className="d-flex justify-content-end align-items-center mb-1">
               {!is_public && (

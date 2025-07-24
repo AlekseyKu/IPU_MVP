@@ -7,6 +7,7 @@ import { useUser, useCreatePostModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 // import { supabase } from '@/lib/supabaseClient'
 import { usePromiseApi } from '@/hooks/usePromiseApi'
+import { addHashtag, removeHashtag, getRandomPopularHashtags, MAX_HASHTAGS } from '@/utils/hashtags';
 
 const PromiseCreate: React.FC = () => {
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
@@ -21,6 +22,9 @@ const PromiseCreate: React.FC = () => {
   const [deadlineError, setDeadlineError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [mediaType, setMediaType] = useState<string | null>(null);
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [hashtagInput, setHashtagInput] = useState('');
+  const [randomPopular, setRandomPopular] = useState<string[]>([]);
 
   // Локальный updatePosts-заглушка, если компонент используется отдельно
   const updatePosts = () => {};
@@ -50,6 +54,32 @@ const PromiseCreate: React.FC = () => {
         console.error('Error determining media type:', err);
       });
   }, [previewUrl]);
+
+  useEffect(() => {
+    if (isCreatePostOpen) {
+      setRandomPopular(getRandomPopularHashtags([], 6));
+    }
+  }, [isCreatePostOpen]);
+
+  // --- Хештеги ---
+  const handleHashtagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHashtagInput(e.target.value);
+  };
+  const handleHashtagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["Enter", " ", ","].includes(e.key)) {
+      e.preventDefault();
+      if (hashtagInput.trim()) {
+        setHashtags(prev => addHashtag(prev, hashtagInput));
+        setHashtagInput('');
+      }
+    }
+  };
+  const handleRemoveHashtag = (tag: string) => {
+    setHashtags(prev => removeHashtag(prev, tag));
+  };
+  const handlePopularHashtagClick = (tag: string) => {
+    setHashtags(prev => addHashtag(prev, tag));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,7 +117,8 @@ const PromiseCreate: React.FC = () => {
         deadline: utcDeadline,
         content,
         media_url: mediaUrl,
-        is_public: isPublic
+        is_public: isPublic,
+        hashtags // <--- добавляем хештеги
       });
       if (created) setIsCreatePostOpen(false)
     } catch (error) {
@@ -127,6 +158,7 @@ const PromiseCreate: React.FC = () => {
         left: 0,
         width: '100vw',
         height: '100vh',
+        
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 9999,
         display: 'flex',
@@ -134,6 +166,7 @@ const PromiseCreate: React.FC = () => {
         justifyContent: 'center',
         overflowY: 'auto',
         padding: '1rem',
+        paddingBottom: '2rem',
         animation: 'fadeIn 0.3s ease-out',
       }}
     >
@@ -229,6 +262,43 @@ const PromiseCreate: React.FC = () => {
             style={{ height: '200px' }}
             required
           />
+
+          {/* --- Хештеги --- */}
+          <div className="mb-2">
+            <label className="text-muted form-label">Хештеги (до {MAX_HASHTAGS}):</label>
+            <div className="mb-1">
+              {hashtags.map(tag => (
+                <span key={tag} className="badge bg-primary me-1 mb-1" >
+                  #{tag}
+                  <button type="button" onClick={() => handleRemoveHashtag(tag)} className="btn btn-outline-primary text-white px-1 py-0" tabIndex={-1}>&times;</button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={hashtagInput}
+              onChange={handleHashtagInputChange}
+              onKeyDown={handleHashtagKeyDown}
+              placeholder="Введите хештег и нажмите Enter"
+              className="form-control mb-1"
+              disabled={hashtags.length >= MAX_HASHTAGS}
+              maxLength={30}
+            />
+            <div className="mt-1">
+              {/* <span className="text-muted font-xsss">Популярные:</span> */}
+              {randomPopular.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => handlePopularHashtagClick(tag)}
+                  disabled={hashtags.length >= MAX_HASHTAGS}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="mb-3">
             <label className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">

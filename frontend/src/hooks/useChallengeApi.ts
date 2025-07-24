@@ -14,7 +14,7 @@ export function useChallengeApi(
   updateChallenges: (challenge: ChallengeData, eventType: 'INSERT' | 'UPDATE' | 'DELETE') => void,
   setError: (msg: string) => void
 ) {
-  const handleCreateChallenge = async (newChallenge: Omit<ChallengeData, 'id' | 'created_at' | 'is_completed'> & { media_url?: string }) => {
+  const handleCreateChallenge = async (newChallenge: Omit<ChallengeData, 'id' | 'created_at' | 'is_completed'> & { media_url?: string; hashtags?: string[] }) => {
     try {
       const response = await fetch('/api/challenges', {
         method: 'POST',

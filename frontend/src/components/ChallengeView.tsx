@@ -315,6 +315,13 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
       <div className="card-body p-0 d-flex flex-column">
         <div className="flex-grow-1">
           <span className="text-dark font-xs mb-1">{challenge.title}</span>
+          {challenge.hashtags && challenge.hashtags.length > 0 && (
+            <div className="mb-2">
+              {challenge.hashtags.map(tag => (
+                <span key={tag} className="badge bg-secondary me-1">#{tag}</span>
+              ))}
+            </div>
+          )}
           {isOwnProfile && !isList && (
             <div className="d-flex justify-content-end align-items-center mb-1">
               <span className="text-muted font-xssss me-1">{challenge.is_public ? 'Публичное' : 'Личное'}</span>
@@ -429,7 +436,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
               {activeTab === 'progress' ? (
                 <div>
                   {reports.length === 0 && <div className="text-muted font-xsss">Нет отчетов</div>}
-                  {reports.map((report, idx) => (
+                  {[...reports].reverse().map((report, idx) => (
                     <div key={report.id || report.report_date + idx} className="mb-2">
                       <div
                         className="d-flex align-items-center justify-content-between cursor-pointer font-xsss px-2 py-1 bg-white"

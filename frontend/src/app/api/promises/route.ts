@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
       media_url: data.media_url || null,
       created_at: new Date().toISOString(),
       is_completed: false,
-      is_public: data.is_public ?? true
+      is_public: data.is_public ?? true,
+      hashtags: data.hashtags || null
     }).select().single();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -42,7 +43,7 @@ export async function PUT(request: NextRequest) {
     // Формируем объект для обновления, поддерживая новые поля
     const updateFields: any = { ...updatedPromise };
     // Только разрешённые поля
-    const allowed = ['title','content','media_url','deadline','is_public','is_completed','result_content','result_media_url','completed_at'];
+    const allowed = ['title','content','media_url','deadline','is_public','is_completed','result_content','result_media_url','completed_at','hashtags'];
     Object.keys(updateFields).forEach(key => { if (!allowed.includes(key)) delete updateFields[key]; });
 
     const { error, data: updatedRows } = await supabase

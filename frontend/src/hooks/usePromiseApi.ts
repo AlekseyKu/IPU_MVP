@@ -6,7 +6,7 @@ export function usePromiseApi(
   setError: (msg: string) => void
 ) {
 
-  const handleCreate = async (newPromise: Omit<PromiseData, 'id' | 'created_at' | 'is_completed'> & { media_url?: string }) => {
+  const handleCreate = async (newPromise: Omit<PromiseData, 'id' | 'created_at' | 'is_completed'> & { media_url?: string; hashtags?: string[] }) => {
     try {
       const response = await fetch('/api/promises', {
         method: 'POST',

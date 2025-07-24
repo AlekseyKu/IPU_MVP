@@ -9,6 +9,7 @@ interface CreateChallengeBody {
   total_reports: number;
   content?: string;
   media_url?: string;
+  hashtags?: string[];
 }
 
 interface ActionBody {
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       completed_reports: 0,
       is_public: true,
       is_completed: false,
+      hashtags: body.hashtags || null
     }).select().single();
 
     if (insertError) throw insertError;

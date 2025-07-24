@@ -31,6 +31,7 @@ export interface PostData {
   created_at: string;
   is_public: boolean;
   is_completed: boolean;
+  hashtags?: string[];
 }
 
 export interface PromiseData extends PostData {

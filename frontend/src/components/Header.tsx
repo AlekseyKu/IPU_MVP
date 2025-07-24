@@ -182,7 +182,7 @@ const Header: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://telegram.im/@dexstudioapp" className="nav-content-bttn open-font">
+                  <Link href="https://telegram.im/@IPU_community" className="nav-content-bttn open-font">
                     <Send className="me-3 w-5 h-5" />
                     <span>Telegram</span>
                   </Link>
