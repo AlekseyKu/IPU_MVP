@@ -1,7 +1,64 @@
+[.vscode]
+    └── tasks.json
+
+[backend]
+    ├── .env
+    ├── alembic.ini
+    ├── [app]
+        ├── db.py
+        ├── main.py
+        ├── [models]
+            ├── user.py
+            ├── __init__.py
+            └── [__pycache__]
+                ├── user.cpython-311.pyc
+                └── __init__.cpython-311.pyc
+        ├── [routers]
+            ├── users.py
+            ├── __init__.py
+            └── [__pycache__]
+                ├── users.cpython-311.pyc
+                └── __init__.cpython-311.pyc
+        ├── [schemas]
+            ├── user.py
+            ├── __init__.py
+            └── [__pycache__]
+                ├── user.cpython-311.pyc
+                └── __init__.cpython-311.pyc
+        ├── [services]
+            └── __init__.py
+        ├── test_db.py
+        ├── __init__.py
+        └── [__pycache__]
+            ├── db.cpython-311.pyc
+            ├── main.cpython-311.pyc
+            └── __init__.cpython-311.pyc
+    ├── Dockerfile
+    ├── requirements.txt
+    ├── start_backend.py
+    └── supabase-ca.crt
+
+[bot]
+    ├── .env
+    ├── config.py
+    ├── env_prod
+    ├── [handlers]
+        ├── user_private.py
+        └── [__pycache__]
+            └── user_private.cpython-311.pyc
+    ├── [keyboards]
+        └── __init__.py
+    ├── main.py
+    ├── requirements.txt
+    └── [services]
+        └── __init__.py
+
 [frontend]
+    ├── .env.local
     ├── .gitignore
     ├── next-env.d.ts
-    ├── next.config.js
+    ├── next.config.mjs
+    ├── ngrok.exe
     ├── package-lock.json
     ├── package.json
     ├── [public]
@@ -29,6 +86,7 @@
             ├── [images]
                 ├── 4deb9925c00cc266b4b1a80c3f36ee77.png
                 ├── 805e6044b6ff6c7b265a57919fc912d1.png
+                ├── avatar.png
                 ├── b-10.png
                 ├── b-14.png
                 ├── b-17.png
@@ -38,6 +96,9 @@
                 ├── close.png
                 ├── comingsoon.svg
                 ├── d70504d4e44f19ce41ad5ec3448ab30d.png
+                ├── defaultAvatar.png
+                ├── defaultAvatar.svg
+                ├── defaultAvatar_2.svg
                 ├── [demo]
                     ├── 404.jpg
                     ├── 404.png
@@ -107,6 +168,7 @@
                 ├── favicon.png
                 ├── group.png
                 ├── group.svg
+                ├── hero-img.png
                 ├── hotel.png
                 ├── icon-1.png
                 ├── icon-3.png
@@ -114,7 +176,14 @@
                 ├── icon2.png
                 ├── instagram.png
                 ├── [ipu]
-                    └── logo.png
+                    ├── avatar.png
+                    ├── hero-img.png
+                    ├── ipu.svg
+                    ├── ipu_512.svg
+                    ├── logo.png
+                    ├── logo_512.png
+                    ├── logo_512.webp
+                    └── logo_bg.png
                 ├── linkedin.png
                 ├── loading.gif
                 ├── login.svg
@@ -370,106 +439,102 @@
         ├── index.html
         ├── manifest.json
         └── robots.txt
-    ├── README.md
     ├── [src]
         ├── [app]
+            ├── [api]
+                ├── [challenges]
+                    ├── [reports]
+                        └── route.ts
+                    ├── route.ts
+                    └── [upload]
+                        └── route.ts
+                ├── [promises]
+                    ├── route.ts
+                    └── [upload]
+                        └── route.ts
+                ├── [subscriptions]
+                    └── route.ts
+                ├── [user]
+                    └── [[telegramId]]
+                        └── route.ts
+                └── [users]
+                    └── [[telegramId]]
+                        ├── route.ts
+                        ├── [subscribers]
+                            └── route.ts
+                        ├── [update]
+                            └── route.ts
+                        └── [upload]
+                            └── route.ts
             ├── globals.scss
             ├── layout.tsx
+            ├── [leaders]
+                └── page.tsx
             ├── [list]
                 └── page.tsx
+            ├── MainContent.tsx
             ├── page.tsx
-            └── [video]
+            ├── [profile]
+                └── [[telegramId]]
+                    └── page.tsx
+            ├── [settings]
+                └── [[telegramId]]
+                    └── page.tsx
+            ├── [shop]
                 └── page.tsx
+            └── [user]
+                └── [[telegramId]]
+                    └── page.tsx
         ├── [components]
             ├── Appfooter.tsx
-            ├── Createpost.tsx
+            ├── ChallengeCheckModal.tsx
+            ├── ChallengeCreate.tsx
+            ├── ChallengeView.tsx
             ├── Events.tsx
             ├── Friendsilder.tsx
             ├── Header.tsx
+            ├── Header_backup.tsx
             ├── Leftnav.tsx
             ├── Load.tsx
             ├── [modals]
                 └── CreatepostModal.tsx
-            ├── [old]
-                ├── Appfooter.tsx
-                ├── Contacts.tsx
-                ├── Createpost.tsx
-                ├── Darkbtn.tsx
-                ├── Events.tsx
-                ├── Friends.tsx
-                ├── Friendsilder.tsx
-                ├── Group.tsx
-                ├── Header.tsx
-                ├── Leftnav.tsx
-                ├── Load.tsx
-                ├── Memberslider.tsx
-                ├── Pagetitle.tsx
-                ├── Popupchat.tsx
-                ├── Postview.tsx
-                ├── ProfilecardOne.tsx
-                ├── ProfilecardThree.tsx
-                ├── ProfilecardTwo.tsx
-                ├── Profiledetail.tsx
-                ├── Profilephoto.tsx
-                ├── Rightchat.tsx
-                └── Storyslider.tsx
-            ├── Postview.tsx
             ├── ProfilecardThree.tsx
             ├── Profiledetail.tsx
             ├── Profilephoto.tsx
-            └── [template]
-                ├── Contacts.tsx
-                ├── Darkbtn.tsx
-                ├── Friends.tsx
-                ├── Group.tsx
-                ├── Memberslider.tsx
-                ├── Pagetitle.tsx
-                ├── Popupchat.tsx
-                ├── ProfilecardOne.tsx
-                ├── ProfilecardTwo.tsx
-                ├── Rightchat.tsx
-                └── Storyslider.tsx
+            ├── PromiseCompleteModal.tsx
+            ├── PromiseCreate.tsx
+            ├── PromiseResultModal.tsx
+            ├── PromiseView.tsx
+            ├── TelegramExpand.tsx
+            └── xTest.tsx
+        ├── [context]
+            └── UserContext.tsx
         ├── [hooks]
-            └── useCreateModal.ts
-        ├── [old_page_files]
-            ├── About.tsx
-            ├── AccountInfo.tsx
-            ├── Analytic.tsx
-            ├── Authorpage.tsx
-            ├── Badge.tsx
-            ├── Cart.tsx
-            ├── Checkout.tsx
-            ├── Comingsoon.tsx
-            ├── Contactinfo.tsx
-            ├── Demo.tsx
-            ├── Eamilopen.tsx
-            ├── Email.tsx
-            ├── Eventpage.tsx
-            ├── Forgot.tsx
-            ├── Group.tsx
-            ├── Grouppage.tsx
-            ├── Helpbox.tsx
-            ├── Home.tsx
-            ├── Hotelpage.tsx
-            ├── Hotelsingle.tsx
-            ├── Jobpage.tsx
-            ├── Live.tsx
-            ├── Login.tsx
-            ├── Message.tsx
-            ├── Notfound.tsx
-            ├── Notification.tsx
-            ├── Password.tsx
-            ├── Payment.tsx
-            ├── Register.tsx
-            ├── Settings.tsx
-            ├── Shopone.tsx
-            ├── Shoptwo.tsx
-            ├── Singleproduct.tsx
-            ├── Socialaccount.tsx
-            ├── Storie.tsx
-            ├── Userpage.tsx
-            └── Video.tsx
-        └── [styles]
+            ├── useChallengeApi.ts
+            ├── usePromiseApi.ts
+            ├── usePublicPosts.ts
+            ├── useUserData.ts
+            ├── useUserProfileData.ts
+            └── useUserSubscription.ts
+        ├── [lib]
+            └── supabaseClient.ts
+        ├── [styles]
             ├── custom-bootstrap.scss
             └── demo.css
+        ├── [todo]
+            └── route.ts
+        ├── [types]
+            └── telegram.d.ts
+        ├── types.ts
+        └── [utils]
+            └── formatDate.ts
     └── tsconfig.json
+
+
+info
+package-lock.json
+package.json
+README.md
+README_dev_start_project.md
+.env.main
+.env

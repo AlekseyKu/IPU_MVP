@@ -48,6 +48,7 @@ coverage/
 *.key
 *.pem
 *.crt
+bot/env_prod
 
 # 💣 Билды и артефакты
 dist/
@@ -100,3 +101,6 @@ temp/
 **/temp/
 .cache/
 **/.cache/
+
+# backup
+backup/
