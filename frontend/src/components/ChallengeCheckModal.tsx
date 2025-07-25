@@ -71,8 +71,8 @@ const ChallengeCheckModal: React.FC<ChallengeCheckModalProps> = ({ isOpen, onClo
             onChange={e => setText(e.target.value)}
             placeholder="Ваш отчет..."
             required
-            className="form-control mb-2"
-            style={{ minHeight: 100 }}
+            className="form-control mb-2 lh-30"
+            style={{ height: 200 }}
           />
           {previewUrl && (
             <div className="mb-2 position-relative">

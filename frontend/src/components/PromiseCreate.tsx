@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom'
 import { useUser, useCreatePostModal } from '@/context/UserContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 // import { supabase } from '@/lib/supabaseClient'
-import { usePromiseApi } from '@/hooks/usePromiseApi';
+import { usePromiseApi } from '@/hooks/usePromiseApi'
 
 const PromiseCreate: React.FC = () => {
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
@@ -244,11 +244,11 @@ const PromiseCreate: React.FC = () => {
             </label>
           </div>
 
-          <div className="d-flex justify-content-end gap-2">
-            <button type="button" onClick={handleClose} className="btn btn-light" disabled={loading}>
+          <div className="d-flex w-100 gap-2">
+            <button type="button" onClick={handleClose} className="btn btn-light w-50" disabled={loading}>
               Отмена
             </button>
-            <button type="submit" className="btn btn-outline-primary" disabled={loading}>
+            <button type="submit" className="btn btn-outline-primary w-50" disabled={loading}>
               {loading ? 'Сохранение...' : 'Создать'}
             </button>
           </div>

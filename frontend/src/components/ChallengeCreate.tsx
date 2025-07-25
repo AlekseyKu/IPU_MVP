@@ -252,11 +252,11 @@ const ChallengeCreate: React.FC = () => {
             </label>
           </div>
 
-          <div className="d-flex justify-content-end gap-2">
-            <button type="button" onClick={handleClose} className="btn btn-light" disabled={loading}>
+          <div className="d-flex w-100 gap-2">
+            <button type="button" onClick={handleClose} className="btn btn-light w-50" disabled={loading}>
               Отмена
             </button>
-            <button type="submit" className="btn btn-outline-primary" disabled={loading}>
+            <button type="submit" className="btn btn-outline-primary w-50" disabled={loading}>
               {loading ? 'Сохранение...' : 'Создать'}
             </button>
           </div>

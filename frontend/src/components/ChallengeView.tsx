@@ -384,7 +384,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                           setIsCheckModalOpen(false);
                         }}
                         title="Челлендж продолжается!"
-                        description="Вы на верном пути - сделайте отчет и вы будете еще на один шаг ближе к цели"
+                        description="Вы на верном пути - сделайте отчет и вы будете еще на один шаг ближе к цели!"
                         buttonText="Чек дня"
                       />
                     </>
