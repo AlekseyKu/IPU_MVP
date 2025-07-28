@@ -8,6 +8,8 @@ import { X, Image as ImageIcon } from 'lucide-react'
 // import { supabase } from '@/lib/supabaseClient'
 import { usePromiseApi } from '@/hooks/usePromiseApi'
 import { addHashtag, removeHashtag, getRandomPopularHashtags, MAX_HASHTAGS } from '@/utils/hashtags';
+import UserSearch from './UserSearch';
+import { UserData } from '@/types';
 
 const PromiseCreate: React.FC = () => {
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
@@ -25,6 +27,8 @@ const PromiseCreate: React.FC = () => {
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState('');
   const [randomPopular, setRandomPopular] = useState<string[]>([]);
+  const [isToSomeone, setIsToSomeone] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
 
   // Локальный updatePosts-заглушка, если компонент используется отдельно
   const updatePosts = () => {};
@@ -111,15 +115,22 @@ const PromiseCreate: React.FC = () => {
       // Преобразуем deadline в UTC-строку
       const utcDeadline = new Date(deadline).toISOString();
 
-      const created = await handleCreate({
+      const createPayload: any = {
         user_id: telegramId,
         title,
         deadline: utcDeadline,
         content,
         media_url: mediaUrl,
         is_public: isPublic,
-        hashtags // <--- добавляем хештеги
-      });
+        hashtags
+      };
+      if (isToSomeone && selectedUser) {
+        createPayload.requires_accept = true;
+        createPayload.recipient_id = selectedUser.telegram_id;
+        console.log('Creating promise to someone:', { requires_accept: true, recipient_id: selectedUser.telegram_id });
+      }
+      console.log('Final createPayload:', createPayload);
+      const created = await handleCreate(createPayload);
       if (created) setIsCreatePostOpen(false)
     } catch (error) {
       console.error('Error saving promise:', error)
@@ -237,6 +248,39 @@ const PromiseCreate: React.FC = () => {
               {isPublic ? 'Публичное' : 'Личное'}
             </label>
           </div>
+
+          <div className="form-check form-switch mb-2">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              checked={isToSomeone}
+              onChange={e => {
+                setIsToSomeone(e.target.checked);
+                if (!e.target.checked) setSelectedUser(null);
+              }}
+              id="isToSomeone"
+            />
+            <label className="form-check-label font-xsss" htmlFor="isToSomeone">
+              {isToSomeone ? 'Обещание кому-то' : 'Обычное обещание'}
+            </label>
+          </div>
+          {isToSomeone && (
+            <div className="mb-2">
+              <UserSearch
+                onSelect={user => setSelectedUser(user)}
+                placeholder="Кому вы даёте обещание?"
+                myTelegramId={telegramId ?? undefined}
+              />
+              {selectedUser && (
+                <div className="d-flex align-items-center mt-2 p-2 bg-light rounded">
+                  <img src={selectedUser.avatar_img_url || '/assets/images/defaultAvatar.svg'} alt="avatar" width={32} height={32} className="rounded-circle me-2" style={{ objectFit: 'cover' }} />
+                  <span className="fw-bold">{selectedUser.first_name} {selectedUser.last_name}</span>
+                  {selectedUser.username && <span className="text-muted ms-2">@{selectedUser.username}</span>}
+                  <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => setSelectedUser(null)}>×</button>
+                </div>
+              )}
+            </div>
+          )}
 
           <input
             type="datetime-local"

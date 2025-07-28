@@ -9,6 +9,7 @@ import { formatDateTime } from '@/utils/formatDate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PromiseCompleteModal from './PromiseCompleteModal';
+import PromiseCompleteForRecipientModal from './PromiseCompleteForRecipientModal';
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 import PromiseResultModal from './PromiseResultModal';
 
@@ -20,10 +21,12 @@ interface PostviewProps {
   onDelete: (id: string) => void;
   isOpen: boolean;
   isOwnProfile: boolean;
+  isOwnCreator?: boolean; // --- Новый проп для создателя ---
   isList?: boolean;
   isProfilePage?: boolean;
   avatarUrl?: string;
   userId?: number;
+  userCtxId?: number; // --- Новый проп для ID текущего пользователя ---
   userName?: string;
 }
 
@@ -35,10 +38,12 @@ const PromiseView: React.FC<PostviewProps> = ({
   onDelete,
   isOpen,
   isOwnProfile,
+  isOwnCreator,
   isList = false,
   isProfilePage = false,
   avatarUrl,
   userId,
+  userCtxId,
   userName
 }) => {
   // --- Состояния и хуки ---
@@ -48,6 +53,7 @@ const PromiseView: React.FC<PostviewProps> = ({
   const [mediaType, setMediaType] = useState<string | null>(null);
   const router = useRouter();
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [isCompleteForRecipientModalOpen, setIsCompleteForRecipientModalOpen] = useState(false);
   const [completeLoading, setCompleteLoading] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   // --- usePromiseApi ---
@@ -71,9 +77,20 @@ const PromiseView: React.FC<PostviewProps> = ({
     return today.setHours(0,0,0,0) <= deadlineDate.setHours(0,0,0,0);
   })();
 
+  // --- Новый блок: определение обещания "кому-то" ---
+  const isToSomeone = !!promise.requires_accept && !!promise.recipient_id;
+  const isRecipient = isToSomeone && userCtxId === promise.recipient_id;
+  const isCreator = isToSomeone && userCtxId === promise.user_id;
+  // --- Новый блок: состояния для кнопок ---
+  const [actionLoading, setActionLoading] = useState(false);
+
   // --- Обработчики ---
   const handleComplete = () => {
     setIsCompleteModalOpen(true);
+  };
+
+  const handleCompleteForRecipient = () => {
+    setIsCompleteForRecipientModalOpen(true);
   };
 
   const handleCompleteSubmit = async (resultText: string, file: File | null) => {
@@ -111,6 +128,50 @@ const PromiseView: React.FC<PostviewProps> = ({
     }
   };
 
+  const handleCompleteForRecipientSubmit = async (resultText: string, file: File | null) => {
+    setCompleteLoading(true);
+    try {
+      let result_media_url = null;
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('telegramId', String(promise.user_id));
+        const response = await fetch('/api/promises/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) throw new Error('Ошибка загрузки файла');
+        const data = await response.json();
+        result_media_url = data.url;
+      }
+      // Отправляем отчет через handleCompleteByCreator
+      const res = await fetch('/api/promises/recipient/complete', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          promise_id: promise.id, 
+          user_id: userCtxId,
+          result_content: resultText,
+          result_media_url: result_media_url
+        })
+      });
+      if (res.ok) {
+        onUpdate({ 
+          ...promise, 
+          is_completed_by_creator: true,
+          result_content: resultText,
+          result_media_url: result_media_url
+        });
+        setIsCompleteForRecipientModalOpen(false);
+      }
+    } catch (error) {
+      alert('Ошибка при отправке отчета');
+      console.error(error);
+    } finally {
+      setCompleteLoading(false);
+    }
+  };
+
   const handleDelete = () => {
     if (!id || !isOwnProfile) return;
     if (confirm('Вы уверены, что хотите удалить это обещание?')) {
@@ -137,6 +198,52 @@ const PromiseView: React.FC<PostviewProps> = ({
       alert('Поделиться недоступно на этом устройстве');
     }
     setMenuOpen(false);
+  };
+
+  // --- Новый блок: обработчики для новых API-роутов ---
+  const handleAccept = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/promises/recipient/accept', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promise_id: promise.id, user_id: userCtxId })
+      });
+      if (res.ok) onUpdate({ ...promise, is_accepted: true });
+    } finally { setActionLoading(false); }
+  };
+  const handleDecline = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/promises/recipient/decline', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promise_id: promise.id, user_id: userCtxId })
+      });
+      if (res.ok) onUpdate({ ...promise, is_accepted: false });
+    } finally { setActionLoading(false); }
+  };
+  const handleCompleteByCreator = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/promises/recipient/complete', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promise_id: promise.id, user_id: userCtxId })
+      });
+      if (res.ok) onUpdate({ ...promise, is_completed_by_creator: true });
+    } finally { setActionLoading(false); }
+  };
+  const handleConfirmComplete = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/promises/recipient/confirm-complete', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promise_id: promise.id, user_id: userCtxId })
+      });
+      if (res.ok) onUpdate({ ...promise, is_completed_by_recipient: true, is_completed: true });
+    } finally { setActionLoading(false); }
   };
 
   // --- Закрытие меню при клике вне него ---
@@ -199,16 +306,16 @@ const PromiseView: React.FC<PostviewProps> = ({
               ))}
             </div>
           )}
-          {isOwnProfile && isProfilePage && (
-            <div className="d-flex justify-content-end align-items-center mb-1">
-              {!is_public && (
-                <>
-                  <span className="text-muted font-xssss me-1">Личное</span>
-                  <GlobeLock className="w-2 h-2 text-muted" />
-                </>
-              )}
-            </div>
-          )}
+                     {isOwnProfile && isProfilePage && (
+             <div className="d-flex justify-content-end align-items-center mb-1">
+               {!is_public && (
+                 <>
+                   <span className="text-muted font-xssss me-1">Личное</span>
+                   <GlobeLock className="w-2 h-2 text-muted" />
+                 </>
+               )}
+             </div>
+           )}
         </div>
         <div className="d-flex justify-content-between align-items-center">
           <span className="text-muted font-xsss">
@@ -234,43 +341,140 @@ const PromiseView: React.FC<PostviewProps> = ({
               )}
             </div>
           )}
-          {/* --- Кнопка Завершить или Результат --- */}
-          {isOwnProfile && isProfilePage && !is_completed && (
-            <div className="d-flex justify-content-center py-2">
-              <button
-                className="btn w-50 btn-outline-primary"
-                onClick={handleComplete}
-                disabled={!isDeadlineActive}
-              >
-                Завершить
-              </button>
-            </div>
+          {/* --- Новый блок: логика для обещаний "кому-то" --- */}
+          {isToSomeone ? (
+            <>
+              {/* --- Для создателя (Ю1) --- */}
+              {isCreator && (
+                <div className="d-flex flex-column align-items-center mb-2">
+                  {/* Не подтверждено */}
+                  {promise.is_accepted === null && !promise.is_completed_by_creator && (
+                    <button className="btn btn-outline-secondary w-50 mb-2" disabled>
+                      Не подтверждено
+                    </button>
+                  )}
+                  {/* Отказано */}
+                  {promise.is_accepted === false && (
+                    <button className="btn btn-outline-danger w-50 mb-2" disabled>
+                      Отказано
+                    </button>
+                  )}
+                                     {/* Принято, но не завершено */}
+                   {promise.is_accepted === true && !promise.is_completed_by_creator && (
+                     <button
+                       className="btn btn-outline-primary w-50 mb-2"
+                       onClick={handleCompleteForRecipient}
+                       disabled={actionLoading}
+                     >
+                       {actionLoading ? 'Обработка...' : 'Создать отчет'}
+                     </button>
+                   )}
+                  {/* Завершено создателем, ждет подтверждения */}
+                  {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
+                    <button className="btn btn-outline-warning w-50 mb-2" disabled>
+                      Ожидание подтверждения
+                    </button>
+                  )}
+                  {/* Обещание полностью выполнено */}
+                  {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
+                    <button className="btn btn-outline-success w-50 mb-2" disabled>
+                      Выполнено
+                    </button>
+                  )}
+                </div>
+              )}
+              {/* --- Для получателя (Ю2) --- */}
+              {isRecipient && (
+                <div className="d-flex flex-column align-items-center mb-2">
+                  {/* Не обработано: принять/отклонить */}
+                  {promise.is_accepted === null && !promise.is_completed_by_recipient && (
+                    <div className="d-flex gap-2 mb-2">
+                      <button className="btn btn-outline-primary" onClick={handleAccept} disabled={actionLoading}>
+                        {actionLoading ? 'Обработка...' : 'Принять'}
+                      </button>
+                      <button className="btn btn-outline-danger" onClick={handleDecline} disabled={actionLoading}>
+                        {actionLoading ? 'Обработка...' : 'Отказать'}
+                      </button>
+                    </div>
+                  )}
+                  {/* Принято, ждет завершения создателя */}
+                  {promise.is_accepted === true && !promise.is_completed_by_creator && (
+                    <button className="btn btn-outline-warning w-50 mb-2" disabled>
+                      Ожидание завершения
+                    </button>
+                  )}
+                  {/* Завершено создателем, ждет подтверждения получателя */}
+                  {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
+                    <div className="d-flex gap-2 mb-2">
+                      <button className="btn btn-outline-success" onClick={handleConfirmComplete} disabled={actionLoading}>
+                        {actionLoading ? 'Обработка...' : 'Подтвердить выполнение'}
+                      </button>
+                      {/* Можно добавить кнопку "Отклонить выполнение" при необходимости */}
+                    </div>
+                  )}
+                  {/* Обещание полностью выполнено */}
+                  {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
+                    <button className="btn btn-outline-success w-50 mb-2" disabled>
+                      Выполнено
+                    </button>
+                  )}
+                  {/* Отказано */}
+                  {promise.is_accepted === false && (
+                    <button className="btn btn-outline-danger w-50 mb-2" disabled>
+                      Отказано
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            // --- Старая логика для обычных обещаний ---
+            <>
+              {isOwnProfile && isProfilePage && !is_completed && (
+                <div className="d-flex justify-content-center py-2">
+                  <button
+                    className="btn w-50 btn-outline-primary"
+                    onClick={handleComplete}
+                    disabled={!isDeadlineActive}
+                  >
+                    Завершить
+                  </button>
+                </div>
+              )}
+              {is_completed && (
+                <div className="d-flex justify-content-center py-2">
+                  <button
+                    className="btn w-50 btn-outline-primary"
+                    onClick={() => setIsResultModalOpen(true)}
+                  >
+                    Результат
+                  </button>
+                </div>
+              )}
+            </>
           )}
-          {is_completed && (
-            <div className="d-flex justify-content-center py-2">
-              <button
-                className="btn w-50 btn-outline-primary"
-                onClick={() => setIsResultModalOpen(true)}
-              >
-                Результат
-              </button>
-            </div>
-          )}
-          {isCompleteModalOpen && (
-            <PromiseCompleteModal
-              onClose={() => setIsCompleteModalOpen(false)}
-              onSubmit={handleCompleteSubmit}
-              loading={completeLoading}
-            />
-          )}
-          {isResultModalOpen && (
-            <PromiseResultModal
-              onClose={() => setIsResultModalOpen(false)}
-              result_content={promise.result_content}
-              result_media_url={promise.result_media_url}
-              completed_at={promise.completed_at}
-            />
-          )}
+                     {isCompleteModalOpen && (
+             <PromiseCompleteModal
+               onClose={() => setIsCompleteModalOpen(false)}
+               onSubmit={handleCompleteSubmit}
+               loading={completeLoading}
+             />
+           )}
+           {isCompleteForRecipientModalOpen && (
+             <PromiseCompleteForRecipientModal
+               onClose={() => setIsCompleteForRecipientModalOpen(false)}
+               onSubmit={handleCompleteForRecipientSubmit}
+               loading={completeLoading}
+             />
+           )}
+           {isResultModalOpen && (
+             <PromiseResultModal
+               onClose={() => setIsResultModalOpen(false)}
+               result_content={promise.result_content}
+               result_media_url={promise.result_media_url}
+               completed_at={promise.completed_at}
+             />
+           )}
           <span className="text-muted small">Создано: {formatDateTime(created_at)}</span>
 
           {/* --- Меню --- */}

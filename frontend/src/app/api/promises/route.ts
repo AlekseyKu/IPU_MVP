@@ -1,3 +1,4 @@
+// TODO: Для обещаний с recipient_id и requires_accept использовать отдельные роуты (accept, decline, complete, confirm-complete) — не смешивать с обычной логикой.
 // frontend\src\app\api\promises\route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
@@ -5,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
+    console.log('API: Received promise data:', data);
     // Минимальная валидация
     if (!data.user_id || !data.title || !data.deadline) {
       return NextResponse.json({ error: 'user_id, title и deadline обязательны' }, { status: 400 });
@@ -18,7 +20,13 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
       is_completed: false,
       is_public: data.is_public ?? true,
-      hashtags: data.hashtags || null
+      hashtags: data.hashtags || null,
+      // --- Новые поля для обещаний "кому-то" ---
+      requires_accept: data.requires_accept || false,
+      recipient_id: data.recipient_id || null,
+      is_accepted: data.requires_accept ? null : null, // null для обещаний "кому-то"
+      is_completed_by_creator: null,
+      is_completed_by_recipient: null
     }).select().single();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -43,7 +51,7 @@ export async function PUT(request: NextRequest) {
     // Формируем объект для обновления, поддерживая новые поля
     const updateFields: any = { ...updatedPromise };
     // Только разрешённые поля
-    const allowed = ['title','content','media_url','deadline','is_public','is_completed','result_content','result_media_url','completed_at','hashtags'];
+    const allowed = ['title','content','media_url','deadline','is_public','is_completed','result_content','result_media_url','completed_at','hashtags','requires_accept','recipient_id','is_accepted','is_completed_by_creator','is_completed_by_recipient'];
     Object.keys(updateFields).forEach(key => { if (!allowed.includes(key)) delete updateFields[key]; });
 
     const { error, data: updatedRows } = await supabase

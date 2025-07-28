@@ -49,6 +49,29 @@ export default function UserProfile() {
   const { userData, isLoading: userLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId)
   const isOwn = ctxId === telegramId
 
+  // --- Новый блок: фильтрация постов для разных пользователей ---
+  const filteredPosts = useMemo(() => {
+    if (isOwn) {
+      // Для владельца профиля показываем все его посты (собственные + адресованные ему)
+      return allPosts;
+    }
+    
+    // Для других пользователей фильтруем посты
+    return allPosts.filter(post => {
+      if (isPromiseData(post)) {
+        // Обычное обещание - показываем только публичные
+        if (!post.requires_accept) {
+          return post.is_public;
+        }
+        // Обещание "кому-то" - показываем только если адресовано текущему пользователю
+        return post.is_public && post.recipient_id === ctxId;
+      }
+      // Челленджи - показываем все (старая логика)
+      return true;
+    });
+  }, [allPosts, isOwn, ctxId]);
+  // --- конец блока фильтрации ---
+
   const updatePosts = (
     post: PromiseData | ChallengeData,
     eventType: 'INSERT' | 'UPDATE' | 'DELETE'
@@ -93,6 +116,40 @@ export default function UserProfile() {
     // Для других пользователей используем дефолтный аватар
     return '/assets/images/defaultAvatar.png';
   };
+
+  // --- Новый блок: загрузка информации о создателях обещаний ---
+  const [promiseCreators, setPromiseCreators] = useState<Record<number, UserData>>({});
+
+  const loadPromiseCreators = async (promises: PromiseData[]) => {
+    const creatorIds = promises
+      .filter(p => p.user_id !== telegramId) // Только создатели, которые не являются владельцем профиля
+      .map(p => p.user_id)
+      .filter((id, index, arr) => arr.indexOf(id) === index); // Уникальные ID
+
+    if (creatorIds.length === 0) return;
+
+    try {
+      const { data: creators, error } = await supabase
+        .from('users')
+        .select('telegram_id, username, first_name, last_name, avatar_img_url')
+        .in('telegram_id', creatorIds);
+
+      if (error) {
+        console.error('Error loading promise creators:', error);
+        return;
+      }
+
+      const creatorsMap = (creators || []).reduce((acc, creator) => {
+        acc[creator.telegram_id] = creator;
+        return acc;
+      }, {} as Record<number, UserData>);
+
+      setPromiseCreators(creatorsMap);
+    } catch (error) {
+      console.error('Error loading promise creators:', error);
+    }
+  };
+  // --- конец блока загрузки создателей ---
 
   // Загрузка подписанных челленджей
   const loadSubscribedChallenges = async () => {
@@ -161,10 +218,17 @@ export default function UserProfile() {
     setTelegramId(telegramId)
 
     Promise.all([
+      // --- Загружаем собственные обещания пользователя ---
       supabase
         .from('promises')
         .select('*')
         .eq('user_id', telegramId)
+        .order('created_at', { ascending: false }),
+      // --- Загружаем обещания, адресованные пользователю ---
+      supabase
+        .from('promises')
+        .select('*')
+        .eq('recipient_id', telegramId)
         .order('created_at', { ascending: false }),
       supabase
         .from('challenges')
@@ -172,12 +236,14 @@ export default function UserProfile() {
         .eq('user_id', telegramId)
         .order('created_at', { ascending: false }),
     ])
-      .then(([pRes, cRes]) => {
-        if (pRes.error) throw pRes.error
+      .then(([ownPromisesRes, receivedPromisesRes, cRes]) => {
+        if (ownPromisesRes.error) throw ownPromisesRes.error
+        if (receivedPromisesRes.error) throw receivedPromisesRes.error
         if (cRes.error) throw cRes.error
 
         const merged = [
-          ...(pRes.data || []),
+          ...(ownPromisesRes.data || []),
+          ...(receivedPromisesRes.data || []),
           ...(cRes.data || []),
         ].sort(
           (a, b) =>
@@ -185,6 +251,13 @@ export default function UserProfile() {
             new Date(a.created_at).getTime()
         )
         setAllPosts(merged)
+        
+        // --- Загружаем информацию о создателях обещаний ---
+        const allPromises = [
+          ...(ownPromisesRes.data || []),
+          ...(receivedPromisesRes.data || [])
+        ] as PromiseData[];
+        loadPromiseCreators(allPromises);
       })
       .catch((err) => {
         console.error(err)
@@ -205,6 +278,7 @@ export default function UserProfile() {
 
     const channel = supabase
       .channel(`posts-${telegramId}`)
+      // --- Отслеживаем собственные обещания пользователя ---
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
@@ -218,6 +292,22 @@ export default function UserProfile() {
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
+        (payload) => updatePosts(payload.old as PromiseData, 'DELETE')
+      )
+      // --- Отслеживаем обещания, адресованные пользователю ---
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'promises', filter: `recipient_id=eq.${telegramId}` },
+        (payload) => updatePosts(payload.new as PromiseData, 'INSERT')
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'promises', filter: `recipient_id=eq.${telegramId}` },
+        (payload) => updatePosts(payload.new as PromiseData, 'UPDATE')
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'promises', filter: `recipient_id=eq.${telegramId}` },
         (payload) => updatePosts(payload.old as PromiseData, 'DELETE')
       )
       .on(
@@ -312,9 +402,10 @@ export default function UserProfile() {
                   )}
                 </AnimatePresence>
               </div>
-                                            <div className="col-xl-8 col-xxl-9 col-lg-8">
-                 <AnimatePresence>
-                   {allPosts.map((post) =>
+              <div className="col-xl-8 col-xxl-9 col-lg-8">
+                <AnimatePresence>
+                  {/* --- Изменено: используем filteredPosts вместо allPosts --- */}
+                  {filteredPosts.map((post) =>
                     isPromiseData(post) ? (
                       <motion.div
                         key={post.id}
@@ -332,9 +423,21 @@ export default function UserProfile() {
                           onUpdate={handleUpdate}
                           onDelete={handleDelete}
                           isOwnProfile={isOwn}
-                          avatarUrl={localUser.avatar_img_url || defaultAvatarImg}
-                          userId={telegramId}
-                          userName={fullName}
+                          isOwnCreator={post.user_id === (ctxId || 0)}
+                          avatarUrl={
+                            post.user_id === telegramId 
+                              ? (localUser?.avatar_img_url || defaultAvatarImg)
+                              : (promiseCreators[post.user_id]?.avatar_img_url || defaultAvatarImg)
+                          }
+                          userId={post.user_id}
+                          userCtxId={ctxId || 0}
+                          userName={
+                            post.user_id === telegramId
+                              ? fullName
+                              : promiseCreators[post.user_id]
+                                ? `${promiseCreators[post.user_id].first_name || ''} ${promiseCreators[post.user_id].last_name || ''}`.trim() || `@${post.user_id}`
+                                : `@${post.user_id}`
+                          }
                           isList
                           isProfilePage
                         />
@@ -347,42 +450,42 @@ export default function UserProfile() {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                                                 <ChallengeView
-                           key={`${post.id}-${isChallengeData(post) ? post.completed_reports : ''}-${isChallengeData(post) ? post.start_at : ''}`}
-                           challenge={post}
-                           onToggle={() =>
-                             setOpenPostId(openPostId === post.id ? null : post.id)
-                           }
-                           isOpen={openPostId === post.id}
-                           onUpdate={updated => updatePosts(updated, 'UPDATE')}
-                           onDelete={() => {
-                             handleDeleteChallenge(post.id);
-                             setSubscribedChallenges(prev => prev.filter(c => c.id !== post.id));
-                           }}
-                           isOwnProfile={post.user_id === telegramId}
-                           avatarUrl={
-                             isChallengeData(post) && (post as ChallengeWithOwner).owner?.avatar_img_url
-                               ? (post as ChallengeWithOwner).owner!.avatar_img_url
-                               : getUserAvatar(post.user_id)
-                           }
-                           userId={post.user_id}
-                           userName={
-                             isChallengeData(post) && (post as ChallengeWithOwner).owner
-                               ? (
-                                   ((post as ChallengeWithOwner).owner!.first_name || '') +
-                                   ' ' +
-                                   ((post as ChallengeWithOwner).owner!.last_name || '') ||
-                                   (post as ChallengeWithOwner).owner!.username ||
-                                   `@${post.user_id}`
-                                 ).trim()
-                               : getUserName(post.user_id)
-                           }
-                           isList
-                           isProfilePage
-                           onStart={() => handleUpdateChallenge(post.id, telegramId, 'start')}
-                           onCheckDay={() => handleUpdateChallenge(post.id, telegramId, 'check_day')}
-                           onFinish={() => handleUpdateChallenge(post.id, telegramId, 'finish')}
-                         />
+                        <ChallengeView
+                          key={`${post.id}-${isChallengeData(post) ? post.completed_reports : ''}-${isChallengeData(post) ? post.start_at : ''}`}
+                          challenge={post}
+                          onToggle={() =>
+                            setOpenPostId(openPostId === post.id ? null : post.id)
+                          }
+                          isOpen={openPostId === post.id}
+                          onUpdate={updated => updatePosts(updated, 'UPDATE')}
+                          onDelete={() => {
+                            handleDeleteChallenge(post.id);
+                            setSubscribedChallenges(prev => prev.filter(c => c.id !== post.id));
+                          }}
+                          isOwnProfile={post.user_id === telegramId}
+                          avatarUrl={
+                            isChallengeData(post) && (post as ChallengeWithOwner).owner?.avatar_img_url
+                              ? (post as ChallengeWithOwner).owner!.avatar_img_url
+                              : getUserAvatar(post.user_id)
+                          }
+                          userId={post.user_id}
+                          userName={
+                            isChallengeData(post) && (post as ChallengeWithOwner).owner
+                              ? (
+                                  ((post as ChallengeWithOwner).owner!.first_name || '') +
+                                  ' ' +
+                                  ((post as ChallengeWithOwner).owner!.last_name || '') ||
+                                  (post as ChallengeWithOwner).owner!.username ||
+                                  `@${post.user_id}`
+                                ).trim()
+                              : getUserName(post.user_id)
+                          }
+                          isList
+                          isProfilePage
+                          onStart={() => handleUpdateChallenge(post.id, telegramId, 'start')}
+                          onCheckDay={() => handleUpdateChallenge(post.id, telegramId, 'check_day')}
+                          onFinish={() => handleUpdateChallenge(post.id, telegramId, 'finish')}
+                        />
                       </motion.div>
                     )
                   )}
@@ -390,8 +493,8 @@ export default function UserProfile() {
               </div>
             </div>
           </div>
-                 </div>
-       </div>
+        </div>
+      </div>
       <Appfooter />
     </>
   )

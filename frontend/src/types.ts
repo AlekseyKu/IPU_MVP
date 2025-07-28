@@ -39,6 +39,12 @@ export interface PromiseData extends PostData {
   result_content?: string;      // завершение - текст
   result_media_url?: string; // завершение - медиа
   completed_at?: string;     // завершение - дата
+  // --- Новые поля для обещаний "кому-то" ---
+  requires_accept?: boolean;
+  recipient_id?: number;
+  is_accepted?: boolean | null;
+  is_completed_by_creator?: boolean | null;
+  is_completed_by_recipient?: boolean | null;
 }
 
 export interface ChallengeData extends PostData {
