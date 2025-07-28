@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
+import { useChallengeParticipants } from '@/hooks/useChallengeParticipants';
 import ChallengeCheckModal from './ChallengeCheckModal';
 
 // --- Константы ---
@@ -70,6 +71,23 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const [reports, setReports] = useState<ChallengeReport[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+  const [isJoiningChallenge, setIsJoiningChallenge] = useState(false);
+  
+  // Используем новый хук для участников
+  const {
+    participants,
+    isLoading: participantsLoading,
+    error: participantsError,
+    fetchParticipants,
+    checkParticipation,
+    joinChallenge,
+    leaveChallenge,
+    toggleParticipation
+  } = useChallengeParticipants(
+    challenge.user_id, // telegram_id владельца челленджа
+    undefined, // setOwnerUserData - пока не передаем, так как нет глобального стейта владельца
+    undefined  // setOwnerError - пока не передаем
+  );
 
   // --- Эффекты ---
   useEffect(() => {
@@ -125,6 +143,12 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
       .catch(() => setReports([]))
       .finally(() => setReportsLoading(false));
   }, [isOpen, challenge.id, userId]);
+
+  // Загрузка участников при открытии деталей челленджа
+  useEffect(() => {
+    if (!isOpen) return;
+    fetchParticipants(challenge.id);
+  }, [isOpen, challenge.id, fetchParticipants]);
 
   // Найти текущий период (сегодня)
   const today = new Date().toISOString().split('T')[0];
@@ -298,6 +322,36 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   };
 
+  // --- Действия ---
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  
+  // Проверяем участие пользователя при загрузке
+  useEffect(() => {
+    if (!telegramId || !isOpen) return;
+    
+    const checkUserParticipation = async () => {
+      const isParticipant = await checkParticipation(challenge.id, telegramId);
+      setIsSubscribed(isParticipant);
+    };
+    
+    checkUserParticipation();
+  }, [telegramId, challenge.id, isOpen, checkParticipation]);
+
+  const handleToggleChallengeSubscription = useCallback(async () => {
+    if (isOwnProfile || !telegramId) return;
+    setIsJoiningChallenge(true);
+    try {
+      const success = await toggleParticipation(challenge.id, telegramId);
+      if (success) {
+        setIsSubscribed(!isSubscribed);
+      }
+    } catch (error) {
+      console.error('Error toggling challenge subscription:', error);
+    } finally {
+      setIsJoiningChallenge(false);
+    }
+  }, [challenge.id, isOwnProfile, telegramId, isSubscribed, toggleParticipation]);
+
   // --- JSX ---
   return (
     <div className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative" onClick={onToggle}>
@@ -358,6 +412,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           )}
 
           {/* --- Кнопки управления --- */}
+          {/* Кнопки для владельца челленджа */}
           {isOwnProfile && isProfilePage && !is_completed && (
             <div className="d-flex justify-content-center py-2">
               {!isStarted ? (
@@ -419,6 +474,27 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
             </div>
           )}
 
+          {/* Кнопка присоединения/отписки для других пользователей */}
+          {!isOwnProfile && !is_completed && (
+            <div className="d-flex justify-content-center py-2">
+              <button 
+                className={`btn w-50 ${isSubscribed ? 'btn-outline-primary' : 'btn-outline-primary'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleChallengeSubscription();
+                }}
+                disabled={isJoiningChallenge}
+              >
+                {isJoiningChallenge 
+                  ? 'Обработка...' 
+                  : isSubscribed 
+                    ? 'Отписаться от челленджа' 
+                    : 'Присоединиться'
+                }
+              </button>
+            </div>
+          )}
+
           {/* --- Следующий чек --- */}
           {isStarted && formattedNextPeriod && (
             <div className="d-flex justify-content-center text-muted font-xsss mb-2">
@@ -464,7 +540,40 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                   ))}
                 </div>
               ) : (
-                <div className="text-muted font-xsss">Участники (пусто)</div>
+                <div>
+                  {participantsLoading ? (
+                    <div className="text-muted font-xsss">Загрузка участников...</div>
+                  ) : participants.length === 0 ? (
+                    <div className="text-muted font-xsss">Нет участников</div>
+                  ) : (
+                    <div>
+                      {participants.map((participant) => (
+                        <div key={participant.telegram_id} className="d-flex align-items-center mb-2 p-2">
+                          <Link 
+                            href={participant.telegram_id === telegramId ? `/user/${participant.telegram_id}` : `/profile/${participant.telegram_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="d-flex align-items-center text-decoration-none"
+                          >
+                            <img 
+                              src={participant.avatar_img_url || '/assets/images/defaultAvatar.png'} 
+                              alt="avatar" 
+                              width={32} 
+                              height={32} 
+                              className="rounded-circle me-2" 
+                              style={{ objectFit: 'cover' }} 
+                            />
+                            <span className="text-dark font-xsss">
+                              {participant.first_name && participant.last_name 
+                                ? `${participant.first_name} ${participant.last_name}`
+                                : participant.username || `@${participant.telegram_id}`
+                              }
+                            </span>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

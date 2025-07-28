@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useUser } from '@/context/UserContext';
+import { useUserData } from '@/hooks/useUserData';
 import {
   Video,
   Search,
@@ -37,6 +38,7 @@ const Header: React.FC = () => {
   })
 
   const { telegramId } = useUser();
+  const { userData } = useUserData(telegramId || 0);
 
   const [isMounted, setIsMounted] = useState(false)
 
@@ -226,7 +228,7 @@ const Header: React.FC = () => {
               <div className="nav-caption fw-600 font-xssss text-grey-500">Аккаунт</div>
               <ul className="mb-1">
                 <li>
-                  <Link href={telegramId ? `/settings/${telegramId}` : '/'} className="nav-content-bttn open-font h-auto pt-2 pb-2">
+                  <Link href={userData?.telegram_id ? `/settings/${userData.telegram_id}` : '/'} className="nav-content-bttn open-font h-auto pt-2 pb-2">
                     <Settings className="me-3 w-4 h-4 text-grey-500" />
                     <span>Настройки</span>
                   </Link>
@@ -262,7 +264,7 @@ const Header: React.FC = () => {
       <div className={`app-header-search ${uiState.isActive ? 'show' : ''}` } style={{ zIndex: 9998 }}>
         <form className="search-form">
           <div className="form-group searchbox mb-0 border-0 p-1">
-            <UserSearch />
+            <UserSearch myTelegramId={typeof userData?.telegram_id === 'number' ? userData.telegram_id : undefined} />
             <span className="ms-1 mt-1 d-inline-block close searchbox-close cursor-pointer">
               <X className="w-4 h-4 me-2 mb-2" onClick={() => toggleState('isActive')} />
             </span>

@@ -8356,8 +8356,8 @@ textarea.form-control-lg {
 }
 
 .my-2 {
-  margin-top: 0.5rem !important;
-  margin-bottom: 0.5rem !important;
+  margin-top: 0.5rem !important;;
+  margin-bottom: 0.5rem !important;;
 }
 
 .my-3 {
@@ -8562,8 +8562,8 @@ textarea.form-control-lg {
 }
 
 .py-3 {
-  padding-top: 1rem !important;
-  padding-bottom: 1rem !important;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 
 .py-4 {

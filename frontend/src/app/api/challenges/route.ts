@@ -14,7 +14,7 @@ interface CreateChallengeBody {
 
 interface ActionBody {
   user_id: number;
-  action: 'start' | 'check_day' | 'finish';
+  action: 'start' | 'check_day' | 'finish' | 'joinChallenge' | 'leaveChallenge';
   start_at?: string;
   final_check?: boolean;
   comment?: string;
@@ -104,8 +104,60 @@ export async function PUT(request: Request) {
 
     if (!id) return NextResponse.json({ detail: 'Missing challenge id' }, { status: 400 });
 
-    const { user_id, action, start_at, final_check } = body;
+    const { user_id, action } = body;
     if (!user_id || !action) return NextResponse.json({ detail: 'Missing user_id or action' }, { status: 400 });
+
+    // Для joinChallenge и leaveChallenge не проверяем владельца
+    if (action === 'joinChallenge' || action === 'leaveChallenge') {
+      // Проверяем существование челленджа
+      const { data: challenge, error } = await supabase
+        .from('challenges')
+        .select('id')
+        .eq('id', id)
+        .single();
+      if (error || !challenge) return NextResponse.json({ detail: 'Challenge not found' }, { status: 404 });
+      
+      if (action === 'joinChallenge') {
+        // Проверяем, не участвует ли уже пользователь
+        const { data: existingParticipant } = await supabase
+          .from('challenge_participants')
+          .select('id')
+          .eq('challenge_id', id)
+          .eq('user_id', user_id)
+          .single();
+        
+        if (!existingParticipant) {
+          // Добавляем участника
+          const { error: insertError } = await supabase
+            .from('challenge_participants')
+            .insert({
+              challenge_id: id,
+              user_id: user_id,
+              joined_at: new Date().toISOString()
+            });
+          if (insertError) throw insertError;
+        }
+      } else if (action === 'leaveChallenge') {
+        // Удаляем участника
+        const { error: deleteError } = await supabase
+          .from('challenge_participants')
+          .delete()
+          .eq('challenge_id', id)
+          .eq('user_id', user_id);
+        if (deleteError) throw deleteError;
+      }
+      
+      // Возвращаем обновленный объект челленджа
+      const { data: updatedChallenge, error: selectError } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (selectError || !updatedChallenge) {
+        return NextResponse.json({ detail: 'Challenge not found after update' }, { status: 500 });
+      }
+      return NextResponse.json(updatedChallenge, { status: 200 });
+    }
 
     const challenge = await supabase
       .from('challenges')
@@ -123,7 +175,7 @@ export async function PUT(request: Request) {
       const { comment, media_url } = body;
       const frequencyInterval = { daily: 1, weekly: 7, monthly: 30 } as const;
       const interval = frequencyInterval[challenge.data.frequency as keyof typeof frequencyInterval];
-      const nowIso = start_at || now.toISOString();
+      const nowIso = body.start_at || now.toISOString();
       const newReportPeriods = generateReportPeriods(now, challenge.data.total_reports, interval);
       const newDeadlinePeriod = newReportPeriods[newReportPeriods.length - 1];
 

@@ -1,3 +1,4 @@
+// frontend\src\components\UserSearch.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserData } from '@/types';
@@ -5,12 +6,13 @@ import { UserData } from '@/types';
 interface UserSearchProps {
   onSelect?: (user: UserData) => void;
   placeholder?: string;
+  myTelegramId?: number;
 }
 
 const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_DELAY = 300;
 
-const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Поиск пользователей...' }) => {
+const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Поиск пользователей...', myTelegramId }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,7 +76,11 @@ const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Пои
     if (onSelect) {
       onSelect(user);
     } else {
-      router.push(`/profile/${user.telegram_id}`);
+      if (myTelegramId && user.telegram_id === myTelegramId) {
+        router.push(`/user/${user.telegram_id}`);
+      } else {
+        router.push(`/profile/${user.telegram_id}`);
+      }
     }
   };
 

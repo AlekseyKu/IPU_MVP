@@ -149,32 +149,33 @@ const ProfilecardThree: React.FC<Props> = ({
 
       <div className="card-body d-block w-100 shadow-none mb-0 mt-2 pt-2 p-0 border-top-xs">
         {!isEditable && (
-          <ul
-            className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
-            role="tablist"
-          >
-            {tabs.map(({ label, count }, i) => (
-              <li
-                key={i}
-                className="flex-fill d-flex flex-column align-items-center justify-content-center text-center me-0"
-              >
-                <div className="fw-400 font-xss mb-0">{count}</div>
-                <div className="fw-400 font-xssss text-dark">{label}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {!isOwnProfile && (
-          <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
-            <button
-              onClick={handleSubscribe}
-              className="btn btn-outline-primary me-2"
-              disabled={isLoading}
+          <>
+            <ul
+              className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
+              role="tablist"
             >
-              {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
-            </button>
-          </div>
+              {tabs.map(({ label, count }, i) => (
+                <li
+                  key={i}
+                  className="flex-fill d-flex flex-column align-items-center justify-content-center text-center me-0"
+                >
+                  <div className="fw-400 font-xss mb-0">{count}</div>
+                  <div className="fw-400 font-xssss text-dark">{label}</div>
+                </li>
+              ))}
+            </ul>
+            {!isOwnProfile && (
+              <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
+                <button
+                  onClick={handleSubscribe}
+                  className="btn btn-outline-primary me-2"
+                  disabled={isLoading}
+                >
+                  {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

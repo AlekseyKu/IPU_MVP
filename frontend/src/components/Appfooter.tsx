@@ -60,7 +60,7 @@ const Appfooter: React.FC = () => {
 
   return (
     <>
-      <div className="app-footer border-0 shadow-lg bg-white d-flex justify-content-around align-items-center py-3">
+      <div className="app-footer border-0 shadow-lg bg-white d-flex justify-content-around align-items-start">
         {links.map(({ icon: Icon, getHref, onClick }, idx) => {
           const href = getHref()
           const isActive = pathname === href
@@ -72,7 +72,7 @@ const Appfooter: React.FC = () => {
                 e.preventDefault()
                 onClick()
               }}
-              className="nav-content-bttn nav-center bg-transparent border-0 p-0"
+              className="nav-content-bttn nav-center bg-transparent border-0 p-0 mt-3"
             >
               <Icon
                 style={{ color: isActive ? '#0066ff' : '#A0AEC0' }}

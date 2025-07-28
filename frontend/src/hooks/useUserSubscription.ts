@@ -8,12 +8,12 @@ export default function useUserSubscription(
   setUserData: Dispatch<SetStateAction<UserData | null>>,
   setError: Dispatch<SetStateAction<string | null>>
 ) {
-  const handleSubscribe = async (telegramId: number, isSubscribed: boolean) => {
+  const handleSubscribe = async (followedId: number, isSubscribed: boolean) => {
     try {
       const response = await fetch('/api/subscriptions', {
         method: isSubscribed ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ follower_id: telegramId, followed_id: telegramId }),
+        body: JSON.stringify({ follower_id: telegramId, followed_id: followedId }),
       });
 
       if (!response.ok) {
