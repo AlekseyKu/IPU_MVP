@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    // Увеличиваем счетчик promises
-    await supabase.rpc('increment_promises', { user_id: data.user_id });
+    // Убираем RPC вызов - триггер уже обновляет счетчик
+    // await supabase.rpc('increment_promises', { user_id: data.user_id });
     return NextResponse.json({ success: true, promise: inserted });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
-} 
+}
 
 export async function PUT(request: NextRequest) {
   try {
@@ -62,14 +62,13 @@ export async function PUT(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    // Если promise стал выполненным, увеличиваем promises_done
-    if (oldPromise && !oldPromise.is_completed && updatedPromise.is_completed) {
-      await supabase.rpc('increment_promises_done', { user_id: oldPromise.user_id });
-    }
-    // Если promise был выполнен, а теперь нет — уменьшаем
-    if (oldPromise && oldPromise.is_completed && !updatedPromise.is_completed) {
-      await supabase.rpc('decrement_promises_done', { user_id: oldPromise.user_id });
-    }
+    // Убираем RPC вызовы - триггеры уже обновляют счетчики
+    // if (oldPromise && !oldPromise.is_completed && updatedPromise.is_completed) {
+    //   await supabase.rpc('increment_promises_done', { user_id: oldPromise.user_id });
+    // }
+    // if (oldPromise && oldPromise.is_completed && !updatedPromise.is_completed) {
+    //   await supabase.rpc('decrement_promises_done', { user_id: oldPromise.user_id });
+    // }
     return NextResponse.json({ success: true, promise: updatedRows?.[0] });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -97,12 +96,11 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    // Уменьшаем счетчик promises
-    await supabase.rpc('decrement_promises', { user_id });
-    // Если promise был выполнен, уменьшаем promises_done
-    if (is_completed) {
-      await supabase.rpc('decrement_promises_done', { user_id });
-    }
+    // Убираем RPC вызовы - триггеры уже обновляют счетчики
+    // await supabase.rpc('decrement_promises', { user_id });
+    // if (is_completed) {
+    //   await supabase.rpc('decrement_promises_done', { user_id });
+    // }
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

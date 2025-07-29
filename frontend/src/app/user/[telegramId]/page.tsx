@@ -1,7 +1,7 @@
 // frontend/src/app/user/[telegramId]/page.tsx
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useUser } from '@/context/UserContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -18,6 +18,7 @@ import { useUserData } from '@/hooks/useUserData'
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
 import { useChallengeParticipants } from '@/hooks/useChallengeParticipants';
+import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 
 // type guards
 function isPromiseData(post: PostData): post is PromiseData {
@@ -43,11 +44,128 @@ export default function UserProfile() {
   const [openPostId, setOpenPostId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [localUser, setLocalUser] = useState<UserData | null>(null)
+  // Убираем localUser - используем напрямую userData
+  // const [localUser, setLocalUser] = useState<UserData | null>(null)
   const [subscribedChallenges, setSubscribedChallenges] = useState<ChallengeData[]>([])
 
   const { userData, isLoading: userLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId)
   const isOwn = ctxId === telegramId
+
+  // Функция для перезагрузки данных пользователя - стабилизируем с useCallback
+  const loadUserData = useCallback(async () => {
+    if (!telegramId || isNaN(telegramId)) return;
+    
+    try {
+      const [ownPromisesRes, receivedPromisesRes, cRes] = await Promise.all([
+        supabase
+          .from('promises')
+          .select('*')
+          .eq('user_id', telegramId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('promises')
+          .select('*')
+          .eq('recipient_id', telegramId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('challenges')
+          .select('*')
+          .eq('user_id', telegramId)
+          .order('created_at', { ascending: false }),
+      ]);
+
+      if (ownPromisesRes.error) throw ownPromisesRes.error;
+      if (receivedPromisesRes.error) throw receivedPromisesRes.error;
+      if (cRes.error) throw cRes.error;
+
+      const merged = [
+        ...(ownPromisesRes.data || []),
+        ...(receivedPromisesRes.data || []),
+        ...(cRes.data || []),
+      ].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
+      
+      setAllPosts(merged);
+      console.log('📝 Posts list reloaded');
+    } catch (error) {
+      console.error('Error reloading posts:', error);
+    }
+  }, [telegramId]);
+
+  // Стабилизируем функции обработчиков с помощью useCallback
+  const handleUserStatsUpdate = useCallback((payload: any) => {
+    console.log('📊 User stats updated via centralized system:', payload);
+    // Обновление статистики уже обрабатывается в useUserData
+  }, []);
+
+  const handlePostsUpdate = useCallback((payload: any) => {
+    console.log('📝 Posts updated via centralized system:', payload);
+    
+    // Для DELETE событий перезагружаем весь список (так как payload.old содержит только id)
+    if (payload.eventType === 'DELETE') {
+      console.log('🗑️ DELETE event detected, reloading posts list');
+      loadUserData();
+    } else if (payload.eventType === 'INSERT') {
+      // Оптимистичные обновления для INSERT событий с защитой от дубликатов
+      setAllPosts(prev => {
+        // Проверяем, нет ли уже такого элемента
+        const exists = prev.some(post => post.id === payload.new.id);
+        if (exists) {
+          console.log('⚠️ Post already exists, skipping duplicate:', payload.new.id);
+          return prev;
+        }
+        // Добавляем новый элемент
+        const updated = [payload.new, ...prev].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        console.log('➕ Optimistically added post:', payload.new.id);
+        return updated;
+      });
+    } else {
+      // Для UPDATE перезагружаем весь список
+      loadUserData();
+    }
+  }, [loadUserData]);
+
+  const handleChallengesUpdate = useCallback((payload: any) => {
+    console.log('🏆 Challenges updated via centralized system:', payload);
+    
+    // Для DELETE событий перезагружаем весь список (так как payload.old содержит только id)
+    if (payload.eventType === 'DELETE') {
+      console.log('🗑️ DELETE event detected, reloading challenges list');
+      loadUserData();
+    } else if (payload.eventType === 'INSERT') {
+      // Оптимистичные обновления для INSERT событий с защитой от дубликатов
+      setAllPosts(prev => {
+        // Проверяем, нет ли уже такого элемента
+        const exists = prev.some(post => post.id === payload.new.id);
+        if (exists) {
+          console.log('⚠️ Challenge already exists, skipping duplicate:', payload.new.id);
+          return prev;
+        }
+        // Добавляем новый элемент
+        const updated = [payload.new, ...prev].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        console.log('➕ Optimistically added challenge:', payload.new.id);
+        return updated;
+      });
+    } else {
+      // Для UPDATE перезагружаем весь список
+      loadUserData();
+    }
+  }, [loadUserData]);
+
+  // Централизованная система real-time обновлений
+  useRealtimeUpdates({
+    telegramId,
+    onUserStatsUpdate: handleUserStatsUpdate,
+    onPostsUpdate: handlePostsUpdate,
+    onChallengesUpdate: handleChallengesUpdate
+  });
 
   // --- Новый блок: фильтрация постов для разных пользователей ---
   const filteredPosts = useMemo(() => {
@@ -59,7 +177,7 @@ export default function UserProfile() {
     // Для других пользователей фильтруем посты
     return allPosts.filter(post => {
       if (isPromiseData(post)) {
-        // Обычное обещание - показываем только публичные
+        // Обещание себе - показываем только публичные
         if (!post.requires_accept) {
           return post.is_public;
         }
@@ -76,7 +194,8 @@ export default function UserProfile() {
     post: PromiseData | ChallengeData,
     eventType: 'INSERT' | 'UPDATE' | 'DELETE'
   ) => {
-    console.log('[updatePosts]', eventType, post);
+    // Убираем логирование - updatePosts больше не должен вызываться
+    // console.log('[updatePosts]', eventType, post);
     setAllPosts((prev) => {
       let list = [...prev]
 
@@ -102,7 +221,7 @@ export default function UserProfile() {
   // Функция для получения имени пользователя по ID
   const getUserName = (userId: number) => {
     if (userId === telegramId) {
-      return `${localUser?.first_name || ''} ${localUser?.last_name || ''}`.trim() || `@${userId}`;
+      return `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim() || `@${userId}`;
     }
     // Для других пользователей показываем ID, можно добавить загрузку данных
     return `@${userId}`;
@@ -111,7 +230,7 @@ export default function UserProfile() {
   // Функция для получения аватара пользователя по ID
   const getUserAvatar = (userId: number) => {
     if (userId === telegramId) {
-      return localUser?.avatar_img_url || defaultAvatarImg;
+      return userData?.avatar_img_url || defaultAvatarImg;
     }
     // Для других пользователей используем дефолтный аватар
     return '/assets/images/defaultAvatar.png';
@@ -205,8 +324,56 @@ export default function UserProfile() {
   };
 
   useEffect(() => {
-    if (userData) setLocalUser(userData)
-  }, [userData])
+    if (userData) {
+      console.log('📊 User stats updated:', {
+        promises: userData.promises,
+        promises_done: userData.promises_done,
+        challenges: userData.challenges,
+        challenges_done: userData.challenges_done,
+        total: (userData.promises || 0) + (userData.challenges || 0),
+        total_done: (userData.promises_done || 0) + (userData.challenges_done || 0)
+      });
+    }
+  }, [userData?.promises, userData?.promises_done, userData?.challenges, userData?.challenges_done])
+
+  // Удаляем дублирующую подписку - оставляем только в useUserData
+  // useEffect(() => {
+  //   if (!telegramId) return;
+  //   console.log('Setting up user stats subscription for telegramId:', telegramId);
+  //   const channel = supabase
+  //     .channel(`user-stats-${telegramId}`)
+  //     .on(
+  //       'postgres_changes',
+  //       { 
+  //         event: 'UPDATE', 
+  //         schema: 'public', 
+  //         table: 'users', 
+  //         filter: `telegram_id=eq.${telegramId}` 
+  //       },
+  //       (payload) => {
+  //         console.log('User stats updated via subscription:', payload);
+  //         console.log('Old stats:', payload.old);
+  //         console.log('New stats:', payload.new);
+  //         console.log('New data promises:', payload.new.promises);
+  //         console.log('New data promises_done:', payload.new.promises_done);
+  //         console.log('New data challenges:', payload.new.challenges);
+  //         console.log('New data challenges_done:', payload.new.challenges_done);
+  //         
+  //         // Обновляем localUser при изменении статистики
+  //         if (payload.new) {
+  //           console.log('Updating localUser with new data');
+  //           setLocalUser(payload.new as UserData);
+  //         }
+  //       }
+  //     )
+  //     .subscribe((status) => {
+  //       console.log('User stats subscription status:', status);
+  //     });
+  //   return () => {
+  //     console.log('Cleaning up user stats subscription for telegramId:', telegramId);
+  //     supabase.removeChannel(channel);
+  //   };
+  // }, [telegramId]);
 
   useEffect(() => {
     if (!telegramId || isNaN(telegramId)) {
@@ -214,6 +381,7 @@ export default function UserProfile() {
       setIsLoading(false)
       return
     }
+    
     setIsLoading(true)
     setTelegramId(telegramId)
 
@@ -273,87 +441,87 @@ export default function UserProfile() {
     }, 100); // Небольшая задержка для обеспечения загрузки основных данных
   }, [paramId, ctxId])
 
-  useEffect(() => {
-    if (!telegramId) return
-
-    const channel = supabase
-      .channel(`posts-${telegramId}`)
-      // --- Отслеживаем собственные обещания пользователя ---
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.new as PromiseData, 'INSERT')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.new as PromiseData, 'UPDATE')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'promises', filter: `user_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.old as PromiseData, 'DELETE')
-      )
-      // --- Отслеживаем обещания, адресованные пользователю ---
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'promises', filter: `recipient_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.new as PromiseData, 'INSERT')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'promises', filter: `recipient_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.new as PromiseData, 'UPDATE')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'promises', filter: `recipient_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.old as PromiseData, 'DELETE')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'challenges', filter: `user_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.new as ChallengeData, 'INSERT')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'challenges', filter: `user_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.new as ChallengeData, 'UPDATE')
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'challenges', filter: `user_id=eq.${telegramId}` },
-        (payload) => updatePosts(payload.old as ChallengeData, 'DELETE')
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [telegramId])
+  // Удаляем старую подписку - теперь используем централизованную систему
+  // useEffect(() => {
+  //   if (!telegramId) return;
+  //   console.log('📝 Setting up promises list subscription for telegramId:', telegramId);
+  //   let retryCount = 0;
+  //   const maxRetries = 3;
+  //   const setupSubscription = () => {
+  //     const channel = supabase
+  //       .channel(`promises-list-${telegramId}-${Date.now()}`)
+  //       .on(
+  //         'postgres_changes',
+  //         {
+  //           event: '*',
+  //           schema: 'public',
+  //           table: 'promises',
+  //           filter: `user_id=eq.${telegramId}`
+  //         },
+  //         (payload) => {
+  //           console.log('📝 Promises list updated:', payload);
+  //           loadUserData();
+  //         }
+  //       )
+  //       .on(
+  //         'postgres_changes',
+  //         {
+  //           event: '*',
+  //           schema: 'public',
+  //           table: 'promises',
+  //           filter: `recipient_id=eq.${telegramId}`
+  //         },
+  //         (payload) => {
+  //           console.log('📝 Promises list updated (recipient):', payload);
+  //           loadUserData();
+  //         }
+  //       )
+  //       .subscribe((status) => {
+  //         console.log('📝 Promises list subscription status:', status);
+  //         if (status === 'CHANNEL_ERROR' && retryCount < maxRetries) {
+  //           console.log(`🔄 Retrying subscription (${retryCount + 1}/${maxRetries})...`);
+  //           retryCount++;
+  //           setTimeout(setupSubscription, 1000);
+  //         }
+  //       });
+  //     return channel;
+  //   };
+  //   const channel = setupSubscription();
+  //   return () => {
+  //     console.log('🧹 Cleaning up promises list subscription for telegramId:', telegramId);
+  //     supabase.removeChannel(channel);
+  //   };
+  // }, [telegramId]);
 
   // const handleChallengeUpdate = (updated: ChallengeData) => {
   //   updatePosts(updated, 'UPDATE')
   // }
 
-  if (isLoading || userLoading || !localUser) {
+  if (isLoading || userLoading || !userData) {
     return <Load />
   }
 
   // клиентская обработка кол-ва обещаний/челленджей и выполненных обещаний/челленджей
-  const fullName = `${localUser.first_name} ${localUser.last_name}`.trim()
-  const promisesCount = allPosts.filter(isPromiseData).length
-  const promisesDone = allPosts.filter((p) => isPromiseData(p) && p.is_completed).length
-  const challengesCount = allPosts.filter((p) => isChallengeData(p) && p.user_id === telegramId).length
-  const challengesDone = allPosts.filter((p) => isChallengeData(p) && p.user_id === telegramId && p.completed_reports === p.total_reports).length
+  // const promisesCount = allPosts.filter(isPromiseData).length
+  // const promisesDone = allPosts.filter((p) => isPromiseData(p) && p.is_completed).length
+  // const challengesCount = allPosts.filter((p) => isChallengeData(p) && p.user_id === telegramId).length
+  // const challengesDone = allPosts.filter((p) => isChallengeData(p) && p.user_id === telegramId && p.completed_reports === p.total_reports).length
 
-  // серверная обраборка кол-ва обещаний/челленджей и выполненных обещаний/челленджей
-  // можно внедрить после добавления челленджей как отдельное поле в БД
-  // добавить подписку на обновление на клиенте
-  // const promisesCount = userData?.promises || 0
-  // const promisesDone = userData?.promises_done || 0
-  // const challengesCount = 0
-  // const challengesDone = 0
+  // серверная обработка кол-ва обещаний/челленджей и выполненных обещаний/челленджей
+  const promisesCount = userData?.promises || 0
+  const promisesDone = userData?.promises_done || 0
+  const challengesCount = userData?.challenges || 0
+  const challengesDone = userData?.challenges_done || 0
+
+  const fullName = `${userData.first_name} ${userData.last_name}`.trim()
+
+  // Убираем лишние логи - оставляем только в useEffect выше
+  // console.log('📈 Current stats:', { 
+  //   promisesCount, 
+  //   promisesDone, 
+  //   challengesCount, 
+  //   challengesDone 
+  // });
 
   return (
     <>
@@ -367,16 +535,16 @@ export default function UserProfile() {
                 <ProfilecardThree
                   onToggleDetail={() => setShowProfileDetail((v) => !v)}
                   isOpen={showProfileDetail}
-                  username={localUser.username || ''}
-                  firstName={localUser.first_name || ''}
-                  lastName={localUser.last_name || ''}
-                  telegramId={localUser.telegram_id}
-                  subscribers={localUser.subscribers || 0}
+                  username={userData.username || ''}
+                  firstName={userData.first_name || ''}
+                  lastName={userData.last_name || ''}
+                  telegramId={userData.telegram_id}
+                  subscribers={userData.subscribers || 0}
                   promises={promisesCount + challengesCount}
                   promisesDone={promisesDone + challengesDone}
-                  stars={localUser.stars || 0}
-                  heroImgUrl={localUser.hero_img_url || defaultHeroImg}
-                  avatarUrl={localUser.avatar_img_url || defaultAvatarImg}
+                  stars={userData.stars || 0}
+                  heroImgUrl={userData.hero_img_url || defaultHeroImg}
+                  avatarUrl={userData.avatar_img_url || defaultAvatarImg}
                   isEditable={false}
                   isOwnProfile={isOwn}
                   isSubscribed={false}
@@ -392,10 +560,10 @@ export default function UserProfile() {
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
                       <Profiledetail
-                        username={localUser.username || ''}
-                        telegramId={localUser.telegram_id}
+                        username={userData.username || ''}
+                        telegramId={userData.telegram_id}
                         fullName={fullName}
-                        about={localUser.about}
+                        about={userData.about}
                         isEditable={false}
                       />
                     </motion.div>
@@ -426,7 +594,7 @@ export default function UserProfile() {
                           isOwnCreator={post.user_id === (ctxId || 0)}
                           avatarUrl={
                             post.user_id === telegramId 
-                              ? (localUser?.avatar_img_url || defaultAvatarImg)
+                              ? (userData?.avatar_img_url || defaultAvatarImg)
                               : (promiseCreators[post.user_id]?.avatar_img_url || defaultAvatarImg)
                           }
                           userId={post.user_id}

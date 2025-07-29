@@ -81,8 +81,8 @@ export async function POST(request: Request) {
 
     if (insertError) throw insertError;
 
-    // Увеличиваем счетчик promises
-    await supabase.rpc('increment_promises', { user_id });
+    // Убираем RPC вызов - триггер уже обновляет счетчик
+    // await supabase.rpc('increment_promises', { user_id });
 
     return NextResponse.json({
       message: 'Challenge created successfully',
@@ -331,12 +331,11 @@ export async function DELETE(request: Request) {
     const { error } = await supabase.from('challenges').delete().eq('id', id);
     if (error) throw error;
 
-    // Уменьшаем счетчик promises
-    await supabase.rpc('decrement_promises', { user_id });
-    // Если челлендж был выполнен, уменьшаем promises_done
-    if (is_completed) {
-      await supabase.rpc('decrement_promises_done', { user_id });
-    }
+    // Убираем RPC вызовы - триггеры уже обновляют счетчики
+    // await supabase.rpc('decrement_promises', { user_id });
+    // if (is_completed) {
+    //   await supabase.rpc('decrement_promises_done', { user_id });
+    // }
 
     return NextResponse.json({ message: 'Challenge deleted successfully' }, { status: 200 });
   } catch (error: unknown) {

@@ -1,0 +1,876 @@
+# Логика приложения IPU_MVP
+
+## Архитектура системы
+
+### Обзор архитектуры
+
+IPU_MVP представляет собой веб-приложение, построенное на современном технологическом стеке с разделением на frontend и backend компоненты.
+
+### Технологический стек
+
+**Frontend:**
+- **Next.js 14** - React фреймворк с App Router
+- **TypeScript** - типизированный JavaScript
+- **React** - UI библиотека
+- **Bootstrap 5** - CSS фреймворк
+- **Lucide React** - иконки
+- **Supabase Client** - клиент для работы с БД
+
+**Backend:**
+- **Next.js API Routes** - серверные эндпоинты
+- **Supabase** - база данных и аутентификация
+- **PostgreSQL** - основная база данных
+- **Supabase Storage** - хранение медиа-файлов
+
+**Инфраструктура:**
+- **Vercel** - хостинг frontend
+- **Supabase** - хостинг backend и БД
+- **GitHub** - система контроля версий
+
+### Структура проекта
+
+```
+IPU_MVP/
+├── frontend/                 # Next.js приложение
+│   ├── src/
+│   │   ├── app/             # App Router (Next.js 14)
+│   │   │   ├── api/         # API роуты
+│   │   │   ├── user/        # Страницы пользователей
+│   │   │   └── layout.tsx   # Корневой layout
+│   │   ├── components/      # React компоненты
+│   │   ├── hooks/          # Кастомные хуки
+│   │   ├── lib/            # Утилиты и конфигурация
+│   │   ├── types.ts        # TypeScript типы
+│   │   └── utils/          # Вспомогательные функции
+│   ├── public/             # Статические файлы
+│   └── package.json
+├── backend/                 # Python backend (альтернативный)
+├── bot/                     # Telegram бот
+└── docs/                    # Документация
+```
+
+### База данных
+
+**Основные таблицы:**
+
+#### `users` - Пользователи
+```sql
+telegram_id INTEGER PRIMARY KEY
+username TEXT
+first_name TEXT
+last_name TEXT
+avatar_img_url TEXT
+hero_img_url TEXT
+about TEXT
+address TEXT
+subscribers INTEGER DEFAULT 0
+promises INTEGER DEFAULT 0
+promises_done INTEGER DEFAULT 0
+challenges INTEGER DEFAULT 0
+challenges_done INTEGER DEFAULT 0
+stars INTEGER DEFAULT 0
+created_at TIMESTAMPTZ DEFAULT NOW()
+```
+
+#### `promises` - Обещания
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+title TEXT NOT NULL
+content TEXT
+deadline TIMESTAMPTZ
+media_url TEXT
+is_completed BOOLEAN DEFAULT FALSE
+is_public BOOLEAN DEFAULT TRUE
+hashtags TEXT[]
+created_at TIMESTAMPTZ DEFAULT NOW()
+-- Поля для обещаний "кому-то"
+requires_accept BOOLEAN DEFAULT FALSE
+recipient_id INTEGER REFERENCES users(telegram_id)
+is_accepted BOOLEAN DEFAULT NULL
+is_completed_by_creator BOOLEAN DEFAULT FALSE
+is_completed_by_recipient BOOLEAN DEFAULT FALSE
+result_content TEXT
+result_media_url TEXT
+completed_at TIMESTAMPTZ
+```
+
+#### `challenges` - Челленджи
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+title TEXT NOT NULL
+description TEXT
+deadline TIMESTAMPTZ
+media_url TEXT
+hashtags TEXT[]
+start_at TIMESTAMPTZ
+end_at TIMESTAMPTZ
+is_completed BOOLEAN DEFAULT FALSE
+completed_reports INTEGER DEFAULT 0
+report_periods TEXT[]
+deadline_period TEXT
+created_at TIMESTAMPTZ DEFAULT NOW()
+```
+
+#### `challenge_reports` - Отчеты по челленджам
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+challenge_id UUID REFERENCES challenges(id)
+report_date TIMESTAMP NOT NULL DEFAULT NOW()
+comment TEXT
+media_url TEXT
+```
+
+#### `challenge_participants` - Участники челленджей
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+challenge_id UUID REFERENCES challenges(id)
+joined_at TIMESTAMPTZ DEFAULT NOW()
+```
+
+#### `subscriptions` - Подписки между пользователями
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+follower_id INTEGER REFERENCES users(telegram_id)
+followed_id INTEGER REFERENCES users(telegram_id)
+created_at TIMESTAMPTZ DEFAULT NOW()
+UNIQUE(follower_id, followed_id)
+```
+
+### Триггеры базы данных
+
+#### Автоматическое обновление статистики пользователей
+
+**Триггер для обещаний:**
+```sql
+-- Функция обновления статистики обещаний
+CREATE OR REPLACE FUNCTION update_user_promise_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    -- Увеличиваем общее количество обещаний
+    UPDATE users SET promises = promises + 1 WHERE telegram_id = NEW.user_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    -- Уменьшаем общее количество обещаний
+    UPDATE users SET promises = GREATEST(0, promises - 1) WHERE telegram_id = OLD.user_id;
+    -- Если удаляем выполненное обещание, уменьшаем счетчик выполненных
+    IF OLD.is_completed THEN
+      UPDATE users SET promises_done = GREATEST(0, promises_done - 1) WHERE telegram_id = OLD.user_id;
+    END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    -- Если обещание стало выполненным
+    IF OLD.is_completed = FALSE AND NEW.is_completed = TRUE THEN
+      UPDATE users SET promises_done = promises_done + 1 WHERE telegram_id = NEW.user_id;
+    -- Если обещание стало невыполненным
+    ELSIF OLD.is_completed = TRUE AND NEW.is_completed = FALSE THEN
+      UPDATE users SET promises_done = GREATEST(0, promises_done - 1) WHERE telegram_id = NEW.user_id;
+    END IF;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Триггер для таблицы promises
+CREATE TRIGGER trigger_update_user_promise_stats
+  AFTER INSERT OR UPDATE OR DELETE ON promises
+  FOR EACH ROW EXECUTE FUNCTION update_user_promise_stats();
+```
+
+**Триггер для челленджей:**
+```sql
+-- Функция обновления статистики челленджей
+CREATE OR REPLACE FUNCTION update_user_challenge_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    -- Увеличиваем общее количество челленджей
+    UPDATE users SET challenges = challenges + 1 WHERE telegram_id = NEW.user_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    -- Уменьшаем общее количество челленджей
+    UPDATE users SET challenges = GREATEST(0, challenges - 1) WHERE telegram_id = OLD.user_id;
+    -- Если удаляем выполненный челлендж, уменьшаем счетчик выполненных
+    IF OLD.is_completed THEN
+      UPDATE users SET challenges_done = GREATEST(0, challenges_done - 1) WHERE telegram_id = OLD.user_id;
+    END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    -- Если челлендж стал выполненным
+    IF OLD.is_completed = FALSE AND NEW.is_completed = TRUE THEN
+      UPDATE users SET challenges_done = challenges_done + 1 WHERE telegram_id = NEW.user_id;
+    -- Если челлендж стал невыполненным
+    ELSIF OLD.is_completed = TRUE AND NEW.is_completed = FALSE THEN
+      UPDATE users SET challenges_done = GREATEST(0, challenges_done - 1) WHERE telegram_id = NEW.user_id;
+    END IF;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Триггер для таблицы challenges
+CREATE TRIGGER trigger_update_user_challenge_stats
+  AFTER INSERT OR UPDATE OR DELETE ON challenges
+  FOR EACH ROW EXECUTE FUNCTION update_user_challenge_stats();
+```
+
+**Особенности триггеров:**
+- **Автоматическое обновление** - статистика обновляется при любых изменениях в таблицах
+- **Защита от отрицательных значений** - использование `GREATEST(0, value - 1)`
+- **Обработка всех операций** - INSERT, UPDATE, DELETE
+- **Атомарность** - обновление происходит в рамках одной транзакции
+
+### API Архитектура
+
+**Структура API роутов:**
+
+```
+/api/
+├── promises/
+│   ├── route.ts                    # CRUD обещаний
+│   ├── upload/route.ts             # Загрузка медиа
+│   └── recipient/
+│       ├── accept/route.ts         # Принятие обещания
+│       ├── decline/route.ts        # Отклонение обещания
+│       ├── complete/route.ts       # Завершение создателем
+│       └── confirm-complete/route.ts # Подтверждение получателем
+├── challenges/
+│   ├── route.ts                    # CRUD челленджей
+│   ├── reports/route.ts            # Отчеты
+│   └── [id]/
+│       └── participants/
+│           ├── route.ts            # Список участников
+│           └── check/route.ts      # Проверка участия
+├── users/
+│   └── [telegramId]/
+│       └── route.ts                # Данные пользователя
+├── subscriptions/
+│   └── route.ts                    # Управление подписками
+└── search/
+    └── route.ts                    # Поиск пользователей
+```
+
+### Frontend Архитектура
+
+**Основные компоненты:**
+
+#### Страницы (Pages)
+- `app/page.tsx` - Главная страница
+- `app/user/[telegramId]/page.tsx` - Профиль пользователя
+- `app/profile/[telegramId]/page.tsx` - Публичный профиль
+
+#### Компоненты (Components)
+- `PromiseCreate.tsx` - Создание обещаний
+- `PromiseView.tsx` - Отображение обещаний
+- `ChallengeCreate.tsx` - Создание челленджей
+- `ChallengeView.tsx` - Отображение челленджей
+- `UserSearch.tsx` - Поиск пользователей
+- `Header.tsx` - Шапка приложения
+
+#### Модалы (Modals)
+- `PromiseCompleteModal.tsx` - Завершение обещания
+- `PromiseResultModal.tsx` - Просмотр результата
+- `PromiseCompleteForRecipientModal.tsx` - Отчет для обещаний "кому-то"
+- `ChallengeCheckModal.tsx` - Отчеты по челленджам
+
+#### Хуки (Hooks)
+- `usePromiseApi.ts` - API для обещаний
+- `useChallengeApi.ts` - API для челленджей
+- `useChallengeParticipants.ts` - Управление участниками
+- `useUserData.ts` - Данные пользователя
+- `useUserSubscription.ts` - Подписки
+
+### Поток данных
+
+#### 1. Аутентификация
+```
+Telegram Login → Supabase Auth → User Session → Protected Routes
+```
+
+#### 2. Создание контента
+```
+Form Input → Validation → API Route → Supabase → Realtime Update → UI
+```
+
+#### 3. Взаимодействие
+```
+User Action → API Call → Database Update → Optimistic UI Update → Confirmation
+```
+
+### Безопасность
+
+#### Аутентификация
+- **Telegram OAuth** - основная система входа
+- **Supabase Auth** - управление сессиями
+- **JWT токены** - безопасная передача данных
+
+#### Авторизация
+- **Row Level Security (RLS)** - защита на уровне БД
+- **API валидация** - проверка прав доступа
+- **CORS настройки** - защита от cross-origin атак
+
+#### Валидация данных
+- **TypeScript** - типизация на клиенте
+- **API схемы** - валидация на сервере
+- **SQL инъекции** - защита через параметризованные запросы
+
+### Производительность
+
+#### Оптимизация
+- **Next.js Image** - оптимизация изображений
+- **Code splitting** - разделение кода
+- **Lazy loading** - ленивая загрузка компонентов
+- **Caching** - кэширование API ответов
+
+#### Мониторинг
+- **Vercel Analytics** - метрики производительности
+- **Error tracking** - отслеживание ошибок
+- **Performance monitoring** - мониторинг скорости
+
+### Развертывание
+
+#### Frontend (Vercel)
+- **Automatic deployment** - автоматический деплой из GitHub
+- **Preview deployments** - предварительные версии для PR
+- **Edge functions** - серверные функции
+
+#### Backend (Supabase)
+- **Managed PostgreSQL** - управляемая БД
+- **Real-time subscriptions** - подписки в реальном времени
+- **Storage buckets** - хранение файлов
+
+### Переменные окружения
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Telegram
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_BOT_USERNAME=your_bot_username
+
+# App
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
+
+---
+
+## Обещания (Promises)
+
+### Обзор
+Система обещаний позволяет пользователям создавать, отслеживать и завершать личные обещания с возможностью прикрепления медиа-файлов и установки дедлайнов.
+
+### Архитектура
+
+#### 1. Создание обещания
+
+**Компоненты:**
+- `frontend/src/components/PromiseCreate.tsx` - форма создания обещания
+- `frontend/src/components/UserSearch.tsx` - поиск пользователей (для обещаний "кому-то")
+
+**API:**
+- `frontend/src/app/api/promises/route.ts` (POST) - создание обещания
+- `frontend/src/app/api/promises/upload/route.ts` (POST) - загрузка медиа-файлов
+
+**Логика:**
+1. Пользователь заполняет форму в PromiseCreate
+2. Выбирает тип: обычное обещание или "кому-то"
+3. Выбирает видимость: публичное или личное (`is_public`)
+4. Прикрепляет медиа-файл (опционально)
+5. Устанавливает дедлайн
+6. Отправляет форму через API
+
+#### 2. Отображение обещаний
+
+**Компоненты:**
+- `frontend/src/components/PromiseView.tsx` - карточка обещания
+- `frontend/src/app/user/[telegramId]/page.tsx` - страница профиля пользователя
+
+**Логика:**
+1. Обещания загружаются на странице профиля
+2. Отображаются в виде карточек с возможностью разворачивания
+3. Показывается статус: "Активно" или "Завершено"
+4. Отображается дедлайн и дата создания
+5. Личные обещания помечаются иконкой замка и текстом "Личное"
+
+#### 3. Завершение обычного обещания
+
+**Компоненты:**
+- `frontend/src/components/PromiseCompleteModal.tsx` - модал завершения
+- `frontend/src/components/PromiseResultModal.tsx` - модал просмотра результата
+
+**API:**
+- `frontend/src/hooks/usePromiseApi.ts` - хук для завершения обещания
+
+**Логика:**
+1. Пользователь нажимает "Завершить" (активна только до дедлайна)
+2. Открывается PromiseCompleteModal
+3. Пользователь заполняет результат и прикрепляет медиа
+4. Обещание помечается как завершенное
+5. Кнопка меняется на "Результат" для просмотра
+
+#### 4. Просмотр результата
+
+**Компоненты:**
+- `frontend/src/components/PromiseResultModal.tsx` - модал с результатом
+
+**Логика:**
+1. Пользователь нажимает "Результат"
+2. Открывается модал с текстом и медиа результата
+3. Отображается дата завершения
+
+### Статусы обычных обещаний
+
+1. **"Активно"** - `is_completed === false`
+2. **"Завершено"** - `is_completed === true`
+
+### База данных
+
+**Таблица `promises` - основные поля:**
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+title TEXT NOT NULL
+content TEXT
+deadline TIMESTAMPTZ
+media_url TEXT
+is_completed BOOLEAN DEFAULT FALSE
+is_public BOOLEAN DEFAULT TRUE
+hashtags TEXT[]
+created_at TIMESTAMPTZ DEFAULT NOW()
+result_content TEXT
+result_media_url TEXT
+completed_at TIMESTAMPTZ
+```
+
+### Типы TypeScript
+
+**`frontend/src/types.ts` - PromiseData:**
+```typescript
+interface PromiseData {
+  id: string;
+  user_id: number;
+  title: string;
+  content?: string;
+  deadline?: string;
+  media_url?: string;
+  is_completed: boolean;
+  is_public: boolean;
+  hashtags?: string[];
+  created_at: string;
+  result_content?: string;
+  result_media_url?: string;
+  completed_at?: string;
+}
+```
+
+### Ключевые файлы
+
+1. **Компоненты:**
+   - `frontend/src/components/PromiseCreate.tsx` - создание обещания
+   - `frontend/src/components/PromiseView.tsx` - отображение и управление
+   - `frontend/src/components/PromiseCompleteModal.tsx` - модал завершения
+   - `frontend/src/components/PromiseResultModal.tsx` - модал результата
+   - `frontend/src/components/UserSearch.tsx` - поиск пользователей
+
+2. **API-роуты:**
+   - `frontend/src/app/api/promises/route.ts` - CRUD операции
+   - `frontend/src/app/api/promises/upload/route.ts` - загрузка медиа
+
+3. **Хуки:**
+   - `frontend/src/hooks/usePromiseApi.ts` - основная логика API
+
+4. **Страницы:**
+   - `frontend/src/app/user/[telegramId]/page.tsx` - профиль пользователя
+
+### Поток данных
+
+1. **Создание:** PromiseCreate → API POST → БД → UI обновление
+2. **Завершение:** PromiseView → PromiseCompleteModal → API PUT → БД → UI обновление
+3. **Просмотр результата:** PromiseView → PromiseResultModal
+
+### Особенности реализации
+
+- **Валидация дедлайна:** Кнопка "Завершить" активна только до дедлайна
+- **Медиа-файлы:** Поддержка изображений и видео
+- **Хештеги:** Система тегов для категоризации
+- **Приватность:** Возможность создания приватных обещаний (`is_public: false`)
+- **Оптимистичные обновления:** UI обновляется сразу после действий
+
+---
+
+## Обещания "кому-то" (Promises "To Someone")
+
+### Обзор
+Система обещаний "кому-то" позволяет создавать обещания, которые требуют принятия от получателя и подтверждения выполнения обеими сторонами.
+
+### Архитектура
+
+#### 1. Создание обещания "кому-то"
+
+**Компоненты:**
+- `frontend/src/components/PromiseCreate.tsx` - форма создания с тумблером "кому-то"
+- `frontend/src/components/UserSearch.tsx` - поиск и выбор получателя
+
+**API:**
+- `frontend/src/app/api/promises/route.ts` (POST) - создание с полями `requires_accept: true`, `recipient_id`
+
+**Логика:**
+1. Пользователь включает тумблер "кому-то" в PromiseCreate
+2. Появляется поле выбора получателя через UserSearch
+3. Выбирает видимость: публичное или личное (`is_public`)
+4. При отправке формы добавляются поля:
+   - `requires_accept: true`
+   - `recipient_id: number`
+   - `is_accepted: null`
+   - `is_completed_by_creator: false`
+   - `is_completed_by_recipient: false`
+
+#### 2. Принятие/отклонение получателем
+
+**Компоненты:**
+- `frontend/src/components/PromiseView.tsx` - отображение кнопок "Принять"/"Отказать"
+
+**API-роуты:**
+- `frontend/src/app/api/promises/recipient/accept/route.ts` (PUT)
+- `frontend/src/app/api/promises/recipient/decline/route.ts` (PUT)
+
+**Логика:**
+1. Получатель видит обещание на своей странице
+2. Отображаются кнопки "Принять"/"Отказать" (если `is_accepted === null`)
+3. При нажатии "Принять" → `is_accepted: true`
+4. При нажатии "Отказать" → `is_accepted: false`
+
+#### 3. Создание отчета создателем
+
+**Компоненты:**
+- `frontend/src/components/PromiseCompleteForRecipientModal.tsx` - модал для создания отчета
+- `frontend/src/components/PromiseView.tsx` - кнопка "Создать отчет"
+
+**API:**
+- `frontend/src/app/api/promises/recipient/complete/route.ts` (PUT) - сохранение отчета
+
+**Логика:**
+1. Создатель видит кнопку "Создать отчет" (если `is_accepted === true`)
+2. При нажатии открывается PromiseCompleteForRecipientModal
+3. Создатель заполняет отчет (текст + медиа)
+4. Отправляется в API с полями:
+   - `result_content: string`
+   - `result_media_url: string`
+   - `is_completed_by_creator: true`
+
+#### 4. Подтверждение получателем
+
+**Компоненты:**
+- `frontend/src/components/PromiseView.tsx` - кнопка "Подтвердить выполнение"
+
+**API:**
+- `frontend/src/app/api/promises/recipient/confirm-complete/route.ts` (PUT)
+
+**Логика:**
+1. Получатель видит кнопку "Подтвердить выполнение" (если `is_completed_by_creator === true`)
+2. При нажатии обновляется:
+   - `is_completed_by_recipient: true`
+   - `is_completed: true`
+   - `completed_at: timestamp`
+
+### Статусы обещаний "кому-то"
+
+#### Для создателя (Ю1):
+1. **"Не подтверждено"** - `is_accepted === null`
+2. **"Отказано"** - `is_accepted === false`
+3. **"Создать отчет"** - `is_accepted === true && !is_completed_by_creator`
+4. **"Ожидание подтверждения"** - `is_completed_by_creator === true && !is_completed_by_recipient`
+5. **"Выполнено"** - `is_completed_by_creator === true && is_completed_by_recipient === true`
+
+#### Для получателя (Ю2):
+1. **"Принять/Отказать"** - `is_accepted === null`
+2. **"Ожидание завершения"** - `is_accepted === true && !is_completed_by_creator`
+3. **"Подтвердить выполнение"** - `is_completed_by_creator === true && !is_completed_by_recipient`
+4. **"Выполнено"** - `is_completed_by_creator === true && is_completed_by_recipient === true`
+5. **"Отказано"** - `is_accepted === false`
+
+### База данных
+
+**Таблица `promises` - используемые поля:**
+```sql
+requires_accept BOOLEAN DEFAULT FALSE
+recipient_id INTEGER REFERENCES users(telegram_id)
+is_accepted BOOLEAN DEFAULT NULL
+is_completed_by_creator BOOLEAN DEFAULT FALSE
+is_completed_by_recipient BOOLEAN DEFAULT FALSE
+result_content TEXT
+result_media_url TEXT
+completed_at TIMESTAMPTZ
+```
+
+### Типы TypeScript
+
+**`frontend/src/types.ts` - PromiseData:**
+```typescript
+interface PromiseData {
+  // ... существующие поля
+  requires_accept?: boolean;
+  recipient_id?: number;
+  is_accepted?: boolean | null;
+  is_completed_by_creator?: boolean;
+  is_completed_by_recipient?: boolean;
+  result_content?: string;
+  result_media_url?: string;
+  completed_at?: string;
+}
+```
+
+### Ключевые файлы
+
+1. **Компоненты:**
+   - `frontend/src/components/PromiseCreate.tsx` - создание с выбором получателя
+   - `frontend/src/components/PromiseView.tsx` - отображение и управление
+   - `frontend/src/components/PromiseCompleteForRecipientModal.tsx` - модал отчета
+   - `frontend/src/components/UserSearch.tsx` - поиск получателя
+
+2. **API-роуты:**
+   - `frontend/src/app/api/promises/route.ts` - основное CRUD
+   - `frontend/src/app/api/promises/recipient/accept/route.ts` - принятие
+   - `frontend/src/app/api/promises/recipient/decline/route.ts` - отклонение
+   - `frontend/src/app/api/promises/recipient/complete/route.ts` - создание отчета
+   - `frontend/src/app/api/promises/recipient/confirm-complete/route.ts` - подтверждение
+
+3. **Хуки:**
+   - `frontend/src/hooks/usePromiseApi.ts` - основная логика API
+
+### Поток данных
+
+1. **Создание:** PromiseCreate → API POST → БД
+2. **Принятие:** PromiseView → API PUT accept → БД → UI обновление
+3. **Отчет:** PromiseView → PromiseCompleteForRecipientModal → API PUT complete → БД → UI обновление
+4. **Подтверждение:** PromiseView → API PUT confirm-complete → БД → UI обновление
+
+### Особенности реализации
+
+- **Оптимистичные обновления:** UI обновляется сразу после действия
+- **Валидация ролей:** API проверяет права пользователя на действие
+- **Медиа-файлы:** Загружаются через `/api/promises/upload` перед сохранением отчета
+- **Состояния загрузки:** Все кнопки показывают "Обработка..." во время API-запросов
+
+---
+
+## Челленджи (Challenges)
+
+### Обзор
+Система челленджей позволяет пользователям создавать долгосрочные задачи с периодическими отчетами, участниками и трекингом прогресса.
+
+### Архитектура
+
+#### 1. Создание челленджа
+
+**Компоненты:**
+- `frontend/src/components/ChallengeCreate.tsx` - форма создания челленджа
+
+**API:**
+- `frontend/src/app/api/challenges/route.ts` (POST) - создание челленджа
+
+**Логика:**
+1. Пользователь заполняет форму в ChallengeCreate
+2. Устанавливает название, описание, дедлайн
+3. Выбирает периодичность отчетов (дни)
+4. Прикрепляет медиа-файл (опционально)
+5. Добавляет хештеги (опционально)
+6. Отправляет форму через API
+
+#### 2. Отображение челленджей
+
+**Компоненты:**
+- `frontend/src/components/ChallengeView.tsx` - карточка челленджа
+- `frontend/src/app/user/[telegramId]/page.tsx` - страница профиля пользователя
+
+**Логика:**
+1. Челленджи загружаются на странице профиля
+2. Отображаются в виде карточек с возможностью разворачивания
+3. Показывается статус: "Не начат", "Активен", "Завершен"
+4. Отображается прогресс и количество отчетов
+5. Показывается дедлайн и дата создания
+
+#### 3. Запуск челленджа
+
+**Компоненты:**
+- `frontend/src/components/ChallengeCheckModal.tsx` - модал первого отчета
+
+**API:**
+- `frontend/src/app/api/challenges/route.ts` (PUT) - действие "start"
+
+**Логика:**
+1. Пользователь нажимает "Начать" в ChallengeView
+2. Открывается ChallengeCheckModal с текстом "Вы начинаете челлендж..."
+3. Пользователь заполняет первый отчет (текст + медиа)
+4. При отправке:
+   - Создается запись в `challenge_reports`
+   - Обновляется `start_at`, `completed_reports: 1`
+   - Генерируется `report_periods` и `deadline_period`
+
+#### 4. Ежедневные отчеты ("Чек дня")
+
+**Компоненты:**
+- `frontend/src/components/ChallengeCheckModal.tsx` - модал отчета
+
+**API:**
+- `frontend/src/app/api/challenges/route.ts` (PUT) - действие "check_day"
+
+**Логика:**
+1. Кнопка "Чек дня" активна только в текущий период отчета
+2. При нажатии открывается ChallengeCheckModal
+3. Пользователь заполняет отчет за день
+4. При отправке:
+   - Создается запись в `challenge_reports`
+   - Увеличивается `completed_reports`
+
+#### 5. Завершение челленджа
+
+**Компоненты:**
+- `frontend/src/components/ChallengeCheckModal.tsx` - модал финального отчета
+
+**API:**
+- `frontend/src/app/api/challenges/route.ts` (PUT) - действие "finish"
+
+**Логика:**
+1. Кнопка "Завершить" активна в день дедлайна
+2. При нажатии открывается ChallengeCheckModal
+3. Пользователь заполняет финальный отчет
+4. При отправке:
+   - Создается запись в `challenge_reports`
+   - Устанавливается `end_at` и `is_completed: true`
+
+#### 6. Участие в челленджах
+
+**Компоненты:**
+- `frontend/src/components/ChallengeView.tsx` - кнопки "Присоединиться"/"Отписаться"
+
+**API:**
+- `frontend/src/app/api/challenges/route.ts` (PUT) - действия "joinChallenge"/"leaveChallenge"
+- `frontend/src/app/api/challenges/[id]/participants/route.ts` (GET) - список участников
+- `frontend/src/app/api/challenges/[id]/participants/check/route.ts` (GET) - проверка участия
+
+**Логика:**
+1. Пользователи могут присоединиться к челленджам других пользователей
+2. При нажатии "Присоединиться" создается запись в `challenge_participants`
+3. При нажатии "Отписаться" удаляется запись из `challenge_participants`
+4. Участники отображаются во вкладке "Участники"
+
+#### 7. Трекер прогресса
+
+**Компоненты:**
+- `frontend/src/components/ChallengeView.tsx` - вкладка "Трекер прогресса"
+
+**API:**
+- `frontend/src/app/api/challenges/reports/route.ts` (GET) - получение отчетов
+
+**Логика:**
+1. Во вкладке "Трекер прогресса" отображаются все отчеты
+2. Каждый отчет можно развернуть для просмотра
+3. Показывается дата отчета, комментарий и медиа
+
+### Статусы челленджей
+
+1. **"Не начат"** - `start_at === null`
+2. **"Активен"** - `start_at !== null && is_completed === false`
+3. **"Завершен"** - `is_completed === true`
+
+### База данных
+
+**Таблица `challenges` - основные поля:**
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+title TEXT NOT NULL
+description TEXT
+deadline TIMESTAMPTZ
+media_url TEXT
+hashtags TEXT[]
+start_at TIMESTAMPTZ
+end_at TIMESTAMPTZ
+is_completed BOOLEAN DEFAULT FALSE
+completed_reports INTEGER DEFAULT 0
+report_periods TEXT[]
+deadline_period TEXT
+created_at TIMESTAMPTZ DEFAULT NOW()
+```
+
+**Таблица `challenge_reports` - отчеты:**
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+challenge_id UUID REFERENCES challenges(id)
+report_date TIMESTAMP NOT NULL DEFAULT NOW()
+comment TEXT
+media_url TEXT
+```
+
+**Таблица `challenge_participants` - участники:**
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id INTEGER REFERENCES users(telegram_id)
+challenge_id UUID REFERENCES challenges(id)
+joined_at TIMESTAMPTZ DEFAULT NOW()
+```
+
+### Типы TypeScript
+
+**`frontend/src/types.ts` - ChallengeData:**
+```typescript
+interface ChallengeData {
+  id: string;
+  user_id: number;
+  title: string;
+  description?: string;
+  deadline?: string;
+  media_url?: string;
+  hashtags?: string[];
+  start_at?: string;
+  end_at?: string;
+  is_completed: boolean;
+  completed_reports: number;
+  report_periods?: string[];
+  deadline_period?: string;
+  created_at: string;
+}
+```
+
+### Ключевые файлы
+
+1. **Компоненты:**
+   - `frontend/src/components/ChallengeCreate.tsx` - создание челленджа
+   - `frontend/src/components/ChallengeView.tsx` - отображение и управление
+   - `frontend/src/components/ChallengeCheckModal.tsx` - модал отчетов
+
+2. **API-роуты:**
+   - `frontend/src/app/api/challenges/route.ts` - CRUD операции и действия
+   - `frontend/src/app/api/challenges/reports/route.ts` - отчеты
+   - `frontend/src/app/api/challenges/[id]/participants/route.ts` - участники
+   - `frontend/src/app/api/challenges/[id]/participants/check/route.ts` - проверка участия
+
+3. **Хуки:**
+   - `frontend/src/hooks/useChallengeApi.ts` - основная логика API
+   - `frontend/src/hooks/useChallengeParticipants.ts` - управление участниками
+
+4. **Страницы:**
+   - `frontend/src/app/user/[telegramId]/page.tsx` - профиль пользователя
+
+### Поток данных
+
+1. **Создание:** ChallengeCreate → API POST → БД → UI обновление
+2. **Запуск:** ChallengeView → ChallengeCheckModal → API PUT start → БД → UI обновление
+3. **Отчет:** ChallengeView → ChallengeCheckModal → API PUT check_day → БД → UI обновление
+4. **Завершение:** ChallengeView → ChallengeCheckModal → API PUT finish → БД → UI обновление
+5. **Участие:** ChallengeView → API PUT joinChallenge/leaveChallenge → БД → UI обновление
+
+### Особенности реализации
+
+- **Периодические отчеты:** Система автоматически генерирует периоды отчетов
+- **Валидация дат:** Кнопки активны только в соответствующие периоды
+- **Медиа-файлы:** Поддержка изображений и видео в отчетах
+- **Хештеги:** Система тегов для категоризации
+- **Участники:** Возможность присоединиться к чужим челленджам
+- **Трекер прогресса:** Отображение всех отчетов с возможностью просмотра
+- **Оптимистичные обновления:** UI обновляется сразу после действий

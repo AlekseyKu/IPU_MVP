@@ -7,6 +7,8 @@ export interface UserData {
   subscribers?: number;
   promises?: number;
   promises_done?: number;
+  challenges?: number;
+  challenges_done?: number;
   stars?: number;
   hero_img_url?: string;
   avatar_img_url?: string;

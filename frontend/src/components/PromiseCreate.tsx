@@ -261,7 +261,7 @@ const PromiseCreate: React.FC = () => {
               id="isToSomeone"
             />
             <label className="form-check-label font-xsss" htmlFor="isToSomeone">
-              {isToSomeone ? 'Обещание кому-то' : 'Обычное обещание'}
+              {isToSomeone ? 'Обещание кому-то' : 'Обещание себе'}
             </label>
           </div>
           {isToSomeone && (

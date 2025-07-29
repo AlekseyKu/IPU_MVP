@@ -377,7 +377,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                   )}
                   {/* Обещание полностью выполнено */}
                   {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
-                    <button className="btn btn-outline-success w-50 mb-2" disabled>
+                    <button className="btn btn-outline-primary w-50 mb-2" disabled>
                       Выполнено
                     </button>
                   )}

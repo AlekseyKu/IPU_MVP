@@ -18,7 +18,7 @@ export async function GET(
     const { data, error } = await supabase
       .from('users')
       .select(
-        'telegram_id, first_name, last_name, username, about, avatar_img_url, hero_img_url, subscribers, promises, promises_done, stars'
+        'telegram_id, first_name, last_name, username, about, avatar_img_url, hero_img_url, subscribers, promises, promises_done, challenges, challenges_done, stars'
       )
       .eq('telegram_id', parsedTelegramId)
       .single();
@@ -38,6 +38,8 @@ export async function GET(
       subscribers: data.subscribers || 0,
       promises: data.promises || 0,
       promises_done: data.promises_done || 0,
+      challenges: data.challenges || 0,
+      challenges_done: data.challenges_done || 0,
       stars: data.stars || 0,
     };
 
