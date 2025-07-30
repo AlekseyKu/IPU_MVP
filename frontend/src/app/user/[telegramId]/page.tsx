@@ -18,7 +18,6 @@ import { useUserData } from '@/hooks/useUserData'
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
 import { useChallengeParticipants } from '@/hooks/useChallengeParticipants';
-import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 
 // type guards
 function isPromiseData(post: PostData): post is PromiseData {
@@ -48,7 +47,6 @@ export default function UserProfile() {
   // const [localUser, setLocalUser] = useState<UserData | null>(null)
   const [subscribedChallenges, setSubscribedChallenges] = useState<ChallengeData[]>([])
 
-  const { userData, isLoading: userLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId)
   const isOwn = ctxId === telegramId
 
   // Функция для перезагрузки данных пользователя - стабилизируем с useCallback
@@ -95,74 +93,23 @@ export default function UserProfile() {
     }
   }, [telegramId]);
 
-  // Стабилизируем функции обработчиков с помощью useCallback
-  const handleUserStatsUpdate = useCallback((payload: any) => {
-    console.log('📊 User stats updated via centralized system:', payload);
-    // Обновление статистики уже обрабатывается в useUserData
-  }, []);
+
 
   const handlePostsUpdate = useCallback((payload: any) => {
-    console.log('📝 Posts updated via centralized system:', payload);
+    console.log('🔍 handlePostsUpdate called:', { eventType: payload.eventType, id: payload.new?.id || payload.old?.id, timestamp: Date.now() });
     
-    // Для DELETE событий перезагружаем весь список (так как payload.old содержит только id)
-    if (payload.eventType === 'DELETE') {
-      console.log('🗑️ DELETE event detected, reloading posts list');
-      loadUserData();
-    } else if (payload.eventType === 'INSERT') {
-      // Оптимистичные обновления для INSERT событий с защитой от дубликатов
-      setAllPosts(prev => {
-        // Проверяем, нет ли уже такого элемента
-        const exists = prev.some(post => post.id === payload.new.id);
-        if (exists) {
-          console.log('⚠️ Post already exists, skipping duplicate:', payload.new.id);
-          return prev;
-        }
-        // Добавляем новый элемент
-        const updated = [payload.new, ...prev].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        console.log('➕ Optimistically added post:', payload.new.id);
-        return updated;
-      });
-    } else {
-      // Для UPDATE перезагружаем весь список
-      loadUserData();
-    }
+    // Для всех событий перезагружаем весь список для избежания дублирования
+    loadUserData();
   }, [loadUserData]);
 
   const handleChallengesUpdate = useCallback((payload: any) => {
-    console.log('🏆 Challenges updated via centralized system:', payload);
-    
-    // Для DELETE событий перезагружаем весь список (так как payload.old содержит только id)
-    if (payload.eventType === 'DELETE') {
-      console.log('🗑️ DELETE event detected, reloading challenges list');
-      loadUserData();
-    } else if (payload.eventType === 'INSERT') {
-      // Оптимистичные обновления для INSERT событий с защитой от дубликатов
-      setAllPosts(prev => {
-        // Проверяем, нет ли уже такого элемента
-        const exists = prev.some(post => post.id === payload.new.id);
-        if (exists) {
-          console.log('⚠️ Challenge already exists, skipping duplicate:', payload.new.id);
-          return prev;
-        }
-        // Добавляем новый элемент
-        const updated = [payload.new, ...prev].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        console.log('➕ Optimistically added challenge:', payload.new.id);
-        return updated;
-      });
-    } else {
-      // Для UPDATE перезагружаем весь список
-      loadUserData();
-    }
+    // Для всех событий перезагружаем весь список для избежания дублирования
+    loadUserData();
   }, [loadUserData]);
 
-  // Централизованная система real-time обновлений
-  useRealtimeUpdates({
+  // Централизованная система real-time обновлений через useUserData
+  const { userData, isLoading: userLoading, defaultHeroImg, defaultAvatarImg } = useUserData({ 
     telegramId,
-    onUserStatsUpdate: handleUserStatsUpdate,
     onPostsUpdate: handlePostsUpdate,
     onChallengesUpdate: handleChallengesUpdate
   });

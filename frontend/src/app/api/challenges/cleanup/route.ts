@@ -33,7 +33,6 @@ export async function POST() {
             console.error(`Error updating challenge ${challenge.id}:`, updateError);
           } else {
             cleanedCount++;
-            console.log(`Cleaned challenge ${challenge.id}: ${challenge.subscribers.length} -> ${uniqueSubscribers.length}`);
           }
         }
       }

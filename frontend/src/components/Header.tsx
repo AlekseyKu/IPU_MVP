@@ -38,7 +38,7 @@ const Header: React.FC = () => {
   })
 
   const { telegramId } = useUser();
-  const { userData } = useUserData(telegramId || 0);
+  const { userData } = useUserData({ telegramId: telegramId || 0 });
 
   const [isMounted, setIsMounted] = useState(false)
 

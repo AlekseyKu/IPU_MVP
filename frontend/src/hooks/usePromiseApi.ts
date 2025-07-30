@@ -8,7 +8,6 @@ export function usePromiseApi(
 
   const handleCreate = async (newPromise: Omit<PromiseData, 'id' | 'created_at' | 'is_completed'> & { media_url?: string; hashtags?: string[] }) => {
     try {
-      console.log('🚀 Creating promise...');
       const response = await fetch('/api/promises', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -19,7 +18,6 @@ export function usePromiseApi(
       if (result.promise) {
         // Убираем клиентское обновление - оставляем только серверное через триггеры
         // updatePosts(result.promise, 'INSERT');
-        console.log('✅ Promise created, waiting for server update via triggers');
       }
       return result.promise;
     } catch (error) {
@@ -46,7 +44,6 @@ export function usePromiseApi(
 
   const handleDelete = async (id: string) => {
     try {
-      console.log('🗑️ Deleting promise...');
       const response = await fetch('/api/promises', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -55,7 +52,6 @@ export function usePromiseApi(
       if (!response.ok) throw new Error('Ошибка удаления');
       // Убираем клиентское обновление - оставляем только серверное через триггеры
       // updatePosts({ id } as PromiseData, 'DELETE');
-      console.log('✅ Promise deleted, waiting for server update via triggers');
     } catch (error) {
       setError('Ошибка при удалении обещания');
       console.error('Error:', error);
@@ -81,11 +77,12 @@ export function usePromiseApi(
       });
       if (!response.ok) throw new Error('Ошибка завершения обещания');
       const updated = await response.json();
-      updatePosts(updated.promise, 'UPDATE');
+      // Убираем updatePosts - обновление происходит через Supabase Realtime
+      // updatePosts(updated.promise, 'UPDATE');
       return updated.promise;
     } catch (error) {
       setError('Ошибка при завершении обещания');
-      console.error(error);
+      console.error('❌ Error in handleCompletePromise:', error);
       return null;
     }
   };

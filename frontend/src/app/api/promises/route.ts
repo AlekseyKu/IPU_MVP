@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabaseClient';
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    console.log('API: Received promise data:', data);
     // Минимальная валидация
     if (!data.user_id || !data.title || !data.deadline) {
       return NextResponse.json({ error: 'user_id, title и deadline обязательны' }, { status: 400 });
@@ -42,9 +41,11 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const updatedPromise = await request.json();
+    
     if (!updatedPromise.id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+    
     // Получаем старое значение is_completed
     const { data: oldPromise } = await supabase.from('promises').select('is_completed, user_id').eq('id', updatedPromise.id).single();
 
@@ -59,9 +60,11 @@ export async function PUT(request: NextRequest) {
       .update(updateFields)
       .eq('id', updatedPromise.id)
       .select();
+      
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    
     // Убираем RPC вызовы - триггеры уже обновляют счетчики
     // if (oldPromise && !oldPromise.is_completed && updatedPromise.is_completed) {
     //   await supabase.rpc('increment_promises_done', { user_id: oldPromise.user_id });
@@ -69,6 +72,7 @@ export async function PUT(request: NextRequest) {
     // if (oldPromise && oldPromise.is_completed && !updatedPromise.is_completed) {
     //   await supabase.rpc('decrement_promises_done', { user_id: oldPromise.user_id });
     // }
+    
     return NextResponse.json({ success: true, promise: updatedRows?.[0] });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

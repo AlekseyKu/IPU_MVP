@@ -114,9 +114,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     const subscription = supabase
       .channel(`challenge-update-${challenge.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'challenges', filter: `id=eq.${challenge.id}` }, (payload) => {
-        const updated = payload.new as ChallengeData;
-        console.log('[realtime] onUpdate payload:', updated);
-        onUpdate(updated);
+        // Убираем дублирующий вызов onUpdate - обновление уже происходит через API
+        // onUpdate(updated);
       })
       .subscribe();
     return () => { supabase.removeChannel(subscription); };
@@ -300,7 +299,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
         }),
       });
       const result = await response.json();
-      console.log('[handleCheckSubmit] PUT result:', result);
       if (result && typeof onUpdate === 'function') {
         // result может быть { success, ...challengeFields }
         // onUpdate({ ...challenge, ...result });
@@ -318,7 +316,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
         }),
       });
       const result = await response.json();
-      console.log('[handleCheckSubmit] PUT result:', result);
     }
   };
 

@@ -2,16 +2,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { UserData } from '@/types';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
-export const useUserData = (telegramId: number) => {
+interface UserDataConfig {
+  telegramId: number;
+  onPostsUpdate?: (payload: any) => void;
+  onChallengesUpdate?: (payload: any) => void;
+}
+
+export const useUserData = ({ 
+  telegramId, 
+  onPostsUpdate, 
+  onChallengesUpdate 
+}: UserDataConfig) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const defaultHeroImg = '/assets/images/ipu/hero-img.png';
   const defaultAvatarImg = '/assets/images/defaultAvatar.svg';
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentStatsRef = useRef({ promises: 0, promises_done: 0, challenges: 0, challenges_done: 0 });
-  const subscriptionRef = useRef<string | null>(null);
+  const channelsRef = useRef<RealtimeChannel[]>([]);
+  const isSetupRef = useRef(false);
+  const processedEventsRef = useRef<Set<string>>(new Set());
 
+  // Первоначальная загрузка данных пользователя
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
@@ -70,20 +84,20 @@ export const useUserData = (telegramId: number) => {
     fetchData();
   }, [telegramId]);
 
-  // Подписка на изменения данных пользователя в реальном времени
+  // Централизованная система real-time подписок
   useEffect(() => {
     if (!telegramId) return;
 
-    // Проверяем, что подписка еще не создана
-    if (subscriptionRef.current) {
+    // Защита от множественных подписок в React Strict Mode
+    if (isSetupRef.current) {
       return;
     }
 
-    const channelName = `user-data-${telegramId}-${Date.now()}`;
-    subscriptionRef.current = channelName;
-    
-    const channel = supabase
-      .channel(channelName)
+    isSetupRef.current = true;
+
+    // 1. Подписка на обновления статистики пользователя
+    const userStatsChannel = supabase
+      .channel(`user-stats-${telegramId}-${Date.now()}`)
       .on(
         'postgres_changes',
         { 
@@ -138,15 +152,71 @@ export const useUserData = (telegramId: number) => {
         }
       )
       .subscribe();
+    
+    channelsRef.current.push(userStatsChannel);
+
+    // 2. Подписка на обновления списка постов (promises)
+    if (onPostsUpdate) {
+      const postsChannel = supabase
+        .channel(`posts-${telegramId}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'promises'
+          },
+                     (payload) => {
+             // Фильтруем события на уровне обработчика
+             const isOwnPromise = (payload.new as any)?.user_id === telegramId;
+             const isReceivedPromise = (payload.new as any)?.recipient_id === telegramId;
+             
+             // Обрабатываем только релевантные события
+             if (isOwnPromise || isReceivedPromise || payload.eventType === 'DELETE') {
+               onPostsUpdate(payload);
+             }
+           }
+        )
+        .subscribe();
+      
+      channelsRef.current.push(postsChannel);
+    }
+
+    // 3. Подписка на обновления challenges
+    const challengesChannel = supabase
+      .channel(`challenges-${telegramId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'challenges',
+          filter: `user_id=eq.${telegramId}`
+        },
+        (payload) => {
+          onChallengesUpdate?.(payload);
+        }
+      )
+      .subscribe();
+    
+    channelsRef.current.push(challengesChannel);
 
     return () => {
-      subscriptionRef.current = null;
+      // Сбрасываем флаг
+      isSetupRef.current = false;
+      
+      // Очищаем таймаут
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
-      supabase.removeChannel(channel);
+      
+      // Удаляем все каналы
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
     };
-  }, [telegramId]); // Только telegramId в зависимостях
+  }, [telegramId, onPostsUpdate, onChallengesUpdate]);
 
   return { userData, isLoading, defaultHeroImg, defaultAvatarImg };
 };

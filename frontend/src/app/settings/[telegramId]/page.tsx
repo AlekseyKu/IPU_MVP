@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const { telegramId: contextTelegramId, initData } = useUser();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
 
-  const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData(telegramId);
+  const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData({ telegramId });
 
   const [heroImg, setHeroImg] = useState(defaultHeroImg);
   const [avatar, setAvatar] = useState(defaultAvatarImg);
