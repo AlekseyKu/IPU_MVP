@@ -349,7 +349,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                 <div className="d-flex flex-column align-items-center mb-2">
                   {/* Не подтверждено */}
                   {promise.is_accepted === null && !promise.is_completed_by_creator && (
-                    <button className="btn btn-outline-secondary w-50 mb-2" disabled>
+                    <button className="btn btn-outline-secondary mb-2" disabled>
                       Не подтверждено
                     </button>
                   )}
@@ -377,8 +377,11 @@ const PromiseView: React.FC<PostviewProps> = ({
                   )}
                   {/* Обещание полностью выполнено */}
                   {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
-                    <button className="btn btn-outline-primary w-50 mb-2" disabled>
-                      Выполнено
+                    <button 
+                      className="btn btn-outline-primary w-50 mb-2"
+                      onClick={() => setIsResultModalOpen(true)}
+                    >
+                      Результат
                     </button>
                   )}
                 </div>
@@ -414,8 +417,11 @@ const PromiseView: React.FC<PostviewProps> = ({
                   )}
                   {/* Обещание полностью выполнено */}
                   {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
-                    <button className="btn btn-outline-success w-50 mb-2" disabled>
-                      Выполнено
+                    <button 
+                      className="btn btn-outline-success w-50 mb-2"
+                      onClick={() => setIsResultModalOpen(true)}
+                    >
+                      Результат
                     </button>
                   )}
                   {/* Отказано */}

@@ -29,6 +29,8 @@ const PromiseCreate: React.FC = () => {
   const [randomPopular, setRandomPopular] = useState<string[]>([]);
   const [isToSomeone, setIsToSomeone] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [isUserToSomeoneVisible, setUserToSomeoneVisible] = useState(false);
+  const [isUserToSomeoneExiting, setUserToSomeoneExiting] = useState(false);
 
   // Локальный updatePosts-заглушка, если компонент используется отдельно
   const updatePosts = () => {};
@@ -64,6 +66,22 @@ const PromiseCreate: React.FC = () => {
       setRandomPopular(getRandomPopularHashtags([], 6));
     }
   }, [isCreatePostOpen]);
+
+  // Управление плавным появлением/исчезновением поля пользователя
+  useEffect(() => {
+    if (isToSomeone) {
+      setUserToSomeoneExiting(false);
+      setUserToSomeoneVisible(true);
+    } else {
+      setUserToSomeoneExiting(true);
+      // Задержка перед скрытием для завершения анимации
+      const timer = setTimeout(() => {
+        setUserToSomeoneVisible(false);
+        setSelectedUser(null);
+      }, 300); // Время анимации fadeOut
+      return () => clearTimeout(timer);
+    }
+  }, [isToSomeone]);
 
   // --- Хештеги ---
   const handleHashtagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,7 +274,6 @@ const PromiseCreate: React.FC = () => {
               checked={isToSomeone}
               onChange={e => {
                 setIsToSomeone(e.target.checked);
-                if (!e.target.checked) setSelectedUser(null);
               }}
               id="isToSomeone"
             />
@@ -264,15 +281,15 @@ const PromiseCreate: React.FC = () => {
               {isToSomeone ? 'Обещание кому-то' : 'Обещание себе'}
             </label>
           </div>
-          {isToSomeone && (
-            <div className="mb-2">
+          {isUserToSomeoneVisible && (
+            <div className={`mb-2 ${isUserToSomeoneExiting ? 'fade-out' : 'fade-in'}`}>
               <UserSearch
                 onSelect={user => setSelectedUser(user)}
                 placeholder="Кому вы даёте обещание?"
                 myTelegramId={telegramId ?? undefined}
               />
               {selectedUser && (
-                <div className="d-flex align-items-center mt-2 p-2 bg-light rounded">
+                <div className={`d-flex align-items-center mt-2 p-2 bg-light rounded ${isUserToSomeoneExiting ? 'fade-out-delayed' : 'fade-in-delayed'}`}>
                   <img src={selectedUser.avatar_img_url || '/assets/images/defaultAvatar.svg'} alt="avatar" width={32} height={32} className="rounded-circle me-2" style={{ objectFit: 'cover' }} />
                   <span className="fw-bold">{selectedUser.first_name} {selectedUser.last_name}</span>
                   {selectedUser.username && <span className="text-muted ms-2">@{selectedUser.username}</span>}

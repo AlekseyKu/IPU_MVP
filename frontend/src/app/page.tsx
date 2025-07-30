@@ -5,13 +5,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/lib/supabaseClient';
+import Onboarding from '@/components/Onboarding';
 
 export default function Page() {
   const router = useRouter();
   const { telegramId, initData, setTelegramId, setInitData } = useUser();
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [navigating, setNavigating] = useState(false);
 
   useEffect(() => {
     const extractUserId = (data: string): number | null => {
@@ -39,7 +39,7 @@ export default function Page() {
       if (data.hideWelcomePage) {
         router.replace(`/user/${id}`);
       } else {
-        setShowWelcome(true);
+        setShowOnboarding(true);
         router.prefetch(`/user/${id}`);
       }
 
@@ -74,22 +74,8 @@ export default function Page() {
     init();
   }, [telegramId, setTelegramId, setInitData, router]);
 
-  const handleCheckboxChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!telegramId) return;
-
-    const { error } = await supabase
-      .from('users')
-      .update({ hideWelcomePage: e.target.checked })
-      .eq('telegram_id', telegramId);
-
-    if (error) {
-      console.error('Failed to update hideWelcomePage:', error.message);
-    }
-  };
-
-  const handleContinue = () => {
+  const handleOnboardingComplete = () => {
     if (telegramId) {
-      setNavigating(true);
       router.replace(`/user/${telegramId}`);
     }
   };
@@ -106,7 +92,7 @@ export default function Page() {
     );
   }
 
-  if (!showWelcome) {
+  if (!showOnboarding) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 bg-white">
         <img
@@ -118,25 +104,5 @@ export default function Page() {
     );
   }
 
-  return (
-    <div className="fade-in p-5 text-center">
-      <h1 className="text-2xl font-bold mb-4">Добро пожаловать!</h1>
-      <p className="mb-4"> IPU - это приложение, где обещания становятся реальными действиями. </p>
-      <p className="mb-4"> Дай обещание, выполни, получи очки доверия. </p>
-      <p className="mb-4 text-primary"> Стань тем, кто держит слово. </p>
-      <div className="mt-4">
-        <button
-          onClick={handleContinue}
-          className="btn btn-outline-primary px-4 py-2 rounded"
-          disabled={navigating}
-        >
-          {navigating ? 'Переход...' : 'Продолжить'}
-        </button>
-      </div>
-      <label>
-        <input type="checkbox" onChange={handleCheckboxChange} />
-        {' '}Больше не показывать
-      </label>
-    </div>
-  );
+  return <Onboarding onComplete={handleOnboardingComplete} />;
 }

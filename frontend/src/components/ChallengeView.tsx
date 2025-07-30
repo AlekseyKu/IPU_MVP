@@ -475,7 +475,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           {!isOwnProfile && !is_completed && (
             <div className="d-flex justify-content-center py-2">
               <button 
-                className={`btn w-50 ${isSubscribed ? 'btn-outline-primary' : 'btn-outline-primary'}`}
+                className={`btn ${isSubscribed ? 'btn-outline-primary' : 'btn-outline-primary'}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleToggleChallengeSubscription();
@@ -485,7 +485,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                 {isJoiningChallenge 
                   ? 'Обработка...' 
                   : isSubscribed 
-                    ? 'Отписаться от челленджа' 
+                    ? 'Подписаны на челлендж' 
                     : 'Присоединиться'
                 }
               </button>
