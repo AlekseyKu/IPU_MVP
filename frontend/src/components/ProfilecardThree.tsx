@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import KarmaHistory from './KarmaHistory';
 
 interface Props {
   onToggleDetail?: () => void;
@@ -12,7 +13,7 @@ interface Props {
   subscribers?: number;
   promises?: number;
   promisesDone?: number;
-  stars?: number;
+  karma_points?: number;
   heroImgUrl?: string;
   avatarUrl?: string;
   isEditable?: boolean;
@@ -38,7 +39,7 @@ const ProfilecardThree: React.FC<Props> = ({
   subscribers = 0,
   promises = 0,
   promisesDone = 0,
-  stars = 0,
+  karma_points = 0,
   heroImgUrl = '/assets/images/ipu/hero-img.png',
   avatarUrl = '/assets/images/ipu/avatar.png',
   isEditable = false,
@@ -56,6 +57,7 @@ const ProfilecardThree: React.FC<Props> = ({
   lastName,
 }) => {
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [showKarmaHistory, setShowKarmaHistory] = useState(false);
   const isLoading = isSavingImage || isSavingText || isSubscribing;
 
   const handleSave = () => {
@@ -76,11 +78,13 @@ const ProfilecardThree: React.FC<Props> = ({
     }
   };
 
+
+
   const tabs = [
-    { label: 'Подписчики', count: subscribers },
-    { label: 'Обещания', count: promises },
-    { label: 'Выполнено', count: promisesDone },
-    { label: 'Звезды', count: stars },
+    { label: 'Подписчики', count: subscribers, onClick: undefined },
+    { label: 'Обещания', count: promises, onClick: undefined },
+    { label: 'Выполнено', count: promisesDone, onClick: undefined },
+    { label: 'Карма', count: karma_points, onClick: () => setShowKarmaHistory(true) },
   ];
 
   const fullName = `${firstName || ''} ${lastName || ''}`.trim();
@@ -154,10 +158,12 @@ const ProfilecardThree: React.FC<Props> = ({
               className="nav nav-tabs h55 d-flex product-info-tab ps-0 border-bottom-0 w-100"
               role="tablist"
             >
-              {tabs.map(({ label, count }, i) => (
+              {tabs.map(({ label, count, onClick }, i) => (
                 <li
                   key={i}
                   className="flex-fill d-flex flex-column align-items-center justify-content-center text-center me-0"
+                  onClick={onClick}
+                  style={{ cursor: onClick ? 'pointer' : 'default' }}
                 >
                   <div className="fw-400 font-xss mb-0">{count}</div>
                   <div className="fw-400 font-xssss text-dark">{label}</div>
@@ -168,7 +174,7 @@ const ProfilecardThree: React.FC<Props> = ({
               <div className="d-flex justify-content-end pe-3 pt-2 mb-2">
                 <button
                   onClick={handleSubscribe}
-                  className="btn btn-outline-primary me-2"
+                  className="btn btn-outline-primary"
                   disabled={isLoading}
                 >
                   {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
@@ -178,6 +184,13 @@ const ProfilecardThree: React.FC<Props> = ({
           </>
         )}
       </div>
+      
+      {/* Модальное окно истории кармы */}
+      <KarmaHistory
+        userId={telegramId}
+        isVisible={showKarmaHistory}
+        onClose={() => setShowKarmaHistory(false)}
+      />
     </div>
   );
 };

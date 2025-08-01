@@ -7,9 +7,9 @@ interface Props {
   telegramId?: number;
   fullName: string;
   about?: string;
-  address?: string;
+  email?: string;
   onChangeAbout?: (text: string) => void;
-  onChangeAddress?: (text: string) => void;
+  onChangeEmail?: (text: string) => void;
   onChangeFullName?: (firstName: string, lastName: string) => void;
   isEditable?: boolean;
   isSavingImage?: boolean;
@@ -22,9 +22,9 @@ const Profiledetail: React.FC<Props> = ({
   telegramId = 0,
   fullName = '',
   about = '',
-  address = '',
+  email = '',
   onChangeAbout,
-  onChangeAddress,
+  onChangeEmail,
   onChangeFullName,
   isEditable = false,
   isSavingImage = false,
@@ -32,7 +32,7 @@ const Profiledetail: React.FC<Props> = ({
   scrollContainerRef,
 }) => {
   const [localAbout, setLocalAbout] = useState(about);
-  const [localAddress, setLocalAddress] = useState(address);
+  const [localEmail, setLocalEmail] = useState(email);
 
   const initialFirstName = fullName.trim().split(' ')[0] || '';
   const initialLastName = fullName.trim().split(' ').slice(1).join(' ') || '';
@@ -48,12 +48,12 @@ const Profiledetail: React.FC<Props> = ({
 
   useEffect(() => {
     setLocalAbout(about);
-    setLocalAddress(address);
+    setLocalEmail(email);
 
     const parts = fullName.trim().split(' ');
     setFirstName(parts[0] || '');
     setLastName(parts.slice(1).join(' ') || '');
-  }, [about, address, fullName]);
+  }, [about, email, fullName]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -127,6 +127,20 @@ const Profiledetail: React.FC<Props> = ({
               </div>
             </div>
 
+            <div className="mb-2">
+              <input
+                type="email"
+                value={localEmail}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setLocalEmail(value);
+                  onChangeEmail?.(value);
+                }}
+                className="form-control font-xsss"
+                placeholder="Email"
+              />
+            </div>
+
             <textarea
               ref={aboutRef}
               onFocus={() => scrollToInput(aboutRef)}
@@ -142,9 +156,16 @@ const Profiledetail: React.FC<Props> = ({
             />
           </div>
         ) : (
-          <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
-            {localAbout || 'Не указано'}
-          </p>
+          <div>
+            <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
+              {localAbout || 'Не указано'}
+            </p>
+            {localEmail && (
+              <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
+                Email: {localEmail}
+              </p>
+            )}
+          </div>
         )}
       </div>
 

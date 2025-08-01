@@ -109,10 +109,35 @@ export function usePublicPosts(currentUserId: number | null) {
       })
       .subscribe();
 
+    // Подписка на обновления подписок (только если есть текущий пользователь)
+    const subscriptionChannel = currentUserId 
+      ? supabase
+          .channel('subscriptions-updates')
+          .on('postgres_changes', 
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'subscriptions',
+              filter: `follower_id=eq.${currentUserId}`
+            }, 
+            (payload) => {
+              if (payload.eventType === 'INSERT') {
+                setSubscriptions((prev) => [...prev, payload.new.followed_id]);
+              } else if (payload.eventType === 'DELETE') {
+                setSubscriptions((prev) => prev.filter(id => id !== payload.old.followed_id));
+              }
+            }
+          )
+          .subscribe()
+      : null;
+
     return () => {
       mounted = false;
       supabase.removeChannel(promiseChannel);
       supabase.removeChannel(challengeChannel);
+      if (subscriptionChannel) {
+        supabase.removeChannel(subscriptionChannel);
+      }
     };
   }, [currentUserId]);
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { awardKarma } from '@/utils/karmaService';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -41,6 +42,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ detail: 'Subscription already exists or invalid data' }, { status: 400 });
     }
 
+    // Начисляем карму за подписку
+    try {
+      await awardKarma(
+        follower_id, 
+        1, 
+        'Подписка на пользователя', 
+        'subscription', 
+        null
+      );
+    } catch (karmaError) {
+      console.error('Error awarding karma for subscription:', karmaError);
+      // Не прерываем создание подписки, если карма не начислилась
+    }
+
     return NextResponse.json({ message: 'Subscription created' }, { status: 201 });
   } catch (error) {
     console.error('General error:', error);
@@ -65,6 +80,20 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       console.error('Error deleting subscription:', error.message);
       return NextResponse.json({ detail: 'Subscription not found' }, { status: 404 });
+    }
+
+    // Списываем карму за отписку
+    try {
+      await awardKarma(
+        follower_id, 
+        -1, 
+        'Отписка от пользователя', 
+        'subscription', 
+        null
+      );
+    } catch (karmaError) {
+      console.error('Error deducting karma for unsubscription:', karmaError);
+      // Не прерываем удаление подписки, если карма не списалась
     }
 
     return NextResponse.json({ message: 'Subscription deleted' }, { status: 200 });

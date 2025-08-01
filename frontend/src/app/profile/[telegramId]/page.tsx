@@ -15,6 +15,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import ChallengeView from '@/components/ChallengeView';
 
+
 export default function ProfilePage() {
   const { telegramId: paramTelegramId } = useParams();
   const { telegramId: currentUserId } = useUser();
@@ -82,6 +83,7 @@ export default function ProfilePage() {
         <div className="middle-sidebar-bottom">
           <div className="middle-sidebar-left pe-0">
             <div className="row">
+
               <div className="col-xl-12 mb-3">
                 <ProfilecardThree
                   onToggleDetail={() => setIsDetailOpen((prev) => !prev)}
@@ -91,7 +93,7 @@ export default function ProfilePage() {
                   subscribers={userData.subscribers || 0}
                   promises={promises.length}
                   promisesDone={promises.filter(p => p.is_completed).length}
-                  stars={userData.stars || 0}
+                  karma_points={userData.karma_points || 0}
                   firstName={userData.first_name || ''}
                   lastName={userData.last_name || ''}
                   heroImgUrl={userData.hero_img_url || '/assets/images/ipu/hero-img.png'}

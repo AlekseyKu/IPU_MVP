@@ -1703,6 +1703,12 @@ address {
   line-height: inherit;
 }
 
+email {
+  margin-bottom: 1rem;
+  font-style: normal;
+  line-height: inherit;
+}
+
 ol,
 ul {
   padding-left: 2rem;

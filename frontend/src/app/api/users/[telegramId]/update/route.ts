@@ -14,13 +14,14 @@ export async function PATCH(
   }
 
   try {
-    const { first_name, last_name, about } = await request.json();
+    const { first_name, last_name, email, about } = await request.json();
 
     const { error } = await supabase
       .from('users')
       .update({
         first_name: first_name || null,
         last_name: last_name || null,
+        email: email || null,
         about: about || null,
       })
       .eq('telegram_id', parsedId);

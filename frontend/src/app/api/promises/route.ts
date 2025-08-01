@@ -2,6 +2,7 @@
 // frontend\src\app\api\promises\route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { checkActivePromisesLimit, awardKarma } from '@/utils/karmaService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +11,15 @@ export async function POST(request: NextRequest) {
     if (!data.user_id || !data.title || !data.deadline) {
       return NextResponse.json({ error: 'user_id, title и deadline обязательны' }, { status: 400 });
     }
+
+    // Проверяем лимит активных обещаний
+    const canCreate = await checkActivePromisesLimit(data.user_id);
+    if (!canCreate) {
+      return NextResponse.json({ 
+        error: 'Превышен лимит активных обещаний (максимум 5)' 
+      }, { status: 400 });
+    }
+
     const { error, data: inserted } = await supabase.from('promises').insert({
       user_id: data.user_id,
       title: data.title,
@@ -27,11 +37,25 @@ export async function POST(request: NextRequest) {
       is_completed_by_creator: null,
       is_completed_by_recipient: null
     }).select().single();
+    
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    // Убираем RPC вызов - триггер уже обновляет счетчик
-    // await supabase.rpc('increment_promises', { user_id: data.user_id });
+
+    // Начисляем карму за создание обещания
+    try {
+      await awardKarma(
+        data.user_id, 
+        1, 
+        'Создание обещания', 
+        'promise', 
+        inserted.id
+      );
+    } catch (karmaError) {
+      console.error('Error awarding karma for promise creation:', karmaError);
+      // Не прерываем создание обещания, если карма не начислилась
+    }
+
     return NextResponse.json({ success: true, promise: inserted });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -65,13 +89,63 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
-    // Убираем RPC вызовы - триггеры уже обновляют счетчики
-    // if (oldPromise && !oldPromise.is_completed && updatedPromise.is_completed) {
-    //   await supabase.rpc('increment_promises_done', { user_id: oldPromise.user_id });
-    // }
-    // if (oldPromise && oldPromise.is_completed && !updatedPromise.is_completed) {
-    //   await supabase.rpc('decrement_promises_done', { user_id: oldPromise.user_id });
-    // }
+    // Начисляем карму при завершении обещания
+    if (oldPromise && !oldPromise.is_completed && updatedPromise.is_completed) {
+      console.log('🎯 Promise completion detected, awarding karma...');
+      try {
+        // Получаем полные данные обещания для проверки типа
+        const { data: fullPromise } = await supabase
+          .from('promises')
+          .select('requires_accept, recipient_id, deadline')
+          .eq('id', updatedPromise.id)
+          .single();
+
+        console.log('📊 Full promise data:', fullPromise);
+
+        if (fullPromise) {
+          const isOverdue = new Date(fullPromise.deadline) < new Date();
+          console.log('⏰ Deadline check:', { deadline: fullPromise.deadline, isOverdue });
+          
+          if (!isOverdue) {
+            if (fullPromise.requires_accept) {
+              // Обещание "кому-то"
+              console.log('🎁 Awarding karma for promise to someone');
+              await awardKarma(
+                oldPromise.user_id, 
+                3, 
+                'Выполнение обещания для другого', 
+                'promise', 
+                updatedPromise.id
+              );
+              if (fullPromise.recipient_id) {
+                await awardKarma(
+                  fullPromise.recipient_id, 
+                  1, 
+                  'Получение выполненного обещания', 
+                  'promise', 
+                  updatedPromise.id
+                );
+              }
+            } else {
+              // Обещание себе
+              console.log('🎁 Awarding karma for self promise');
+              await awardKarma(
+                oldPromise.user_id, 
+                2, 
+                'Выполнение своего обещания', 
+                'promise', 
+                updatedPromise.id
+              );
+            }
+          } else {
+            console.log('⏰ Promise completed but overdue - no karma awarded');
+          }
+        }
+      } catch (karmaError) {
+        console.error('❌ Error awarding karma for promise completion:', karmaError);
+        // Не прерываем завершение обещания, если карма не начислилась
+      }
+    }
     
     return NextResponse.json({ success: true, promise: updatedRows?.[0] });
   } catch (e) {
@@ -95,16 +169,27 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Promise не найден' }, { status: 404 });
     }
     const { user_id, is_completed } = promiseData;
+    
     // Удаляем обещание
     const { error } = await supabase.from('promises').delete().eq('id', id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    // Убираем RPC вызовы - триггеры уже обновляют счетчики
-    // await supabase.rpc('decrement_promises', { user_id });
-    // if (is_completed) {
-    //   await supabase.rpc('decrement_promises_done', { user_id });
-    // }
+
+    // Списываем карму за удаление обещания
+    try {
+      await awardKarma(
+        user_id, 
+        -1, 
+        'Удаление обещания', 
+        'promise', 
+        id
+      );
+    } catch (karmaError) {
+      console.error('Error deducting karma for promise deletion:', karmaError);
+      // Не прерываем удаление обещания, если карма не списалась
+    }
+
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

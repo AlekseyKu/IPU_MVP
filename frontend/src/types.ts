@@ -9,11 +9,11 @@ export interface UserData {
   promises_done?: number;
   challenges?: number;
   challenges_done?: number;
-  stars?: number;
+  karma_points?: number;
   hero_img_url?: string;
   avatar_img_url?: string;
   about?: string;
-  address?: string;
+  email?: string;
 }
 
 export interface User {

@@ -68,7 +68,7 @@ promises INTEGER DEFAULT 0
 promises_done INTEGER DEFAULT 0
 challenges INTEGER DEFAULT 0
 challenges_done INTEGER DEFAULT 0
-stars INTEGER DEFAULT 0
+karma_points INTEGER DEFAULT 0
 created_at TIMESTAMPTZ DEFAULT NOW()
 ```
 

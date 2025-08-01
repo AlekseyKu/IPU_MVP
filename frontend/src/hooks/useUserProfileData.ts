@@ -34,8 +34,8 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
 
         if (!profileRes.ok) throw new Error('User not found');
 
-        const profile: UserData = await profileRes.json();
-        setUserData(profile);
+                 const profile: UserData = await profileRes.json();
+         setUserData(profile);
 
         if (!promisesRes.error) {
           setPromises(promisesRes.data || []);
@@ -66,6 +66,8 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
 
     const promiseChannel = supabase.channel(`promises-${telegramId}`);
     const challengeChannel = supabase.channel(`challenges-${telegramId}`);
+    const userChannel = supabase.channel(`user-${telegramId}`);
+    const subscriptionChannel = supabase.channel(`subscriptions-${telegramId}`);
 
     promiseChannel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'promises' }, (payload) => {
@@ -99,12 +101,64 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
         }
       });
 
+    // Подписка на обновления пользователя (для кармы)
+    userChannel
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'users', 
+          filter: `telegram_id=eq.${telegramId}` 
+        }, 
+                 (payload) => {
+           if (payload.new) {
+            setUserData((prev) => {
+              if (!prev) return prev;
+              const updatedData = {
+                ...prev,
+                karma_points: payload.new.karma_points || prev.karma_points,
+                subscribers: payload.new.subscribers || prev.subscribers,
+                promises: payload.new.promises || prev.promises,
+                promises_done: payload.new.promises_done || prev.promises_done,
+                challenges: payload.new.challenges || prev.challenges,
+                challenges_done: payload.new.challenges_done || prev.challenges_done,
+                             };
+               return updatedData;
+            });
+          }
+        }
+      );
+
+    // Подписка на обновления подписок (только если есть текущий пользователь и это не его профиль)
+    if (currentUserId && !isOwnProfile) {
+      subscriptionChannel
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'subscriptions',
+            filter: `follower_id=eq.${currentUserId} AND followed_id=eq.${telegramId}`
+          }, 
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setIsSubscribed(true);
+            } else if (payload.eventType === 'DELETE') {
+              setIsSubscribed(false);
+            }
+          }
+        );
+    }
+
     promiseChannel.subscribe();
     challengeChannel.subscribe();
+    userChannel.subscribe();
+    subscriptionChannel.subscribe();
 
     return () => {
       supabase.removeChannel(promiseChannel);
       supabase.removeChannel(challengeChannel);
+      supabase.removeChannel(userChannel);
+      supabase.removeChannel(subscriptionChannel);
     };
   }, [telegramId]);
 

@@ -38,32 +38,32 @@ export const useUserData = ({
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('telegram_id, username, first_name, last_name, subscribers, promises, promises_done, challenges, challenges_done, stars, hero_img_url, avatar_img_url, about, address')
+          .select('telegram_id, username, first_name, last_name, subscribers, promises, promises_done, challenges, challenges_done, karma_points, hero_img_url, avatar_img_url, about, email')
           .eq('telegram_id', telegramId)
           .single();
 
         if (error) {
           console.error('Error fetching user data:', error.message);
           setUserData(null);
-        } else if (data) {
-          const newUserData = {
-            telegram_id: data.telegram_id,
-            username: data.username || '',
-            first_name: data.first_name || '',
-            last_name: data.last_name || '',
-            subscribers: data.subscribers || 0,
-            promises: data.promises || 0,
-            promises_done: data.promises_done || 0,
-            challenges: data.challenges || 0,
-            challenges_done: data.challenges_done || 0,
-            stars: data.stars || 0,
-            hero_img_url: data.hero_img_url || defaultHeroImg,
-            avatar_img_url: data.avatar_img_url || defaultAvatarImg,
-            about: data.about || '',
-            address: data.address || '',
-          };
-          
-          setUserData(newUserData);
+                 } else if (data) {
+           const newUserData = {
+             telegram_id: data.telegram_id,
+             username: data.username || '',
+             first_name: data.first_name || '',
+             last_name: data.last_name || '',
+             subscribers: data.subscribers || 0,
+             promises: data.promises || 0,
+             promises_done: data.promises_done || 0,
+             challenges: data.challenges || 0,
+             challenges_done: data.challenges_done || 0,
+             karma_points: data.karma_points || 0,
+             hero_img_url: data.hero_img_url || defaultHeroImg,
+             avatar_img_url: data.avatar_img_url || defaultAvatarImg,
+             about: data.about || '',
+             email: data.email || '',
+                        };
+           
+           setUserData(newUserData);
           
           // Обновляем ref с текущими значениями
           currentStatsRef.current = {
@@ -116,8 +116,13 @@ export const useUserData = ({
             challenges_done: payload.new.challenges_done || 0
           };
           
+                                // Проверяем изменение кармы отдельно
+           const currentKarma = userData?.karma_points || 0;
+           const newKarma = payload.new.karma_points || 0;
+           const karmaChanged = currentKarma !== newKarma;
+          
           // Обновляем только если данные действительно изменились
-          if (JSON.stringify(currentStats) !== JSON.stringify(newStats)) {
+          if (JSON.stringify(currentStats) !== JSON.stringify(newStats) || karmaChanged) {
             // НЕМЕДЛЕННО обновляем ref с новыми значениями
             currentStatsRef.current = { ...newStats };
             
@@ -126,28 +131,27 @@ export const useUserData = ({
               clearTimeout(updateTimeoutRef.current);
             }
             
-            // Добавляем небольшую задержку для предотвращения двойного обновления
-            updateTimeoutRef.current = setTimeout(() => {
-              const updatedData = payload.new as UserData;
-              const newUserData = {
-                telegram_id: updatedData.telegram_id,
-                username: updatedData.username || '',
-                first_name: updatedData.first_name || '',
-                last_name: updatedData.last_name || '',
-                subscribers: updatedData.subscribers || 0,
-                promises: updatedData.promises || 0,
-                promises_done: updatedData.promises_done || 0,
-                challenges: updatedData.challenges || 0,
-                challenges_done: updatedData.challenges_done || 0,
-                stars: updatedData.stars || 0,
-                hero_img_url: updatedData.hero_img_url || defaultHeroImg,
-                avatar_img_url: updatedData.avatar_img_url || defaultAvatarImg,
-                about: updatedData.about || '',
-                address: updatedData.address || '',
-              };
-              
-              setUserData(newUserData);
-            }, 100); // 100ms задержка
+                         // Добавляем небольшую задержку для предотвращения двойного обновления
+             updateTimeoutRef.current = setTimeout(() => {
+               const updatedData = payload.new as UserData;
+               const newUserData = {
+                 telegram_id: updatedData.telegram_id,
+                 username: updatedData.username || '',
+                 first_name: updatedData.first_name || '',
+                 last_name: updatedData.last_name || '',
+                 subscribers: updatedData.subscribers || 0,
+                 promises: updatedData.promises || 0,
+                 promises_done: updatedData.promises_done || 0,
+                 challenges: updatedData.challenges || 0,
+                 challenges_done: updatedData.challenges_done || 0,
+                 karma_points: updatedData.karma_points || 0,
+                 hero_img_url: updatedData.hero_img_url || defaultHeroImg,
+                 avatar_img_url: updatedData.avatar_img_url || defaultAvatarImg,
+                 about: updatedData.about || '',
+                 email: updatedData.email || '',
+                                };
+                 setUserData(newUserData);
+             }, 100); // 100ms задержка
           }
         }
       )
@@ -200,6 +204,25 @@ export const useUserData = ({
       .subscribe();
     
     channelsRef.current.push(challengesChannel);
+
+    // 4. Подписка на обновления karma_transactions (для отладки)
+    const karmaTransactionsChannel = supabase
+      .channel(`karma-transactions-${telegramId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'karma_transactions',
+          filter: `user_id=eq.${telegramId}`
+        },
+                 (payload) => {
+           // Karma transaction received
+         }
+      )
+      .subscribe();
+    
+    channelsRef.current.push(karmaTransactionsChannel);
 
     return () => {
       // Сбрасываем флаг

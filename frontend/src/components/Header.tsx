@@ -50,6 +50,13 @@ const Header: React.FC = () => {
     setUiState((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  // Обработчик клика вне меню
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setUiState((prev) => ({ ...prev, isOpen: false }))
+    }
+  }
+
   if (!isMounted) return null
 
   return (
@@ -252,6 +259,22 @@ const Header: React.FC = () => {
         </div>
       </nav>
 
+      {/* Overlay для закрытия меню по клику вне его */}
+      {uiState.isOpen && (
+        <div
+          className="nav-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.3)',
+            zIndex: 999,
+          }}
+          onClick={handleOverlayClick}
+        />
+      )}
 
       {/* Search bar overlay */}
       {uiState.isActive && (

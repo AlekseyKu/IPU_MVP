@@ -17,9 +17,11 @@ export default function useUserSubscription(
       });
 
       if (!response.ok) {
-        throw new Error('Subscription action failed');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Subscription action failed');
       }
 
+      // Обновляем локальное состояние подписчиков
       setUserData((prev) =>
         prev
           ? {
@@ -31,6 +33,7 @@ export default function useUserSubscription(
           : prev
       );
     } catch (error) {
+      console.error('Subscription error:', error);
       setError('Error updating subscription');
       throw error;
     }

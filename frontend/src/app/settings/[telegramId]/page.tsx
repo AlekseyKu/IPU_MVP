@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [avatar, setAvatar] = useState(defaultAvatarImg);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [about, setAbout] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
@@ -37,6 +38,7 @@ export default function SettingsPage() {
       setAvatar(userData.avatar_img_url || defaultAvatarImg);
       setFirstName(userData.first_name || '');
       setLastName(userData.last_name || '');
+      setEmail(userData.email || '');
       setAbout(userData.about || '');
     }
   }, [userData, defaultHeroImg, defaultAvatarImg]);
@@ -45,9 +47,10 @@ export default function SettingsPage() {
     const hasChanges =
       firstName !== (userData?.first_name || '') ||
       lastName !== (userData?.last_name || '') ||
+      email !== (userData?.email || '') ||
       about !== (userData?.about || '');
     setIsDirty(hasChanges);
-  }, [firstName, lastName, about, userData]);
+  }, [firstName, lastName, email, about, userData]);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -132,7 +135,7 @@ export default function SettingsPage() {
       const response = await fetch(`/api/users/${telegramId}/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: firstName, last_name: lastName, about }),
+        body: JSON.stringify({ first_name: firstName, last_name: lastName, email, about }),
       });
 
       if (!response.ok) {
@@ -177,7 +180,7 @@ export default function SettingsPage() {
                   subscribers={userData.subscribers || 0}
                   promises={userData.promises || 0}
                   promisesDone={userData.promises_done || 0}
-                  stars={userData.stars || 0}
+                  karma_points={userData.karma_points || 0}
                   firstName={firstName}
                   lastName={lastName}
                   heroImgUrl={heroImg}
@@ -202,9 +205,11 @@ export default function SettingsPage() {
                   telegramId={userData.telegram_id}
                   fullName={`${firstName} ${lastName}`.trim()}
                   about={about}
+                  email={email}
                   isEditable={true}
                   isSavingImage={isSavingImage}
                   onChangeAbout={(text) => setAbout(text)}
+                  onChangeEmail={(text) => setEmail(text)}
                   onChangeFullName={(first, last) => {
                     setFirstName(first);
                     setLastName(last);

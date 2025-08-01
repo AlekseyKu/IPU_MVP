@@ -16,7 +16,7 @@ IPU_MVP/
   backend/      — FastAPI backend, Alembic, модели, схемы, сервисы
   bot/          — Telegram-бот, обработчики, сервисы
   frontend/     — Next.js приложение, компоненты, хуки, API-роуты
-  docs/         — Структура проекта
+  docs/         — Документация проекта
 ```
 
 - **Frontend:** Next.js, React, Supabase-js, поддержка SSR, модульная структура, SCSS, Bootstrap.

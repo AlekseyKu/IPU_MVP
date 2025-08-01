@@ -489,7 +489,7 @@ export default function UserProfile() {
                   subscribers={userData.subscribers || 0}
                   promises={promisesCount + challengesCount}
                   promisesDone={promisesDone + challengesDone}
-                  stars={userData.stars || 0}
+                  karma_points={userData.karma_points || 0}
                   heroImgUrl={userData.hero_img_url || defaultHeroImg}
                   avatarUrl={userData.avatar_img_url || defaultAvatarImg}
                   isEditable={false}

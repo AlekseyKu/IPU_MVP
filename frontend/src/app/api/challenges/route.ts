@@ -1,6 +1,7 @@
 // frontend/src/app/api/challenges/route.ts
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { checkActiveChallengesLimit, awardKarma, getCompletedReportsCount, getParticipantsCount } from '@/utils/karmaService';
 
 interface CreateChallengeBody {
   user_id: number;
@@ -50,6 +51,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: 'Total reports must be at least 1' }, { status: 400 });
     }
 
+    // Проверяем лимит активных челленджей
+    const canCreate = await checkActiveChallengesLimit(user_id);
+    if (!canCreate) {
+      return NextResponse.json({ 
+        detail: 'Превышен лимит активных челленджей (максимум 5)' 
+      }, { status: 400 });
+    }
+
     const { data: existingChallenge } = await supabase
       .from('challenges')
       .select('id')
@@ -81,8 +90,19 @@ export async function POST(request: Request) {
 
     if (insertError) throw insertError;
 
-    // Убираем RPC вызов - триггер уже обновляет счетчик
-    // await supabase.rpc('increment_promises', { user_id });
+    // Начисляем карму за создание челленджа
+    try {
+      await awardKarma(
+        user_id, 
+        2, 
+        'Создание челленджа', 
+        'challenge', 
+        data.id
+      );
+    } catch (karmaError) {
+      console.error('Error awarding karma for challenge creation:', karmaError);
+      // Не прерываем создание челленджа, если карма не начислилась
+    }
 
     return NextResponse.json({
       message: 'Challenge created successfully',
@@ -180,13 +200,29 @@ export async function PUT(request: Request) {
       const newDeadlinePeriod = newReportPeriods[newReportPeriods.length - 1];
 
       // Создаём первый отчет
-      await supabase.from('challenge_reports').insert({
+      const { data: reportData, error: reportError } = await supabase.from('challenge_reports').insert({
         user_id,
         challenge_id: id,
         comment: comment || '',
         media_url: media_url || null,
         report_date: nowIso,
-      });
+      }).select().single();
+
+      if (reportError) throw reportError;
+
+      // Начисляем карму за отчет в челлендже
+      try {
+        await awardKarma(
+          user_id, 
+          2, 
+          'Отчет в челлендже', 
+          'challenge', 
+          id
+        );
+      } catch (karmaError) {
+        console.error('Error awarding karma for challenge report:', karmaError);
+        // Не прерываем создание отчета, если карма не начислилась
+      }
 
       const { error: updateError } = await supabase
         .from('challenges')
@@ -234,13 +270,29 @@ export async function PUT(request: Request) {
       if (existingReports?.length) return NextResponse.json({ detail: 'Report already submitted' }, { status: 400 });
 
       // Создаем отчет с текстом и медиа
-      await supabase.from('challenge_reports').insert({
+      const { data: reportData, error: reportError } = await supabase.from('challenge_reports').insert({
         user_id,
         challenge_id: id,
         report_date: now.toISOString(),
         comment: comment || '',
         media_url: media_url || null,
-      });
+      }).select().single();
+
+      if (reportError) throw reportError;
+
+      // Начисляем карму за отчет в челлендже
+      try {
+        await awardKarma(
+          user_id, 
+          2, 
+          'Отчет в челлендже', 
+          'challenge', 
+          id
+        );
+      } catch (karmaError) {
+        console.error('Error awarding karma for challenge report:', karmaError);
+        // Не прерываем создание отчета, если карма не начислилась
+      }
 
       const newCompletedReports = challenge.data.completed_reports + 1;
       await supabase
@@ -275,14 +327,32 @@ export async function PUT(request: Request) {
         .gte('report_date', start)
         .lte('report_date', end);
       if (existingReports?.length) return NextResponse.json({ detail: 'Report already submitted' }, { status: 400 });
+      
       // Создаем отчет
-      await supabase.from('challenge_reports').insert({
+      const { data: reportData, error: reportError } = await supabase.from('challenge_reports').insert({
         user_id,
         challenge_id: id,
         report_date: now.toISOString(),
         comment: comment || '',
         media_url: media_url || null,
-      });
+      }).select().single();
+
+      if (reportError) throw reportError;
+
+      // Начисляем карму за отчет в челлендже
+      try {
+        await awardKarma(
+          user_id, 
+          2, 
+          'Отчет в челлендже', 
+          'challenge', 
+          id
+        );
+      } catch (karmaError) {
+        console.error('Error awarding karma for challenge report:', karmaError);
+        // Не прерываем создание отчета, если карма не начислилась
+      }
+
       const newCompletedReports = challenge.data.completed_reports + 1;
       await supabase
         .from('challenges')
@@ -292,6 +362,25 @@ export async function PUT(request: Request) {
           is_completed: true,
         })
         .eq('id', id);
+
+      // Начисляем карму за завершение челленджа
+      try {
+        const completedReports = await getCompletedReportsCount(id);
+        const participants = await getParticipantsCount(id);
+        const totalKarma = completedReports + participants;
+        
+        await awardKarma(
+          user_id, 
+          totalKarma, 
+          'Завершение челленджа', 
+          'challenge', 
+          id
+        );
+      } catch (karmaError) {
+        console.error('Error awarding karma for challenge completion:', karmaError);
+        // Не прерываем завершение челленджа, если карма не начислилась
+      }
+
       return NextResponse.json({
         message: 'Challenge finished',
         completed_reports: newCompletedReports,
@@ -331,11 +420,19 @@ export async function DELETE(request: Request) {
     const { error } = await supabase.from('challenges').delete().eq('id', id);
     if (error) throw error;
 
-    // Убираем RPC вызовы - триггеры уже обновляют счетчики
-    // await supabase.rpc('decrement_promises', { user_id });
-    // if (is_completed) {
-    //   await supabase.rpc('decrement_promises_done', { user_id });
-    // }
+    // Списываем карму за удаление челленджа
+    try {
+      await awardKarma(
+        user_id, 
+        -2, 
+        'Удаление челленджа', 
+        'challenge', 
+        id
+      );
+    } catch (karmaError) {
+      console.error('Error deducting karma for challenge deletion:', karmaError);
+      // Не прерываем удаление челленджа, если карма не списалась
+    }
 
     return NextResponse.json({ message: 'Challenge deleted successfully' }, { status: 200 });
   } catch (error: unknown) {
