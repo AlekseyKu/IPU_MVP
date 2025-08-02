@@ -73,7 +73,7 @@ export async function checkActivePromisesLimit(userId: number): Promise<boolean>
 
     const activeCount = activePromises?.length || 0;
     console.log(`Active promises for user ${userId}: ${activeCount}`);
-    return activeCount < 5; // Максимум 5 активных обещаний
+    return activeCount < 20; // Максимум 20 активных обещаний
   } catch (error) {
     console.error('Error in checkActivePromisesLimit:', error);
     return false;
