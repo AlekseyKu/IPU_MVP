@@ -1,0 +1,14 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "feature/*": false,
+      "fix/*": false,
+      "refactor/*": false,
+      "release": true
+    }
+  },
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/.next",
+  "installCommand": "cd frontend && npm install"
+} 
