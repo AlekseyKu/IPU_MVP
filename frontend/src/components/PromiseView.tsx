@@ -6,6 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
 import { PromiseData } from '@/types';
 import { formatDateTime } from '@/utils/formatDate';
+import { canDeleteItem } from '@/utils/postRules';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PromiseCompleteModal from './PromiseCompleteModal';
@@ -510,7 +511,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                 )} */}
                 <button className="dropdown-item" onClick={copyLink}>Скопировать ссылку</button>
                 <button className="dropdown-item" onClick={share}>Отправить</button>
-                {isOwnProfile && isProfilePage && (
+                {isOwnProfile && isProfilePage && canDeleteItem(created_at) && (
                   <button className="dropdown-item text-danger" onClick={handleDelete}>
                     Удалить обещание
                   </button>

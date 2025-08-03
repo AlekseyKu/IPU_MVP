@@ -7,6 +7,7 @@ import { Ellipsis, GlobeLock, CirclePlay, CircleStop, ChevronDown, ChevronUp } f
 import { ChallengeData } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
+import { canDeleteItem } from '@/utils/postRules';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
@@ -588,8 +589,10 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                 )}
                 <button className="dropdown-item" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/challenge/${challenge.id}`).then(() => alert('Ссылка скопирована!')); setMenuOpen(false);}}>Скопировать ссылку</button>
                 <button className="dropdown-item" onClick={() => {if (navigator.share) {navigator.share({ title: challenge.title, text: challenge.content, url: `${window.location.origin}/challenge/${challenge.id}` }).catch(console.error);} else alert('Поделиться недоступно'); setMenuOpen(false);}}>Отправить</button>
-                {isOwnProfile && isProfilePage && (
-                  <button className="dropdown-item text-danger" onClick={handleDelete}>Удалить челлендж</button>
+                {isOwnProfile && isProfilePage && canDeleteItem(challenge.created_at) && (
+                  <button className="dropdown-item text-danger" onClick={handleDelete}>
+                    Удалить челлендж
+                  </button>
                 )}
               </div>
             )}

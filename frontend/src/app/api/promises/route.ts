@@ -159,16 +159,28 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'ID обязателен' }, { status: 400 });
     }
-    // Получаем user_id и is_completed по id
+    
+    // Получаем user_id, is_completed и created_at по id
     const { data: promiseData, error: selectError } = await supabase
       .from('promises')
-      .select('user_id, is_completed')
+      .select('user_id, is_completed, created_at')
       .eq('id', id)
       .single();
     if (selectError || !promiseData) {
       return NextResponse.json({ error: 'Promise не найден' }, { status: 404 });
     }
-    const { user_id, is_completed } = promiseData;
+    const { user_id, is_completed, created_at } = promiseData;
+    
+    // Проверяем, прошло ли больше 6 часов с момента создания
+    const createdAt = new Date(created_at);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursDiff > 6) {
+      return NextResponse.json({ 
+        error: 'Удаление обещания возможно только в течение 6 часов после создания' 
+      }, { status: 403 });
+    }
     
     // Удаляем обещание
     const { error } = await supabase.from('promises').delete().eq('id', id);

@@ -404,10 +404,10 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ detail: 'Missing challenge id' }, { status: 400 });
 
-    // Получаем user_id и is_completed по id
+    // Получаем user_id, is_completed и created_at по id
     const { data: challengeData, error: selectError } = await supabase
       .from('challenges')
-      .select('user_id, is_completed')
+      .select('user_id, is_completed, created_at')
       .eq('id', id)
       .single();
     
@@ -415,7 +415,18 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ detail: 'Challenge not found' }, { status: 404 });
     }
     
-    const { user_id, is_completed } = challengeData;
+    const { user_id, is_completed, created_at } = challengeData;
+
+    // Проверяем, прошло ли больше 6 часов с момента создания
+    const createdAt = new Date(created_at);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursDiff > 6) {
+      return NextResponse.json({ 
+        detail: 'Удаление челленджа возможно только в течение 6 часов после создания' 
+      }, { status: 403 });
+    }
 
     const { error } = await supabase.from('challenges').delete().eq('id', id);
     if (error) throw error;
