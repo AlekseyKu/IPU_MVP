@@ -14,6 +14,40 @@ export function canDeleteItem(createdAt: string): boolean {
 }
 
 /**
+ * Проверяет, можно ли завершить обещание
+ * Завершение возможно только через 3 часа после создания
+ */
+export function canCompletePromise(createdAt: string): boolean {
+  const createdAtDate = new Date(createdAt);
+  const now = new Date();
+  const hoursDiff = (now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60);
+  return hoursDiff >= 3;
+}
+
+/**
+ * Возвращает оставшееся время до возможности завершения обещания
+ * Возвращает null, если уже можно завершать
+ */
+export function getTimeUntilCompletionAllowed(createdAt: string): string | null {
+  const createdAtDate = new Date(createdAt);
+  const now = new Date();
+  const hoursDiff = (now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60);
+  
+  if (hoursDiff >= 3) return null; // Уже можно завершать
+  
+  const remainingHours = 3 - hoursDiff;
+  const remainingMinutes = Math.ceil(remainingHours * 60);
+  
+  if (remainingMinutes >= 60) {
+    const hours = Math.floor(remainingMinutes / 60);
+    const minutes = remainingMinutes % 60;
+    return `${hours}ч ${minutes}м`;
+  } else {
+    return `${remainingMinutes}м`;
+  }
+}
+
+/**
  * Проверяет, можно ли редактировать пост
  * В будущем можно добавить логику для редактирования
  */
@@ -23,7 +57,7 @@ export function canEditItem(createdAt: string): boolean {
 }
 
 /**
- * Проверяет, можно ли завершить обещание
+ * Проверяет, можно ли завершить обещание по дедлайну
  * Завершение возможно только в день дедлайна или раньше
  */
 export function canCompleteItem(deadline: string): boolean {

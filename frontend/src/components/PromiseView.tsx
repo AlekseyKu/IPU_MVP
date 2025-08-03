@@ -6,7 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
 import { PromiseData } from '@/types';
 import { formatDateTime } from '@/utils/formatDate';
-import { canDeleteItem } from '@/utils/postRules';
+import { canDeleteItem, canCompletePromise, getTimeUntilCompletionAllowed } from '@/utils/postRules';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PromiseCompleteModal from './PromiseCompleteModal';
@@ -62,6 +62,9 @@ const PromiseView: React.FC<PostviewProps> = ({
   const setError = (msg: string) => { console.error(msg); };
   const { handleCompletePromise } = usePromiseApi(updatePosts, setError);
 
+  // --- Состояние для тултипа ---
+  const [showTooltip, setShowTooltip] = useState(false);
+
   // --- Логика статуса и иконки ---
   const statusText = is_completed ? 'Завершено' : 'Активно';
   const Icon = is_completed ? CircleStop : CirclePlay;
@@ -74,8 +77,8 @@ const PromiseView: React.FC<PostviewProps> = ({
     const today = new Date();
     const deadlineDate = new Date(deadline);
     // Кнопка активна, если сегодня не позже дедлайна (включительно)
-    // TODO кнопка активна не ранее 6ч от даты старт (created_at)
-    return today.setHours(0,0,0,0) <= deadlineDate.setHours(0,0,0,0);
+    // И прошло минимум 3 часа с момента создания
+    return today.setHours(0,0,0,0) <= deadlineDate.setHours(0,0,0,0) && canCompletePromise(created_at);
   })();
 
   // --- Новый блок: определение обещания "кому-то" ---
@@ -87,6 +90,18 @@ const PromiseView: React.FC<PostviewProps> = ({
 
   // --- Обработчики ---
   const handleComplete = () => {
+    // Проверяем время создания (3 часа)
+    if (!canCompletePromise(created_at)) {
+      setShowTooltip(!showTooltip);
+      return;
+    }
+    
+    // Проверяем дедлайн
+    if (!isDeadlineActive) {
+      setShowTooltip(!showTooltip);
+      return;
+    }
+    
     setIsCompleteModalOpen(true);
   };
 
@@ -260,6 +275,21 @@ const PromiseView: React.FC<PostviewProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
+  // --- Закрытие тултипа при клике вне его ---
+  useEffect(() => {
+    if (!showTooltip) return;
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Element;
+      if (!target.closest('.tooltip-container')) {
+        setShowTooltip(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showTooltip]);
 
   // --- Определение типа медиа ---
   useEffect(() => {
@@ -438,14 +468,28 @@ const PromiseView: React.FC<PostviewProps> = ({
             // --- Старая логика для обычных обещаний ---
             <>
               {isOwnProfile && isProfilePage && !is_completed && (
-                <div className="d-flex justify-content-center py-2">
+                <div className="d-flex justify-content-center py-2 position-relative">
                   <button
-                    className="btn w-50 btn-outline-primary"
+                    className="btn btn-outline-primary w-50 mb-2"
                     onClick={handleComplete}
-                    disabled={!isDeadlineActive}
                   >
                     Завершить
                   </button>
+                   {showTooltip && (!canCompletePromise(created_at) || !isDeadlineActive) && (
+                     <div className="position-absolute w-100 bottom-100 start-50 translate-middle-x mb-1 p-2 bg-white text-dark rounded shadow-sm font-xsss tooltip-container text-center border" style={{ zIndex: 1000, minWidth: '200px' }}>
+                       <div className="mb-1">
+                         {!canCompletePromise(created_at) 
+                           ? 'Завершить обещание можно не раньше, чем через 3 часа после создания'
+                           : 'Завершить обещание можно только до дедлайна'
+                         }
+                       </div>
+                       {!canCompletePromise(created_at) && (
+                         <div className="text-secondary">
+                           Осталось: {getTimeUntilCompletionAllowed(created_at)}
+                         </div>
+                       )}
+                     </div>
+                   )}
                 </div>
               )}
               {is_completed && (
