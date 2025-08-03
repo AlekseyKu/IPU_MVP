@@ -65,18 +65,36 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const updatedPromise = await request.json();
-    
     if (!updatedPromise.id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'ID обязателен' }, { status: 400 });
     }
-    
-    // Получаем старое значение is_completed
-    const { data: oldPromise } = await supabase.from('promises').select('is_completed, user_id').eq('id', updatedPromise.id).single();
 
-    // Формируем объект для обновления, поддерживая новые поля
+    // Получаем текущие данные обещания
+    const { data: oldPromise, error: selectError } = await supabase
+      .from('promises')
+      .select('is_completed, user_id, created_at')
+      .eq('id', updatedPromise.id)
+      .single();
+    
+    if (selectError || !oldPromise) {
+      return NextResponse.json({ error: 'Promise не найден' }, { status: 404 });
+    }
+
+    // Проверяем время для завершения обещания
+    if (updatedPromise.is_completed && !oldPromise.is_completed) {
+      const createdAt = new Date(oldPromise.created_at);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursDiff < 3) {
+        return NextResponse.json({ 
+          error: 'Завершение обещания возможно только через 3 часа после создания' 
+        }, { status: 403 });
+      }
+    }
+
+    const allowed = ['title', 'content', 'media_url', 'deadline', 'is_public', 'is_completed', 'result_content', 'result_media_url', 'completed_at', 'hashtags', 'requires_accept', 'recipient_id', 'is_accepted', 'is_completed_by_creator', 'is_completed_by_recipient'];
     const updateFields: any = { ...updatedPromise };
-    // Только разрешённые поля
-    const allowed = ['title','content','media_url','deadline','is_public','is_completed','result_content','result_media_url','completed_at','hashtags','requires_accept','recipient_id','is_accepted','is_completed_by_creator','is_completed_by_recipient'];
     Object.keys(updateFields).forEach(key => { if (!allowed.includes(key)) delete updateFields[key]; });
 
     const { error, data: updatedRows } = await supabase
@@ -159,16 +177,28 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'ID обязателен' }, { status: 400 });
     }
-    // Получаем user_id и is_completed по id
+    
+    // Получаем user_id, is_completed и created_at по id
     const { data: promiseData, error: selectError } = await supabase
       .from('promises')
-      .select('user_id, is_completed')
+      .select('user_id, is_completed, created_at')
       .eq('id', id)
       .single();
     if (selectError || !promiseData) {
       return NextResponse.json({ error: 'Promise не найден' }, { status: 404 });
     }
-    const { user_id, is_completed } = promiseData;
+    const { user_id, is_completed, created_at } = promiseData;
+    
+    // Проверяем, прошло ли больше 6 часов с момента создания
+    const createdAt = new Date(created_at);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursDiff > 6) {
+      return NextResponse.json({ 
+        error: 'Удаление обещания возможно только в течение 6 часов после создания' 
+      }, { status: 403 });
+    }
     
     // Удаляем обещание
     const { error } = await supabase.from('promises').delete().eq('id', id);
