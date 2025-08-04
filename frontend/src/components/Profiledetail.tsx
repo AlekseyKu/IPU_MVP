@@ -5,7 +5,8 @@ import React, { useState, useEffect, useRef } from 'react';
 interface Props {
   username?: string;
   telegramId?: number;
-  fullName: string;
+  firstName?: string;
+  lastName?: string;
   about?: string;
   email?: string;
   onChangeAbout?: (text: string) => void;
@@ -20,7 +21,8 @@ interface Props {
 const Profiledetail: React.FC<Props> = ({
   username = '',
   telegramId = 0,
-  fullName = '',
+  firstName: propFirstName = '',
+  lastName: propLastName = '',
   about = '',
   email = '',
   onChangeAbout,
@@ -34,11 +36,8 @@ const Profiledetail: React.FC<Props> = ({
   const [localAbout, setLocalAbout] = useState(about);
   const [localEmail, setLocalEmail] = useState(email);
 
-  const initialFirstName = fullName.trim().split(' ')[0] || '';
-  const initialLastName = fullName.trim().split(' ').slice(1).join(' ') || '';
-
-  const [firstName, setFirstName] = useState(initialFirstName);
-  const [lastName, setLastName] = useState(initialLastName);
+  const [firstName, setFirstName] = useState(propFirstName);
+  const [lastName, setLastName] = useState(propLastName);
 
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -49,11 +48,9 @@ const Profiledetail: React.FC<Props> = ({
   useEffect(() => {
     setLocalAbout(about);
     setLocalEmail(email);
-
-    const parts = fullName.trim().split(' ');
-    setFirstName(parts[0] || '');
-    setLastName(parts.slice(1).join(' ') || '');
-  }, [about, email, fullName]);
+    setFirstName(propFirstName);
+    setLastName(propLastName);
+  }, [about, email, propFirstName, propLastName]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -157,6 +154,12 @@ const Profiledetail: React.FC<Props> = ({
           </div>
         ) : (
           <div>
+            {/* Отображение имени и фамилии в режиме просмотра */}
+            {[firstName, lastName].filter(Boolean).length > 0 && (
+              <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
+                Имя: {[firstName, lastName].filter(Boolean).join(' ') || 'Не указано'}
+              </p>
+            )}
             <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
               {localAbout || 'Не указано'}
             </p>

@@ -203,7 +203,8 @@ export default function SettingsPage() {
                 <Profiledetail
                   username={userData.username || ''}
                   telegramId={userData.telegram_id}
-                  fullName={`${firstName} ${lastName}`.trim()}
+                  firstName={firstName}
+                  lastName={lastName}
                   about={about}
                   email={email}
                   isEditable={true}
