@@ -70,6 +70,15 @@ export default function ListPage() {
                     const isOwnProfile = currentUserId === post.user_id;
                     const isPromise = isPromiseData(post); // Используем функцию проверки
 
+                    // --- Новый блок: получение данных о получателе для обещаний "кому-то" ---
+                    let recipientName = '';
+                    let recipientAvatarUrl = '';
+                    if (isPromise && (post as PromiseData).recipient_id) {
+                      const recipient = users[(post as PromiseData).recipient_id!] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
+                      recipientName = `${recipient.first_name} ${recipient.last_name}`.trim() || recipient.username || 'Guest';
+                      recipientAvatarUrl = recipient.avatar_img_url || '/assets/images/defaultAvatar.png';
+                    }
+
                     return (
                       <motion.div
                         key={post.id} // Типизация гарантирует наличие id
@@ -90,6 +99,8 @@ export default function ListPage() {
                             avatarUrl={user.avatar_img_url}
                             userId={post.user_id}
                             userName={fullName}
+                            recipientName={recipientName}
+                            recipientAvatarUrl={recipientAvatarUrl}
                           />
                         ) : (
                           <ChallengeView

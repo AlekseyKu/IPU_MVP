@@ -3,7 +3,7 @@
 
 // --- Импорты ---
 import React, { useState, useRef, useEffect } from 'react';
-import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock } from 'lucide-react';
+import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock, ArrowBigRight, Redo, MoveRight } from 'lucide-react';
 import { PromiseData } from '@/types';
 import { formatDateTime } from '@/utils/formatDate';
 import { canDeleteItem, canCompletePromise, getTimeUntilCompletionAllowed } from '@/utils/postRules';
@@ -29,6 +29,8 @@ interface PostviewProps {
   userId?: number;
   userCtxId?: number; // --- Новый проп для ID текущего пользователя ---
   userName?: string;
+  recipientName?: string; // --- Новый проп для имени получателя ---
+  recipientAvatarUrl?: string; // --- Новый проп для аватара получателя ---
 }
 
 // --- Основной компонент ---
@@ -45,7 +47,9 @@ const PromiseView: React.FC<PostviewProps> = ({
   avatarUrl,
   userId,
   userCtxId,
-  userName
+  userName,
+  recipientName,
+  recipientAvatarUrl
 }) => {
   // --- Состояния и хуки ---
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise;
@@ -323,6 +327,28 @@ const PromiseView: React.FC<PostviewProps> = ({
             />
           </Link>
           <span className="text-dark font-xsss">{userName || 'Guest'}</span>
+          
+          {/* --- Новый блок: отображение получателя для обещаний "кому-то" --- */}
+          {isToSomeone && recipientName && (
+            <>
+              <MoveRight className="w-3 h-3 text-muted mx-2" />
+              <div className="d-flex align-items-center pe-4">
+                <Link href={`/user/${promise.recipient_id}`} onClick={(e) => e.stopPropagation()}>
+                  <img 
+                    src={recipientAvatarUrl || '/assets/images/defaultAvatar.png'} 
+                    alt="recipient avatar" 
+                    width={32} 
+                    height={32} 
+                    className="rounded-circle me-2"
+                    style={{ objectFit: 'cover' }}
+                  />
+                </Link>
+                <Link href={`/user/${promise.recipient_id}`} onClick={(e) => e.stopPropagation()}>
+                  <span className="text-dark font-xsss">{recipientName}</span>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -449,7 +475,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                   {/* Обещание полностью выполнено */}
                   {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
                     <button 
-                      className="btn btn-outline-success w-50 mb-2"
+                      className="btn btn-outline-primary w-50 mb-2"
                       onClick={() => setIsResultModalOpen(true)}
                     >
                       Результат
