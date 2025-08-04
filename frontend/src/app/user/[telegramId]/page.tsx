@@ -185,6 +185,8 @@ export default function UserProfile() {
 
   // --- Новый блок: загрузка информации о создателях обещаний ---
   const [promiseCreators, setPromiseCreators] = useState<Record<number, UserData>>({});
+  // --- Новый блок: загрузка информации о получателях обещаний ---
+  const [promiseRecipients, setPromiseRecipients] = useState<Record<number, UserData>>({});
 
   const loadPromiseCreators = async (promises: PromiseData[]) => {
     const creatorIds = promises
@@ -197,22 +199,57 @@ export default function UserProfile() {
     try {
       const { data: creators, error } = await supabase
         .from('users')
-        .select('telegram_id, username, first_name, last_name, avatar_img_url')
+        .select('telegram_id, first_name, last_name, username, avatar_img_url')
         .in('telegram_id', creatorIds);
 
-      if (error) {
-        console.error('Error loading promise creators:', error);
-        return;
+      if (!error && creators) {
+        const mapped = creators.reduce((acc, creator) => {
+          acc[creator.telegram_id] = {
+            telegram_id: creator.telegram_id,
+            first_name: creator.first_name || '',
+            last_name: creator.last_name || '',
+            username: creator.username || '',
+            avatar_img_url: creator.avatar_img_url || '',
+          };
+          return acc;
+        }, {} as Record<number, UserData>);
+        setPromiseCreators(mapped);
       }
-
-      const creatorsMap = (creators || []).reduce((acc, creator) => {
-        acc[creator.telegram_id] = creator;
-        return acc;
-      }, {} as Record<number, UserData>);
-
-      setPromiseCreators(creatorsMap);
     } catch (error) {
       console.error('Error loading promise creators:', error);
+    }
+  };
+
+  // --- Новый блок: загрузка информации о получателях обещаний ---
+  const loadPromiseRecipients = async (promises: PromiseData[]) => {
+    const recipientIds = promises
+      .filter(p => p.recipient_id && p.recipient_id !== telegramId) // Только получатели, которые не являются владельцем профиля
+      .map(p => p.recipient_id!)
+      .filter((id, index, arr) => arr.indexOf(id) === index); // Уникальные ID
+
+    if (recipientIds.length === 0) return;
+
+    try {
+      const { data: recipients, error } = await supabase
+        .from('users')
+        .select('telegram_id, first_name, last_name, username, avatar_img_url')
+        .in('telegram_id', recipientIds);
+
+      if (!error && recipients) {
+        const mapped = recipients.reduce((acc, recipient) => {
+          acc[recipient.telegram_id] = {
+            telegram_id: recipient.telegram_id,
+            first_name: recipient.first_name || '',
+            last_name: recipient.last_name || '',
+            username: recipient.username || '',
+            avatar_img_url: recipient.avatar_img_url || '',
+          };
+          return acc;
+        }, {} as Record<number, UserData>);
+        setPromiseRecipients(mapped);
+      }
+    } catch (error) {
+      console.error('Error loading promise recipients:', error);
     }
   };
   // --- конец блока загрузки создателей ---
@@ -373,6 +410,7 @@ export default function UserProfile() {
           ...(receivedPromisesRes.data || [])
         ] as PromiseData[];
         loadPromiseCreators(allPromises);
+        loadPromiseRecipients(allPromises);
       })
       .catch((err) => {
         console.error(err)
@@ -529,33 +567,60 @@ export default function UserProfile() {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                        <PromiseView
-                          promise={post}
-                          onToggle={() =>
-                            setOpenPostId(openPostId === post.id ? null : post.id)
+                        {/* --- Новый блок: получение данных о получателе для обещаний "кому-то" --- */}
+                        {(() => {
+                          let recipientName = '';
+                          let recipientAvatarUrl = '';
+                          if (post.recipient_id) {
+                            // Если получатель - это владелец профиля
+                            if (post.recipient_id === telegramId) {
+                              recipientName = fullName;
+                              recipientAvatarUrl = userData?.avatar_img_url || defaultAvatarImg;
+                            } else {
+                              // Для других получателей используем загруженные данные
+                              const recipient = promiseRecipients[post.recipient_id];
+                              if (recipient) {
+                                recipientName = `${recipient.first_name} ${recipient.last_name}`.trim() || recipient.username || `@${post.recipient_id}`;
+                                recipientAvatarUrl = recipient.avatar_img_url || '/assets/images/defaultAvatar.png';
+                              } else {
+                                // Если данные еще не загружены, показываем ID
+                                recipientName = `@${post.recipient_id}`;
+                                recipientAvatarUrl = '/assets/images/defaultAvatar.png';
+                              }
+                            }
                           }
-                          isOpen={openPostId === post.id}
-                          onUpdate={handleUpdate}
-                          onDelete={handleDelete}
-                          isOwnProfile={isOwn}
-                          isOwnCreator={post.user_id === (ctxId || 0)}
-                          avatarUrl={
-                            post.user_id === telegramId 
-                              ? (userData?.avatar_img_url || defaultAvatarImg)
-                              : (promiseCreators[post.user_id]?.avatar_img_url || defaultAvatarImg)
-                          }
-                          userId={post.user_id}
-                          userCtxId={ctxId || 0}
-                          userName={
-                            post.user_id === telegramId
-                              ? fullName
-                              : promiseCreators[post.user_id]
-                                ? `${promiseCreators[post.user_id].first_name || ''} ${promiseCreators[post.user_id].last_name || ''}`.trim() || `@${post.user_id}`
-                                : `@${post.user_id}`
-                          }
-                          isList
-                          isProfilePage
-                        />
+                          return (
+                            <PromiseView
+                              promise={post}
+                              onToggle={() =>
+                                setOpenPostId(openPostId === post.id ? null : post.id)
+                              }
+                              isOpen={openPostId === post.id}
+                              onUpdate={handleUpdate}
+                              onDelete={handleDelete}
+                              isOwnProfile={isOwn}
+                              isOwnCreator={post.user_id === (ctxId || 0)}
+                              avatarUrl={
+                                post.user_id === telegramId 
+                                  ? (userData?.avatar_img_url || defaultAvatarImg)
+                                  : (promiseCreators[post.user_id]?.avatar_img_url || defaultAvatarImg)
+                              }
+                              userId={post.user_id}
+                              userCtxId={ctxId || 0}
+                              userName={
+                                post.user_id === telegramId
+                                  ? fullName
+                                  : promiseCreators[post.user_id]
+                                    ? `${promiseCreators[post.user_id].first_name || ''} ${promiseCreators[post.user_id].last_name || ''}`.trim() || `@${post.user_id}`
+                                    : `@${post.user_id}`
+                              }
+                              recipientName={recipientName}
+                              recipientAvatarUrl={recipientAvatarUrl}
+                              isList
+                              isProfilePage
+                            />
+                          );
+                        })()}
                       </motion.div>
                     ) : (
                       <motion.div

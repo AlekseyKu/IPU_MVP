@@ -10,6 +10,8 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // --- Новый блок: состояние для получателей обещаний ---
+  const [recipients, setRecipients] = useState<Record<number, UserData>>({});
   const isOwnProfile = telegramId === currentUserId;
 
   useEffect(() => {
@@ -38,7 +40,35 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
          setUserData(profile);
 
         if (!promisesRes.error) {
-          setPromises(promisesRes.data || []);
+          const promisesData = promisesRes.data || [];
+          setPromises(promisesData);
+          
+          // --- Новый блок: загрузка данных о получателях обещаний ---
+          const recipientIds = promisesData
+            .filter(p => p.recipient_id && p.recipient_id !== telegramId)
+            .map(p => p.recipient_id!)
+            .filter((id, index, arr) => arr.indexOf(id) === index);
+
+          if (recipientIds.length > 0) {
+            const { data: recipientsData, error: recipientsError } = await supabase
+              .from('users')
+              .select('telegram_id, first_name, last_name, username, avatar_img_url')
+              .in('telegram_id', recipientIds);
+
+            if (!recipientsError && recipientsData) {
+              const mapped = recipientsData.reduce((acc, recipient) => {
+                acc[recipient.telegram_id] = {
+                  telegram_id: recipient.telegram_id,
+                  first_name: recipient.first_name || '',
+                  last_name: recipient.last_name || '',
+                  username: recipient.username || '',
+                  avatar_img_url: recipient.avatar_img_url || '',
+                };
+                return acc;
+              }, {} as Record<number, UserData>);
+              setRecipients(mapped);
+            }
+          }
         }
         if (!challengesRes.error) {
           setChallenges(challengesRes.data || []);
@@ -162,5 +192,5 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
     };
   }, [telegramId]);
 
-  return { userData, promises, challenges, isSubscribed, isLoading, error, setUserData, setIsSubscribed, setError };
+  return { userData, promises, challenges, isSubscribed, isLoading, error, setUserData, setIsSubscribed, setError, recipients };
 }
