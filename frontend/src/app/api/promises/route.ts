@@ -109,7 +109,7 @@ export async function PUT(request: NextRequest) {
     
     // Начисляем карму при завершении обещания
     if (oldPromise && !oldPromise.is_completed && updatedPromise.is_completed) {
-      console.log('🎯 Promise completion detected, awarding karma...');
+      // console.log('🎯 Promise completion detected, awarding karma...');
       try {
         // Получаем полные данные обещания для проверки типа
         const { data: fullPromise } = await supabase
@@ -118,11 +118,11 @@ export async function PUT(request: NextRequest) {
           .eq('id', updatedPromise.id)
           .single();
 
-        console.log('📊 Full promise data:', fullPromise);
+        // console.log('📊 Full promise data:', fullPromise);
 
         if (fullPromise) {
           const isOverdue = new Date(fullPromise.deadline) < new Date();
-          console.log('⏰ Deadline check:', { deadline: fullPromise.deadline, isOverdue });
+          // console.log('⏰ Deadline check:', { deadline: fullPromise.deadline, isOverdue });
           
           if (!isOverdue) {
             if (fullPromise.requires_accept) {
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
               }
             } else {
               // Обещание себе
-              console.log('🎁 Awarding karma for self promise');
+              // console.log('🎁 Awarding karma for self promise');
               await awardKarma(
                 oldPromise.user_id, 
                 2, 

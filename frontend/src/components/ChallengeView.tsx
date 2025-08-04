@@ -1,9 +1,9 @@
-// frontend\src\components\ChallengeView.tsx
+// frontend/src/components/ChallengeView.tsx
 'use client'
 
 // --- Импорты ---
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Ellipsis, GlobeLock, CirclePlay, CircleStop, ChevronDown, ChevronUp } from 'lucide-react';
+import { Ellipsis, GlobeLock, CirclePlay, CircleStop, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { ChallengeData } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { formatDateTime } from '@/utils/formatDate';
@@ -14,6 +14,7 @@ import { useUser } from '@/context/UserContext';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
 import { useChallengeParticipants } from '@/hooks/useChallengeParticipants';
 import ChallengeCheckModal from './ChallengeCheckModal';
+import LikeButton from './LikeButton';
 
 // --- Константы ---
 const frequencyMap: Record<string, string> = {
@@ -258,6 +259,18 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
     }
   };
 
+  const share = () => {
+    if (navigator.share) {
+      navigator.share({ 
+        title: challenge.title, 
+        text: challenge.content, 
+        url: `${window.location.origin}/challenge/${challenge.id}` 
+      }).catch(console.error);
+    } else {
+      alert('Поделиться недоступно');
+    }
+  };
+
   const handleStartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsCheckModalOpen(true);
@@ -398,6 +411,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
       {/* --- Детали челленджа --- */}
       {isOpen && (
         <div className="mt-3" onClick={e => e.stopPropagation()}>
+          <span className="text-muted small font-xssss mb-2 d-block">Создано: {formatDateTime(challenge.created_at)}</span>
           <p className="text-muted lh-sm small mb-2">{challenge.content}</p>
           {challenge.media_url && (
             <div className="mb-2">
@@ -576,8 +590,35 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
             </div>
           </div>
 
-          {/* --- Дата создания и меню --- */}
-          <span className="text-muted small">Создано: {formatDateTime(challenge.created_at)}</span>
+          {/* --- Кнопки лайка и поделиться внизу --- */}
+          <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+            <div className="w-50 d-flex justify-content-center">
+              <LikeButton 
+                postId={challenge.id} 
+                postType="challenge" 
+                size={20}
+              />
+            </div>
+            <div className="w-50 d-flex justify-content-center">
+              <button
+                className="btn btn-link p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  share();
+                }}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer'
+                }}
+                title="Поделиться"
+              >
+                <Send size={20} className="text-muted" />
+              </button>
+            </div>
+          </div>
+
+          {/* --- Меню --- */}
           <div ref={menuRef} className="position-absolute top-0 end-0 mt-3 me-3">
             <Ellipsis className="cursor-pointer text-muted" size={24} onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }} />
             {menuOpen && (

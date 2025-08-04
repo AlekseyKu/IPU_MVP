@@ -3,7 +3,7 @@
 
 // --- Импорты ---
 import React, { useState, useRef, useEffect } from 'react';
-import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock, ArrowBigRight, Redo, MoveRight } from 'lucide-react';
+import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock, MoveRight, Send } from 'lucide-react';
 import { PromiseData } from '@/types';
 import { formatDateTime } from '@/utils/formatDate';
 import { canDeleteItem, canCompletePromise, getTimeUntilCompletionAllowed } from '@/utils/postRules';
@@ -13,6 +13,7 @@ import PromiseCompleteModal from './PromiseCompleteModal';
 import PromiseCompleteForRecipientModal from './PromiseCompleteForRecipientModal';
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 import PromiseResultModal from './PromiseResultModal';
+import LikeButton from './LikeButton';
 
 // --- Типы ---
 interface PostviewProps {
@@ -375,7 +376,7 @@ const PromiseView: React.FC<PostviewProps> = ({
            )}
         </div>
         <div className="d-flex justify-content-between align-items-center">
-          <span className="text-muted font-xsss">
+          <span className="text-muted font-xssss">
             Дэдлайн: {formatDateTime(deadline)}
           </span>
           <div className="d-flex align-items-center text-nowrap">
@@ -387,10 +388,11 @@ const PromiseView: React.FC<PostviewProps> = ({
 
       {/* --- Детали обещания --- */}
       {isOpen && (
-        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-0" onClick={(e) => e.stopPropagation()}>
+          <span className="text-muted small font-xssss mt-0 mb-2 d-block">Создано: {formatDateTime(created_at)}</span>
           <p className="text-muted lh-sm small mb-2">{content}</p>
           {media_url && (
-            <div className="mb-3">
+            <div className="mb-2">
               {mediaType?.startsWith('video') ? (
                 <video src={media_url} controls className="w-100 rounded" style={{ backgroundColor: '#000' }} />
               ) : (
@@ -501,21 +503,21 @@ const PromiseView: React.FC<PostviewProps> = ({
                   >
                     Завершить
                   </button>
-                   {showTooltip && (!canCompletePromise(created_at) || !isDeadlineActive) && (
-                     <div className="position-absolute w-100 bottom-100 start-50 translate-middle-x mb-1 p-2 bg-white text-dark rounded shadow-sm font-xsss tooltip-container text-center border" style={{ zIndex: 1000, minWidth: '200px' }}>
-                       <div className="mb-1">
-                         {!canCompletePromise(created_at) 
-                           ? 'Завершить обещание можно не раньше, чем через 3 часа после создания'
-                           : 'Завершить обещание можно только до дедлайна'
-                         }
-                       </div>
-                       {!canCompletePromise(created_at) && (
-                         <div className="text-secondary">
-                           Осталось: {getTimeUntilCompletionAllowed(created_at)}
-                         </div>
-                       )}
-                     </div>
-                   )}
+                    {showTooltip && (!canCompletePromise(created_at) || !isDeadlineActive) && (
+                      <div className="position-absolute w-100 bottom-100 start-50 translate-middle-x mb-1 p-2 bg-white text-dark rounded shadow-sm font-xsss tooltip-container text-center border" style={{ zIndex: 1000, minWidth: '200px' }}>
+                        <div className="mb-1">
+                          {!canCompletePromise(created_at) 
+                            ? 'Завершить обещание можно не раньше, чем через 3 часа после создания'
+                            : 'Завершить обещание можно только до дедлайна'
+                          }
+                        </div>
+                        {!canCompletePromise(created_at) && (
+                          <div className="text-secondary">
+                              Осталось: {getTimeUntilCompletionAllowed(created_at)}
+                          </div>
+                        )}
+                      </div>
+                    )}
                 </div>
               )}
               {is_completed && (
@@ -530,29 +532,56 @@ const PromiseView: React.FC<PostviewProps> = ({
               )}
             </>
           )}
-                     {isCompleteModalOpen && (
-             <PromiseCompleteModal
-               onClose={() => setIsCompleteModalOpen(false)}
-               onSubmit={handleCompleteSubmit}
-               loading={completeLoading}
-             />
-           )}
-           {isCompleteForRecipientModalOpen && (
-             <PromiseCompleteForRecipientModal
-               onClose={() => setIsCompleteForRecipientModalOpen(false)}
-               onSubmit={handleCompleteForRecipientSubmit}
-               loading={completeLoading}
-             />
-           )}
-           {isResultModalOpen && (
-             <PromiseResultModal
-               onClose={() => setIsResultModalOpen(false)}
-               result_content={promise.result_content}
-               result_media_url={promise.result_media_url}
-               completed_at={promise.completed_at}
-             />
-           )}
-          <span className="text-muted small">Создано: {formatDateTime(created_at)}</span>
+          {isCompleteModalOpen && (
+            <PromiseCompleteModal
+              onClose={() => setIsCompleteModalOpen(false)}
+              onSubmit={handleCompleteSubmit}
+              loading={completeLoading}
+            />
+          )}
+          {isCompleteForRecipientModalOpen && (
+            <PromiseCompleteForRecipientModal
+              onClose={() => setIsCompleteForRecipientModalOpen(false)}
+              onSubmit={handleCompleteForRecipientSubmit}
+              loading={completeLoading}
+            />
+          )}
+          {isResultModalOpen && (
+            <PromiseResultModal
+              onClose={() => setIsResultModalOpen(false)}
+              result_content={promise.result_content}
+              result_media_url={promise.result_media_url}
+              completed_at={promise.completed_at}
+            />
+          )}
+
+          {/* --- Кнопки лайка и поделиться внизу --- */}
+          <div className="d-flex align-items-center justify-content-between pt-2 border-top">
+            <div className="w-50 d-flex justify-content-center">
+              <LikeButton 
+                postId={promise.id} 
+                postType="promise" 
+                size={20}
+              />
+            </div>
+            <div className="w-50 d-flex justify-content-center">
+              <button
+                className="btn btn-link p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  share();
+                }}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer'
+                }}
+                title="Поделиться"
+              >
+                <Send size={20} className="text-muted" />
+              </button>
+            </div>
+          </div>
 
           {/* --- Меню --- */}
           <div ref={menuRef} className="position-absolute top-0 end-0 mt-3 me-3">
