@@ -87,7 +87,8 @@ const ProfilecardThree: React.FC<Props> = ({
     { label: 'Карма', count: karma_points, onClick: () => setShowKarmaHistory(true) },
   ];
 
-  const fullName = `${firstName || ''} ${lastName || ''}`.trim();
+  // Безопасное формирование полного имени
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
 
   return (
     <div className="card w-100 border-0 p-0 bg-white shadow-xss rounded-xxl">

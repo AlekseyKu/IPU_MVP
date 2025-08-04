@@ -106,7 +106,8 @@ export default function ProfilePage() {
                       <Profiledetail
                         username={userData.username || ''}
                         telegramId={userData.telegram_id}
-                        fullName={fullName}
+                        firstName={userData.first_name || ''}
+                        lastName={userData.last_name || ''}
                         about={userData.about || ''}
                         isEditable={isEditable}
                       />
