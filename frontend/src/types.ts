@@ -24,6 +24,15 @@ export interface User {
   avatar_img_url?: string;
 }
 
+// --- Новые типы для системы лайков ---
+export interface LikeData {
+  id: string;
+  user_id: number;
+  post_id: string;
+  post_type: 'promise' | 'challenge';
+  created_at: string;
+}
+
 export interface PostData {
   id: string;
   user_id: number;
@@ -34,6 +43,9 @@ export interface PostData {
   is_public: boolean;
   is_completed: boolean;
   hashtags?: string[];
+  // --- Новые поля для лайков ---
+  likes_count?: number;
+  is_liked_by_current_user?: boolean;
 }
 
 export interface PromiseData extends PostData {
