@@ -309,7 +309,8 @@ const PromiseView: React.FC<PostviewProps> = ({
       });
   }, [media_url]);
 
-  
+
+
 
   // --- JSX ---
   return (
@@ -317,7 +318,7 @@ const PromiseView: React.FC<PostviewProps> = ({
       {/* --- Заголовок и аватар --- */}
       {isList && userId && (
         <div className="d-flex align-items-center mb-2">
-          <Link href={isOwnProfile ? `/user/${userId}` : `/profile/${userId}`} onClick={(e) => e.stopPropagation()}>
+          <Link href={userCtxId === userId ? `/user/${userId}` : `/profile/${userId}`} onClick={(e) => e.stopPropagation()}>
             <img 
               src={avatarUrl || '/assets/images/defaultAvatar.png'} 
               alt="avatar" 
@@ -334,19 +335,19 @@ const PromiseView: React.FC<PostviewProps> = ({
             <>
               <MoveRight className="w-3 h-3 text-muted mx-2" />
               <div className="d-flex align-items-center pe-4">
-                <Link href={`/user/${promise.recipient_id}`} onClick={(e) => e.stopPropagation()}>
-                  <img 
-                    src={recipientAvatarUrl || '/assets/images/defaultAvatar.png'} 
-                    alt="recipient avatar" 
-                    width={32} 
-                    height={32} 
-                    className="rounded-circle me-2"
-                    style={{ objectFit: 'cover' }}
-                  />
-                </Link>
-                <Link href={`/user/${promise.recipient_id}`} onClick={(e) => e.stopPropagation()}>
-                  <span className="text-dark font-xsss">{recipientName}</span>
-                </Link>
+                  <Link href={userCtxId === promise.recipient_id ? `/user/${promise.recipient_id}` : `/profile/${promise.recipient_id}`} onClick={(e) => e.stopPropagation()}>
+                   <img 
+                     src={recipientAvatarUrl || '/assets/images/defaultAvatar.png'} 
+                     alt="recipient avatar" 
+                     width={32} 
+                     height={32} 
+                     className="rounded-circle me-2"
+                     style={{ objectFit: 'cover' }}
+                   />
+                 </Link>
+                 <Link href={userCtxId === promise.recipient_id ? `/user/${promise.recipient_id}` : `/profile/${promise.recipient_id}`} onClick={(e) => e.stopPropagation()}>
+                   <span className="text-dark font-xsss">{recipientName}</span>
+                 </Link>
               </div>
             </>
           )}
@@ -595,11 +596,11 @@ const PromiseView: React.FC<PostviewProps> = ({
             />
             {menuOpen && (
               <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
-                {isList && !isOwnProfile && (
-                  <button 
-                    className="dropdown-item" 
-                    onClick={() => router.push(isOwnProfile ? `/user/${userId}` : `/profile/${userId}`)}
-                  >
+                                 {isList && userCtxId !== userId && (
+                   <button 
+                     className="dropdown-item" 
+                     onClick={() => router.push(userCtxId === userId ? `/user/${userId}` : `/profile/${userId}`)}
+                   >
                     Посмотреть профиль
                   </button>
                 )}
