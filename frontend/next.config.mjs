@@ -7,11 +7,20 @@ const nextConfig = {
       debug: () => {},
     },
   },
+  
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'fonts.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ipu-mvp.vercel.app',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.ipu-mvp.vercel.app',
       },
     ],
   },
