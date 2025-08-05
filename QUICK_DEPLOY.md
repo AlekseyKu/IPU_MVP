@@ -14,13 +14,14 @@ ssh root@95.140.156.192
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
-sudo reboot
+sudo reboot / exit
 ```
 
 ### 3. Клонирование проекта (без frontend):
 ```bash
 # Вариант 1: Полное клонирование
-git clone https://github.com/AlekseyKu/IPU_MVP.git
+# git clone https://github.com/AlekseyKu/IPU_MVP.git
+git clone git@github.com-ipu-mvp:AlekseyKu/IPU_MVP.git
 cd IPU_MVP
 git checkout release
 
