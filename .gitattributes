@@ -1,0 +1,28 @@
+# Защита файлов деплоя от перезаписи при мерже из main
+# Эти файлы всегда будут браться из ветки release
+
+# Docker конфигурация
+docker-compose.yml merge=ours
+deploy.sh merge=ours
+
+# Nginx конфигурация
+nginx/ipu-mvp.conf merge=ours
+nginx/setup-nginx.sh merge=ours
+nginx/INTEGRATION.md merge=ours
+
+# Документация деплоя
+DEPLOY.md merge=ours
+QUICK_DEPLOY.md merge=ours
+
+# Backend production конфигурация
+backend/Dockerfile merge=ours
+backend/app/main.py merge=ours
+
+# Bot production конфигурация
+bot/Dockerfile merge=ours
+
+# Environment пример
+env.example merge=ours
+
+# Frontend production конфигурация (только в release)
+frontend/next.config.mjs merge=ours 
