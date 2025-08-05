@@ -6,7 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CirclePlay, CircleStop, Ellipsis, Globe, GlobeLock, MoveRight, Send } from 'lucide-react';
 import { PromiseData } from '@/types';
 import { formatDateTime } from '@/utils/formatDate';
-import { canDeleteItem, canCompletePromise, getTimeUntilCompletionAllowed } from '@/utils/postRules';
+import { canDeleteItem, canCompletePromise, getTimeUntilCompletionAllowed, isPromiseExpired } from '@/utils/postRules';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PromiseCompleteModal from './PromiseCompleteModal';
@@ -79,12 +79,15 @@ const PromiseView: React.FC<PostviewProps> = ({
   // --- Проверка дедлайна ---
   const isDeadlineActive = (() => {
     if (!deadline) return false;
-    const today = new Date();
+    const now = new Date();
     const deadlineDate = new Date(deadline);
-    // Кнопка активна, если сегодня не позже дедлайна (включительно)
+    // Кнопка активна, если текущее время не позже дедлайна (включительно)
     // И прошло минимум 3 часа с момента создания
-    return today.setHours(0,0,0,0) <= deadlineDate.setHours(0,0,0,0) && canCompletePromise(created_at);
+    return now <= deadlineDate && canCompletePromise(created_at);
   })();
+
+  // --- Проверка просроченного обещания ---
+  const isExpired = isPromiseExpired(deadline);
 
   // --- Новый блок: определение обещания "кому-то" ---
   const isToSomeone = !!promise.requires_accept && !!promise.recipient_id;
@@ -267,6 +270,84 @@ const PromiseView: React.FC<PostviewProps> = ({
     } finally { setActionLoading(false); }
   };
 
+  // --- Новая функция для закрытия просроченного обещания ---
+  const handleCloseExpiredPromise = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/promises?id=${promise.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          user_id: promise.user_id, 
+          action: 'close_expired',
+          result_content: 'Не выполнено',
+          completed_at: new Date().toISOString()
+        })
+      });
+      if (res.ok) {
+        const updatedPromise = await res.json();
+        onUpdate(updatedPromise);
+      }
+    } catch (error) {
+      console.error('Ошибка при закрытии просроченного обещания:', error);
+      alert('Ошибка при закрытии обещания');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // --- Новая функция для закрытия просроченного обещания "кому-то" (для создателя) ---
+  const handleCloseExpiredPromiseForCreator = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/promises?id=${promise.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          user_id: promise.user_id, 
+          action: 'close_expired_for_creator',
+          result_content: 'Не выполнено',
+          completed_at: new Date().toISOString()
+        })
+      });
+      if (res.ok) {
+        const updatedPromise = await res.json();
+        onUpdate(updatedPromise);
+      }
+    } catch (error) {
+      console.error('Ошибка при закрытии просроченного обещания:', error);
+      alert('Ошибка при закрытии обещания');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // --- Новая функция для закрытия просроченного обещания "кому-то" (для получателя) ---
+  const handleCloseExpiredPromiseForRecipient = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/promises?id=${promise.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          user_id: userCtxId, 
+          action: 'close_expired_for_recipient',
+          result_content: 'Не выполнено',
+          completed_at: new Date().toISOString()
+        })
+      });
+      if (res.ok) {
+        const updatedPromise = await res.json();
+        onUpdate(updatedPromise);
+      }
+    } catch (error) {
+      console.error('Ошибка при закрытии просроченного обещания:', error);
+      alert('Ошибка при закрытии обещания');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // --- Закрытие меню при клике вне него ---
   useEffect(() => {
     if (!menuOpen) return;
@@ -407,88 +488,118 @@ const PromiseView: React.FC<PostviewProps> = ({
               {/* --- Для создателя (Ю1) --- */}
               {isCreator && (
                 <div className="d-flex flex-column align-items-center mb-2">
-                  {/* Не подтверждено */}
-                  {promise.is_accepted === null && !promise.is_completed_by_creator && (
-                    <button className="btn btn-outline-secondary mb-2" disabled>
-                      Не подтверждено
-                    </button>
-                  )}
-                  {/* Отказано */}
-                  {promise.is_accepted === false && (
-                    <button className="btn btn-outline-danger w-50 mb-2" disabled>
-                      Отказано
-                    </button>
-                  )}
-                                     {/* Принято, но не завершено */}
-                   {promise.is_accepted === true && !promise.is_completed_by_creator && (
-                     <button
-                       className="btn btn-outline-primary w-50 mb-2"
-                       onClick={handleCompleteForRecipient}
-                       disabled={actionLoading}
-                     >
-                       {actionLoading ? 'Обработка...' : 'Создать отчет'}
-                     </button>
-                   )}
-                  {/* Завершено создателем, ждет подтверждения */}
-                  {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
-                    <button className="btn btn-outline-warning w-50 mb-2" disabled>
-                      Ожидание подтверждения
-                    </button>
-                  )}
-                  {/* Обещание полностью выполнено */}
-                  {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
-                    <button 
-                      className="btn btn-outline-primary w-50 mb-2"
-                      onClick={() => setIsResultModalOpen(true)}
+                  {/* Просроченное обещание */}
+                  {isExpired && !promise.is_completed && (
+                    <button
+                      className="btn btn-outline-secondary w-50 mb-2"
+                      onClick={handleCloseExpiredPromiseForCreator}
+                      disabled={actionLoading}
                     >
-                      Результат
+                      {actionLoading ? 'Закрываем...' : 'Истек дедлайн'}
                     </button>
+                  )}
+                  {/* Не просроченное обещание */}
+                  {!isExpired && (
+                    <>
+                      {/* Не подтверждено */}
+                      {promise.is_accepted === null && !promise.is_completed_by_creator && (
+                        <button className="btn btn-outline-secondary mb-2" disabled>
+                          Не подтверждено
+                        </button>
+                      )}
+                      {/* Отказано */}
+                      {promise.is_accepted === false && (
+                        <button className="btn btn-outline-danger w-50 mb-2" disabled>
+                          Отказано
+                        </button>
+                      )}
+                      {/* Принято, но не завершено */}
+                      {promise.is_accepted === true && !promise.is_completed_by_creator && (
+                        <button
+                          className="btn btn-outline-primary w-50 mb-2"
+                          onClick={handleCompleteForRecipient}
+                          disabled={actionLoading}
+                        >
+                          {actionLoading ? 'Обработка...' : 'Создать отчет'}
+                        </button>
+                      )}
+                      {/* Завершено создателем, ждет подтверждения */}
+                      {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
+                        <button className="btn btn-outline-warning w-50 mb-2" disabled>
+                          Ожидание подтверждения
+                        </button>
+                      )}
+                      {/* Обещание полностью выполнено */}
+                      {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
+                        <button 
+                          className="btn btn-outline-primary w-50 mb-2"
+                          onClick={() => setIsResultModalOpen(true)}
+                        >
+                          Результат
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               )}
               {/* --- Для получателя (Ю2) --- */}
               {isRecipient && (
                 <div className="d-flex flex-column align-items-center mb-2">
-                  {/* Не обработано: принять/отклонить */}
-                  {promise.is_accepted === null && !promise.is_completed_by_recipient && (
-                    <div className="d-flex gap-2 mb-2">
-                      <button className="btn btn-outline-primary" onClick={handleAccept} disabled={actionLoading}>
-                        {actionLoading ? 'Обработка...' : 'Принять'}
-                      </button>
-                      <button className="btn btn-outline-danger" onClick={handleDecline} disabled={actionLoading}>
-                        {actionLoading ? 'Обработка...' : 'Отказать'}
-                      </button>
-                    </div>
-                  )}
-                  {/* Принято, ждет завершения создателя */}
-                  {promise.is_accepted === true && !promise.is_completed_by_creator && (
-                    <button className="btn btn-outline-warning w-50 mb-2" disabled>
-                      Ожидание завершения
-                    </button>
-                  )}
-                  {/* Завершено создателем, ждет подтверждения получателя */}
-                  {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
-                    <div className="d-flex gap-2 mb-2">
-                      <button className="btn btn-outline-success" onClick={handleConfirmComplete} disabled={actionLoading}>
-                        {actionLoading ? 'Обработка...' : 'Подтвердить выполнение'}
-                      </button>
-                      {/* Можно добавить кнопку "Отклонить выполнение" при необходимости */}
-                    </div>
-                  )}
-                  {/* Обещание полностью выполнено */}
-                  {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
-                    <button 
-                      className="btn btn-outline-primary w-50 mb-2"
-                      onClick={() => setIsResultModalOpen(true)}
+                  {/* Просроченное обещание */}
+                  {isExpired && !promise.is_completed && (
+                    <button
+                      className="btn btn-outline-secondary w-50 mb-2"
+                      onClick={handleCloseExpiredPromiseForRecipient}
+                      disabled={actionLoading}
                     >
-                      Результат
+                      {actionLoading ? 'Закрываем...' : 'Истек дедлайн'}
                     </button>
                   )}
-                  {/* Отказано */}
-                  {promise.is_accepted === false && (
-                    <button className="btn btn-outline-danger w-50 mb-2" disabled>
-                      Отказано
-                    </button>
+                  {/* Не просроченное обещание */}
+                  {!isExpired && (
+                    <>
+                      {/* Не обработано: принять/отклонить */}
+                      {promise.is_accepted === null && !promise.is_completed_by_recipient && (
+                        <div className="d-flex gap-2 mb-2">
+                          <button className="btn btn-outline-primary" onClick={handleAccept} disabled={actionLoading}>
+                            {actionLoading ? 'Обработка...' : 'Принять'}
+                          </button>
+                          <button className="btn btn-outline-danger" onClick={handleDecline} disabled={actionLoading}>
+                            {actionLoading ? 'Обработка...' : 'Отказать'}
+                          </button>
+                        </div>
+                      )}
+                      {/* Принято, ждет завершения создателя */}
+                      {promise.is_accepted === true && !promise.is_completed_by_creator && (
+                        <button className="btn btn-outline-warning w-50 mb-2" disabled>
+                          Ожидание завершения
+                        </button>
+                      )}
+                      {/* Завершено создателем, ждет подтверждения получателя */}
+                      {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
+                        <div className="d-flex gap-2 mb-2">
+                          <button className="btn btn-outline-success" onClick={handleConfirmComplete} disabled={actionLoading}>
+                            {actionLoading ? 'Обработка...' : 'Подтвердить выполнение'}
+                          </button>
+                          {/* Можно добавить кнопку "Отклонить выполнение" при необходимости */}
+                        </div>
+                      )}
+                      {/* Обещание полностью выполнено */}
+                      {promise.is_accepted === true && promise.is_completed_by_creator && promise.is_completed_by_recipient && (
+                        <button 
+                          className="btn btn-outline-primary w-50 mb-2"
+                          onClick={() => setIsResultModalOpen(true)}
+                        >
+                          Результат
+                        </button>
+                      )}
+                      {/* Отказано */}
+                      {promise.is_accepted === false && (
+                        <button className="btn btn-outline-danger w-50 mb-2" disabled>
+                          Отказано
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -498,27 +609,39 @@ const PromiseView: React.FC<PostviewProps> = ({
             <>
               {isOwnProfile && isProfilePage && !is_completed && (
                 <div className="d-flex justify-content-center py-2 position-relative">
-                  <button
-                    className="btn btn-outline-primary w-50 mb-2"
-                    onClick={handleComplete}
-                  >
-                    Завершить
-                  </button>
-                    {showTooltip && (!canCompletePromise(created_at) || !isDeadlineActive) && (
-                      <div className="position-absolute w-100 bottom-100 start-50 translate-middle-x mb-1 p-2 bg-white text-dark rounded shadow-sm font-xsss tooltip-container text-center border" style={{ zIndex: 1000, minWidth: '200px' }}>
-                        <div className="mb-1">
-                          {!canCompletePromise(created_at) 
-                            ? 'Завершить обещание можно не раньше, чем через 3 часа после создания'
-                            : 'Завершить обещание можно только до дедлайна'
-                          }
-                        </div>
-                        {!canCompletePromise(created_at) && (
-                          <div className="text-secondary">
-                              Осталось: {getTimeUntilCompletionAllowed(created_at)}
-                          </div>
-                        )}
+                  {isExpired ? (
+                    // Кнопка для просроченного обещания
+                    <button
+                      className="btn btn-outline-primary w-50 mb-2"
+                      onClick={handleCloseExpiredPromise}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? 'Закрываем...' : 'Истек дедлайн'}
+                    </button>
+                  ) : (
+                    // Обычная кнопка завершения
+                    <button
+                      className="btn btn-outline-primary w-50 mb-2"
+                      onClick={handleComplete}
+                    >
+                      Завершить
+                    </button>
+                  )}
+                  {showTooltip && (!canCompletePromise(created_at) || !isDeadlineActive) && !isExpired && (
+                    <div className="position-absolute w-100 bottom-100 start-50 translate-middle-x mb-1 p-2 bg-white text-dark rounded shadow-sm font-xsss tooltip-container text-center border" style={{ zIndex: 1000, minWidth: '200px' }}>
+                      <div className="mb-1">
+                        {!canCompletePromise(created_at) 
+                          ? 'Завершить обещание можно не раньше, чем через 3 часа после создания'
+                          : 'Завершить обещание можно только до дедлайна'
+                        }
                       </div>
-                    )}
+                      {!canCompletePromise(created_at) && (
+                        <div className="text-secondary">
+                            Осталось: {getTimeUntilCompletionAllowed(created_at)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {is_completed && (

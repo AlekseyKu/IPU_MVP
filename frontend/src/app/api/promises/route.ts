@@ -64,7 +64,15 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const updatedPromise = await request.json();
+    const body = await request.json();
+    
+    // Проверяем, является ли это действием
+    if (body.action) {
+      return handlePromiseAction(request, body);
+    }
+    
+    // Старая логика для обновления полей
+    const updatedPromise = body;
     if (!updatedPromise.id) {
       return NextResponse.json({ error: 'ID обязателен' }, { status: 400 });
     }
@@ -121,7 +129,9 @@ export async function PUT(request: NextRequest) {
         // console.log('📊 Full promise data:', fullPromise);
 
         if (fullPromise) {
-          const isOverdue = new Date(fullPromise.deadline) < new Date();
+          const now = new Date();
+          const deadlineDate = new Date(fullPromise.deadline);
+          const isOverdue = now > deadlineDate;
           // console.log('⏰ Deadline check:', { deadline: fullPromise.deadline, isOverdue });
           
           if (!isOverdue) {
@@ -223,5 +233,144 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  }
+}
+
+// --- Функция для обработки действий с обещаниями ---
+async function handlePromiseAction(request: NextRequest, body: any) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const { user_id, action, result_content, completed_at } = body;
+
+    if (!id) return NextResponse.json({ detail: 'Missing promise id' }, { status: 400 });
+    if (!user_id || !action) return NextResponse.json({ detail: 'Missing user_id or action' }, { status: 400 });
+
+    // Получаем данные обещания
+    const { data: promise, error } = await supabase
+      .from('promises')
+      .select('user_id, is_completed, deadline, requires_accept, recipient_id')
+      .eq('id', id)
+      .single();
+
+    if (error || !promise) return NextResponse.json({ detail: 'Promise not found' }, { status: 404 });
+    if (promise.user_id !== user_id) return NextResponse.json({ detail: 'Unauthorized' }, { status: 403 });
+
+    if (action === 'close_expired') {
+      // Проверяем, что обещание не завершено
+      if (promise.is_completed) {
+        return NextResponse.json({ detail: 'Promise already completed' }, { status: 400 });
+      }
+
+      // Проверяем, что обещание просрочено
+      const now = new Date();
+      const deadlineDate = new Date(promise.deadline);
+      if (now <= deadlineDate) {
+        return NextResponse.json({ detail: 'Promise is not expired' }, { status: 400 });
+      }
+
+      // Закрываем просроченное обещание
+      const { error: updateError, data: updatedPromise } = await supabase
+        .from('promises')
+        .update({
+          is_completed: true,
+          result_content: result_content || 'Не выполнено',
+          completed_at: completed_at || new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return NextResponse.json({ detail: updateError.message }, { status: 500 });
+      }
+
+      return NextResponse.json(updatedPromise, { status: 200 });
+    }
+
+    if (action === 'close_expired_for_creator') {
+      // Проверяем, что обещание не завершено
+      if (promise.is_completed) {
+        return NextResponse.json({ detail: 'Promise already completed' }, { status: 400 });
+      }
+
+      // Проверяем, что обещание просрочено
+      const now = new Date();
+      const deadlineDate = new Date(promise.deadline);
+      if (now <= deadlineDate) {
+        return NextResponse.json({ detail: 'Promise is not expired' }, { status: 400 });
+      }
+
+      // Проверяем, что это обещание "кому-то"
+      if (!promise.requires_accept || !promise.recipient_id) {
+        return NextResponse.json({ detail: 'This is not a promise to someone' }, { status: 400 });
+      }
+
+      // Закрываем просроченное обещание "кому-то" (для создателя)
+      const { error: updateError, data: updatedPromise } = await supabase
+        .from('promises')
+        .update({
+          is_completed: true,
+          result_content: result_content || 'Не выполнено',
+          completed_at: completed_at || new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return NextResponse.json({ detail: updateError.message }, { status: 500 });
+      }
+
+      return NextResponse.json(updatedPromise, { status: 200 });
+    }
+
+    if (action === 'close_expired_for_recipient') {
+      // Проверяем, что обещание не завершено
+      if (promise.is_completed) {
+        return NextResponse.json({ detail: 'Promise already completed' }, { status: 400 });
+      }
+
+      // Проверяем, что обещание просрочено
+      const now = new Date();
+      const deadlineDate = new Date(promise.deadline);
+      if (now <= deadlineDate) {
+        return NextResponse.json({ detail: 'Promise is not expired' }, { status: 400 });
+      }
+
+      // Проверяем, что это обещание "кому-то"
+      if (!promise.requires_accept || !promise.recipient_id) {
+        return NextResponse.json({ detail: 'This is not a promise to someone' }, { status: 400 });
+      }
+
+      // Проверяем, что пользователь является получателем
+      if (user_id !== promise.recipient_id) {
+        return NextResponse.json({ detail: 'Unauthorized - not the recipient' }, { status: 403 });
+      }
+
+      // Закрываем просроченное обещание "кому-то" (для получателя)
+      const { error: updateError, data: updatedPromise } = await supabase
+        .from('promises')
+        .update({
+          is_completed: true,
+          result_content: result_content || 'Не выполнено',
+          completed_at: completed_at || new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return NextResponse.json({ detail: updateError.message }, { status: 500 });
+      }
+
+      return NextResponse.json(updatedPromise, { status: 200 });
+    }
+
+    return NextResponse.json({ detail: 'Invalid action' }, { status: 400 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Server error:', message);
+    return NextResponse.json({ detail: `Server error: ${message}` }, { status: 500 });
   }
 }
