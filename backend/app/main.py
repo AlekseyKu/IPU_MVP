@@ -20,6 +20,11 @@ async def lifespan(app: FastAPI):
 
 app.router.lifespan_context = lifespan  # Установка lifespan контекста
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "ipu-backend"}
+
 app.include_router(users.router)
 app.include_router(payments_minimal.router)
 
