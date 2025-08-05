@@ -81,7 +81,6 @@ const nextConfig = {
   // PROD оптимизации
   compress: true,
   poweredByHeader: false,
-  output: 'standalone',
   generateEtags: false,
   
   // Оптимизация для Vercel
@@ -98,6 +97,10 @@ const nextConfig = {
       },
     ]
   },
+  
+  // Настройки для обработки ошибок
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
 }
 
 export default nextConfig
