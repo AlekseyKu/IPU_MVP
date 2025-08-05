@@ -58,11 +58,22 @@ export function canEditItem(createdAt: string): boolean {
 
 /**
  * Проверяет, можно ли завершить обещание по дедлайну
- * Завершение возможно только в день дедлайна или раньше
+ * Завершение возможно только до дедлайна включительно
  */
 export function canCompleteItem(deadline: string): boolean {
   if (!deadline) return false;
-  const today = new Date();
+  const now = new Date();
   const deadlineDate = new Date(deadline);
-  return today.setHours(0, 0, 0, 0) <= deadlineDate.setHours(0, 0, 0, 0);
+  return now <= deadlineDate;
+}
+
+/**
+ * Проверяет, просрочено ли обещание
+ * Обещание просрочено, если текущее время позже дедлайна
+ */
+export function isPromiseExpired(deadline: string): boolean {
+  if (!deadline) return false;
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  return now > deadlineDate;
 } 
