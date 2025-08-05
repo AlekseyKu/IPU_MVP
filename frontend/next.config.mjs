@@ -14,14 +14,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'fonts.googleapis.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'ipu-mvp.vercel.app',
-      },
-      {
-        protocol: 'https',
-        hostname: 'www.ipu-mvp.vercel.app',
-      },
     ],
   },
   // async headers() {
