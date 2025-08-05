@@ -85,17 +85,7 @@ const nextConfig = {
   
   // Оптимизация для Vercel
   experimental: {
-    optimizeCss: true,
-  },
-  
-  // Кэширование статических ресурсов
-  async rewrites() {
-    return [
-      {
-        source: '/static/:path*',
-        destination: '/_next/static/:path*',
-      },
-    ]
+    // optimizeCss: true, // Временно отключено из-за ошибки critters
   },
   
   // Настройки для обработки ошибок
