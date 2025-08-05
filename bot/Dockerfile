@@ -1,10 +1,9 @@
-# backend/Dockerfile
+# bot/Dockerfile
 FROM python:3.11-slim
 
 # Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
     gcc \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка рабочей директории
@@ -22,4 +21,4 @@ RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 USER app
 
 # Команда запуска
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "main.py"] 
