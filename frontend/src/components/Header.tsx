@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react'
 import UserSearch from './UserSearch';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Header: React.FC = () => {
   const [uiState, setUiState] = useState({
@@ -79,6 +80,7 @@ const Header: React.FC = () => {
           <span onClick={() => toggleState('isActive')} className="me-2 cursor-pointer">
             <Search className="w-5 h-5 text-grey-900 bg-greylight p-1 rounded-full btn-round-sm" />
           </span>
+          <LanguageSwitcher />
           <button
             onClick={() => toggleState('isOpen')}
             className={`nav-menu ms-2 ${uiState.isOpen ? 'active' : ''}`}

@@ -173,13 +173,13 @@ const Profiledetail: React.FC<Props> = ({
       </div>
 
       <div className="card-body px-4 pt-0 text-center position-relative">
-        <h4
-          className="fw-700 text-grey-900 font-xsss m-0"
+        <span
+          className="font-xssss text-grey-900 font-xsss m-0"
           onClick={() => setShowTooltip(true)}
           style={{ cursor: 'pointer' }}
         >
           TG Username: {username || 'Не указано'}
-        </h4>
+        </span>
 
         {showTooltip && (
           <div

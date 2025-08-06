@@ -58,8 +58,8 @@ const LeaderCard: React.FC<LeaderCardProps> = ({ leader, index }) => {
         
         {/* Карма */}
         <div className="d-flex align-items-center">
-          <HeartHandshake className="text-primary me-1" size={14} />
-          <span className="text-primary font-xsss fw-bold">{leader.karma_points}</span>
+          <HeartHandshake className="text-primary me-1" size={20} />
+          <span className="text-primary font-xss fw-bold">{leader.karma_points}</span>
         </div>
       </div>
     </motion.div>
