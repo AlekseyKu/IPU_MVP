@@ -83,7 +83,7 @@ export default function Leaders() {
           </motion.div>
 
           {/* Список лидеров с скроллом */}
-          <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          <div className="overflow-y-auto pb-5" style={{ maxHeight: 'calc(100vh - 300px)' }}>
             {error && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -108,7 +108,7 @@ export default function Leaders() {
               >
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                  <span className="text-gray-600">Загрузка лидеров...</span>
+                  <span className="text-gray-600 font-xsss">Загрузка...</span>
                 </div>
               </motion.div>
             )}
