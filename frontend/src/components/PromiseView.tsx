@@ -446,7 +446,7 @@ const PromiseView: React.FC<PostviewProps> = ({
               ))}
             </div>
           )}
-                     {isOwnProfile && isProfilePage && (
+            {isOwnProfile && isProfilePage && (
              <div className="d-flex justify-content-end align-items-center mb-1">
                {!is_public && (
                  <>
