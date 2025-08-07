@@ -1,60 +1,44 @@
-'use client'
+'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { ru } from '@/locales/ru';
-import { en } from '@/locales/en';
-
-type Language = 'ru' | 'en';
-type Translations = typeof ru;
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { locales, type Locale, getMessages } from '@/i18n';
 
 interface LanguageContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
+  language: Locale;
+  setLanguage: (lang: Locale) => void;
   t: (key: string) => string;
-  translations: Translations;
+  messages: any;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations = {
-  ru,
-  en,
-};
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<Locale>('ru');
 
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>('ru');
-
+  // Загружаем язык из localStorage при инициализации
   useEffect(() => {
-    // Загружаем сохраненный язык из localStorage
-    const savedLanguage = localStorage.getItem('language') as Language;
+    const savedLanguage = localStorage.getItem('language') as Locale;
     if (savedLanguage && (savedLanguage === 'ru' || savedLanguage === 'en')) {
       setLanguageState(savedLanguage);
-    } else {
-      // Определяем язык браузера
-      const browserLanguage = navigator.language.toLowerCase();
-      if (browserLanguage.startsWith('en')) {
-        setLanguageState('en');
-      } else {
-        setLanguageState('ru');
-      }
     }
   }, []);
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = (lang: Locale) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
   };
 
+  // Функция для получения переводов
   const t = (key: string): string => {
+    const messages = getMessages(language);
     const keys = key.split('.');
-    let value: any = translations[language];
+    let value: any = messages;
     
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        // Если перевод не найден, возвращаем ключ
-        return key;
+        return key; // Возвращаем ключ если перевод не найден
       }
     }
     
@@ -65,7 +49,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     language,
     setLanguage,
     t,
-    translations: translations[language],
+    messages: getMessages(language)
   };
 
   return (
@@ -73,12 +57,12 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       {children}
     </LanguageContext.Provider>
   );
-};
+}
 
-export const useLanguage = (): LanguageContextType => {
+export function useLanguage() {
   const context = useContext(LanguageContext);
   if (context === undefined) {
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
   return context;
-}; 
+} 

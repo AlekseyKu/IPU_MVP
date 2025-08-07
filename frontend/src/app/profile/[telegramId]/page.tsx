@@ -63,7 +63,30 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading || !userData) return <Load />;
+  if (isLoading || !userData) {
+    return (
+      <>
+        <Header />
+        <div className="main-content">
+          <div className="middle-sidebar-bottom">
+            <div className="middle-sidebar-left pe-0">
+              <div className="row">
+                <div className="col-12">
+                  <div className="text-center py-12">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span className="text-gray-600">Загрузка профиля...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Appfooter />
+      </>
+    );
+  }
 
   return (
     <>

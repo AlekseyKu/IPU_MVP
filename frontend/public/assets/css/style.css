@@ -12897,7 +12897,8 @@ strong,
   font-weight: 600;
   line-height: 28px;
   color: #888;
-  height: 54px;
+  /* Op_ */
+  height: 34px;
   display: flex;
   overflow: hidden;
   transition: all 0.2s ease;

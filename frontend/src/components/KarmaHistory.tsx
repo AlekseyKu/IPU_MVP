@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import { X, HeartHandshake, TrendingUp, TrendingDown } from 'lucide-react';
 import { useKarma } from '@/hooks/useKarma';
 import { formatDate } from '@/utils/formatDate';
+import { useLanguage } from '@/context/LanguageContext';
+import { translateKarmaReason } from '@/utils/karmaTranslations';
 
 interface KarmaHistoryProps {
   userId: number;
@@ -15,6 +17,7 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
   isVisible = false, 
   onClose 
 }) => {
+  const { t, language } = useLanguage();
   // Хук вызывается только когда модальное окно видимо
   const { 
     karmaHistory, 
@@ -75,10 +78,12 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
            
            <div className="d-flex align-items-center mb-3">
              <HeartHandshake className="w-6 h-6 text-primary me-2" />
-             <h2 className="text-lg mb-0">История кармы</h2>
+             {/* "История кармы" */}
+             <h2 className="text-lg mb-0">{t('karmaHistory.title')}</h2>
            </div>
            
-           <p className="text-muted font-xss mb-3">Просмотр ваших достижений и изменений кармы</p>
+           {/* "Просмотр ваших достижений и изменений кармы" */}
+           <p className="text-muted font-xss mb-3">{t('karmaHistory.subtitle')}</p>
          </div>
 
          {/* Content - Scrollable */}
@@ -86,15 +91,17 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
            {isLoading && (
              <div className="text-center py-4">
                <div className="spinner-border text-primary" role="status">
-                 <span className="visually-hidden">Загрузка...</span>
+                 <span className="visually-hidden">{t('common.loading')}</span>
                </div>
-               <p className="text-muted mt-2">Загрузка истории кармы...</p>
+               {/* "Загрузка истории кармы..." */}
+               <p className="text-muted mt-2">{t('karmaHistory.loading')}</p>
              </div>
            )}
 
            {error && (
              <div className="alert alert-danger" role="alert">
-               <strong>Ошибка загрузки:</strong> {error}
+               {/* "Ошибка загрузки:" */}
+               <strong>{t('karmaHistory.error')}:</strong> {error}
              </div>
            )}
 
@@ -105,7 +112,8 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
                    <HeartHandshake className="w-5 h-5 text-primary me-2" />
                    <h4 className="mb-0 fw-bold text-primary">{karmaStats.karma_points}</h4>
                  </div>
-                 <p className="text-muted mb-0 font-xsss">Текущая карма</p>
+                 {/* "Текущая карма" */}
+                 <p className="text-muted mb-0 font-xsss">{t('karmaHistory.currentKarma')}</p>
                </div>
              </div>
            )}
@@ -115,22 +123,24 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
                <h6 className="mb-3 d-flex align-items-center justify-content-between">
                  <div className="d-flex align-items-center">
                    <TrendingUp className="w-4 h-4 me-2" />
-                   Последние изменения
+                   {/* "Последние изменения" */}
+                   {t('karmaHistory.recentChanges')}
                  </div>
                  <small className="text-muted font-xsss">
-                   {karmaHistory.length} записей
+                   {/* "записей" */}
+                   {karmaHistory.length} {t('karmaHistory.records')}
                  </small>
                </h6>
                <div className="list-group list-group-flush font-xss">
                  {karmaHistory.map((transaction) => (
-                   <div 
+                                        <div 
                      key={transaction.id} 
                      className="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-3"
                    >
                      <div className="flex-grow-1">
-                       <div className="fw-medium text-dark">{transaction.reason}</div>
+                       <div className="fw-medium text-dark">{translateKarmaReason(transaction.reason, t)}</div>
                        <small className="text-muted">
-                         {formatDate(transaction.created_at)}
+                         {formatDate(transaction.created_at, language)}
                        </small>
                      </div>
                      <div className="d-flex align-items-center">
@@ -159,9 +169,10 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
                    {isLoadingMore ? (
                      <div className="d-flex align-items-center justify-content-center">
                        <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
-                         <span className="visually-hidden">Загрузка...</span>
+                         <span className="visually-hidden">{t('common.loading')}</span>
                        </div>
-                       <span className="text-muted font-xsss">Загрузка...</span>
+                       {/* "Загрузка..." */}
+                       <span className="text-muted font-xsss">{t('common.loading')}</span>
                      </div>
                    ) : (
                      <button 
@@ -169,7 +180,8 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
                        className="btn btn-outline-primary border-0 btn-sm pb-2" 
                        onClick={loadMore}
                      >
-                       Загрузить еще
+                       {/* "Загрузить еще" */}
+                       {t('karmaHistory.loadMore')}
                      </button>
                    )}
                  </div>
@@ -180,8 +192,10 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
            {!isLoading && !error && karmaHistory.length === 0 && (
              <div className="text-center py-4">
                <HeartHandshake className="w-12 h-12 text-muted mb-3" />
-               <h6 className="text-muted">История кармы пуста</h6>
-               <p className="text-muted font-xsss">Создавайте и выполняйте обещания, чтобы заработать карму!</p>
+               {/* "История кармы пуста" */}
+               <h6 className="text-muted">{t('karmaHistory.empty')}</h6>
+               {/* "Создавайте и выполняйте обещания, чтобы заработать карму!" */}
+               <p className="text-muted font-xsss">{t('karmaHistory.emptyDescription')}</p>
              </div>
            )}
          </div>
@@ -193,7 +207,8 @@ const KarmaHistory: React.FC<KarmaHistoryProps> = ({
              className="btn btn-outline-primary w-100" 
              onClick={onClose}
            >
-             Закрыть
+             {/* "Закрыть" */}
+             {t('common.close')}
            </button>
          </div>
        </div>

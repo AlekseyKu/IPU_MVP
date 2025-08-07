@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PrivacyModal from './PrivacyModal';
 import TermsModal from './TermsModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -21,58 +22,56 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const router = useRouter();
   const { telegramId } = useUser();
+  const { t } = useLanguage();
 
   const screens = [
     {
-      title: 'Добро пожаловать в \n I PROMISE YOU',
-      subtitle: 'IPU - это приложение, где обещания становятся реальными действиями.',
-      slogan: 'Твое слово - Твоя сила!',
-      buttonText: 'Начать',
+      title: t('onboarding.welcome.title'), // "Добро пожаловать в I PROMISE YOU"
+      subtitle: t('onboarding.welcome.subtitle'), // "IPU - это место, где обещания становятся реальными действиями."
+      slogan: t('onboarding.welcome.description'), // "Твое слово - твоя сила!"
+      buttonText: t('onboarding.welcome.startButton'), // "Начать"
       showProgress: false
     },
     {
-      title: 'Что ты можешь делать в IPU?',
+      title: t('onboarding.features.title'), // "Что ты можешь в IPU?"
       features: [
-        'Обещать себе и другим',
-        'Получать подтверждение и поддержку',
-        'Запускать челленджи и звать друзей',
-        'Зарабатывать очки и звёзды',
-        'Получать титулы и становиться примером'
+        t('onboarding.features.features.0'), // "Обещать себе или другим"
+        t('onboarding.features.features.1'), // "Получать поддержку и одобрение"
+        t('onboarding.features.features.2'), // "Запускать челленджи и следить за ходом выполнения"
+        t('onboarding.features.features.3'), // "Копить "Карму" за действия"
+        t('onboarding.features.features.4'), // "Получать титулы. Быть примером."
       ],
-      buttonText: 'Далее',
+      buttonText: t('onboarding.features.nextButton'), // "Далее"
       showProgress: true
     },
     {
-      title: 'IPU Обещания',
+      title: t('onboarding.promises.title'), // "Обещания в IPU"
       features: [
-        'Создавай обещания для себя или другим',
-        'Публичные или личные обещания',
-        'Добавляй описание, фото или видео',
-        'Устанавливай дедлайн и условия',
-        'Получай бонусы за выполнение обещаний для других',
+        t('onboarding.promises.features.0'), // "Себе или другим"
+        t('onboarding.promises.features.1'), // "Публично или лично"
+        t('onboarding.promises.features.2'), // "С описанием, фото, видео"
+        t('onboarding.promises.features.3'), // "С дедлайном и деталями"
       ],
-      buttonText: 'Далее',
+      buttonText: t('onboarding.promises.nextButton'), // "Далее"
       showProgress: true
     },
     {
-      title: 'IPU Челленджи',
+      title: t('onboarding.challenges.title'), // "Челленджи в IPU"
       features: [
-        'Придумывай челленджи и ставь цель',
-        'Выбирай частоту: ежедневно, еженедельно или ежемесячно',
-        'Делись с друзьями и зови участников',
-        'Отслеживай прогресс и получай награды'
+        t('onboarding.challenges.features.0'), // "Придумывай вызов — себе и друзьям"
+        t('onboarding.challenges.features.1'), // "Задай ритм: каждый день или по расписанию"
+        t('onboarding.challenges.features.2'), // "Делись, зови друзей, набирай поддержку"
+        t('onboarding.challenges.features.3'), // "Выполняй — получай "Карму" и награды"
       ],
-      buttonText: 'Далее',
+      buttonText: t('onboarding.challenges.nextButton'), // "Далее"
       showProgress: true
     },
     {
-      title: 'Политики и условия',
+      title: t('onboarding.terms.title'), // "Перед стартом:"
       features: [
-        'Используя IPU, вы принимаете:',
-        '[Политику конфиденциальности]',
-        '[Условия использования]'
+        t('onboarding.terms.description'), // "Используя IPU, вы принимаете Политику конфиденциальности и Условия использования."
       ],
-      buttonText: 'Готово',
+      buttonText: t('onboarding.terms.startButton'), // "Вперёд!"
       showProgress: true,
       showCheckboxes: true
     }
@@ -141,9 +140,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               {/* Title, subtitle and slogan for screen 0 */}
               {currentScreen === 0 ? (
                 <>
+                  <div className="d-flex justify-content-center align-items-center bg-white">
+                    <img
+                      src="/assets/images/ipu/logo_512.png"
+                      alt="IPU Logo"
+                      className="logo-onboarding"
+                    />
+                  </div>
                   <h1 key={`title-${currentScreen}`} className="onboarding-title mb-4 fade-in text-center">
                     <div className="text-center">
-                      Добро пожаловать в{' '} <br />
+                      {t('onboarding.welcome.title')}
+                      <br />
                       <span className="text-secondary">I</span>
                       {' '}
                       <span className="text-secondary">P</span>ROMISE{' '}YO
@@ -168,10 +175,10 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               {/* Features list for other screens */}
               {currentScreen > 0 && currentScreenData.features && currentScreen !== 4 && (
                 <div key={`features-${currentScreen}`} className="onboarding-features mb-4">
-                  {currentScreenData.features.map((feature, index) => (
+                  {Array.isArray(currentScreenData.features) && currentScreenData.features.map((feature: string, index: number) => (
                     <div 
                       key={`${currentScreen}-${index}`} 
-                      className="onboarding-feature mb-3 fade-in"
+                      className="d-flex justify-content-start align-items-start onboarding-feature mb-3 fade-in text-start"
                       style={{ animationDelay: `${index * 0.2}s` }}
                     >
                       <span>{feature}</span>
@@ -186,13 +193,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   <div key={`policy-${currentScreen}`} className="onboarding-features mb-4">
                     <div className="onboarding-policy-text mb-3 fade-in text-center" style={{ animationDelay: '0.1s' }}>
                       <span>
-                        Используя IPU, вы принимаете:{' '}
+                        {t('onboarding.terms.description')} {/* "Используя IPU, вы принимаете:" */}
                         <button 
                           onClick={openPrivacyPolicy}
                           className="btn btn-link text-decoration-none p-0"
                           style={{ cursor: 'pointer' }}
                         >
-                          Политику конфиденциальности
+                          {t('onboarding.terms.privacyPolicy')} {/* "Политику конфиденциальности" */}
                         </button>
                         {' '}и{' '}
                         <button 
@@ -200,7 +207,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                           className="btn btn-link text-decoration-none p-0"
                           style={{ cursor: 'pointer' }}
                         >
-                          Условия использования
+                          {t('onboarding.terms.termsOfService')} {/* "Условия использования" */}
                         </button>
                       </span>
                     </div>
@@ -215,7 +222,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         onChange={(e) => setAgreeToTerms(e.target.checked)}
                       />
                       <label className="form-check-label" htmlFor="agreeToTerms">
-                        Согласен с политикой и условиями
+                        {t('onboarding.terms.acceptButton')} {/* "Я согласен(а)" */}
                       </label>
                     </div>
                     <div className="form-check mb-3 fade-in" style={{ animationDelay: '0.4s' }}>
@@ -227,7 +234,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         onChange={(e) => setDontShowAgain(e.target.checked)}
                       />
                       <label className="form-check-label" htmlFor="dontShowAgain">
-                        Больше не показывать при входе
+                        {t('onboarding.terms.dontShowAgain')} {/* "Не показывать это снова при входе" */}
                       </label>
                     </div>
                   </div>
@@ -245,7 +252,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 disabled={currentScreen === 4 && !agreeToTerms || loading}
                 style={{ animationDelay: '0.5s' }}
               >
-                {loading ? 'Загрузка...' : currentScreenData.buttonText}
+                {loading ? t('common.loading') : currentScreenData.buttonText}
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 import './globals.scss';
 import type { Metadata, Viewport } from 'next';
 import { UserProvider, CreatePostModalProvider, CreateChallengeModalProvider } from '@/context/UserContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import TelegramExpand from '@/components/TelegramExpand';
 import PromiseCreate from '@/components/PromiseCreate';
 import ChallengeCreate from '@/components/ChallengeCreate';
@@ -25,14 +26,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head />
       <body suppressHydrationWarning>
         <UserProvider>
-          <CreatePostModalProvider>
-            <PromiseCreate />
-            <CreateChallengeModalProvider>
-              <TelegramExpand />
-              {children}
-              <ChallengeCreate />
-            </CreateChallengeModalProvider>
-          </CreatePostModalProvider>
+          <LanguageProvider>
+            <CreatePostModalProvider>
+              <PromiseCreate />
+              <CreateChallengeModalProvider>
+                <TelegramExpand />
+                {children}
+                <ChallengeCreate />
+              </CreateChallengeModalProvider>
+            </CreatePostModalProvider>
+          </LanguageProvider>
         </UserProvider>
       </body>
     </html>

@@ -11,17 +11,14 @@ import { canDeleteItem } from '@/utils/postRules';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useChallengeApi } from '@/hooks/useChallengeApi';
 import { useChallengeParticipants } from '@/hooks/useChallengeParticipants';
 import ChallengeCheckModal from './ChallengeCheckModal';
 import LikeButton from './LikeButton';
 
 // --- Константы ---
-const frequencyMap: Record<string, string> = {
-  daily: 'Ежедневный',
-  weekly: 'Еженедельный',
-  monthly: 'Ежемесячный',
-};
+// frequencyMap теперь используется через переводы
 
 // --- Типы ---
 interface ChallengeViewProps {
@@ -61,6 +58,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   
   // --- Хуки и состояния ---
   const { telegramId } = useUser();
+  const { t } = useLanguage();
   const router = useRouter();
   const renderCount = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -174,7 +172,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
   const now = useMemo(() => new Date(), []);
   const isStarted = challenge.start_at && new Date(challenge.start_at) <= now;
   const is_completed = challenge.is_completed;
-  const statusText = is_completed ? 'Завершено' : 'Челлендж';
+  // "Завершено" или "Челлендж"
+  const statusText = is_completed ? t('status.completed') : t('status.challenge');
   const Icon = is_completed ? CircleStop : CirclePlay;
   const iconColor = is_completed ? 'text-grey' : 'text-secondary';
 
@@ -254,7 +253,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
 
   const handleDelete = async () => {
     if (!isOwnProfile || !isProfilePage) return;
-    if (confirm('Вы уверены, что хотите удалить этот челлендж?')) {
+    // "Подтвердить"
+    if (confirm(t('challengeView.confirmDelete'))) {
       onDelete(challenge.id);
     }
   };
@@ -267,7 +267,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
         url: `${window.location.origin}/challenge/${challenge.id}` 
       }).catch(console.error);
     } else {
-      alert('Поделиться недоступно');
+      // "Ошибка"
+      alert(t('common.error'));
     }
   };
 
@@ -389,15 +390,18 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           )}
           {isOwnProfile && !isList && (
             <div className="d-flex justify-content-end align-items-center mb-1">
-              <span className="text-muted font-xssss me-1">{challenge.is_public ? 'Публичное' : 'Личное'}</span>
+              {/* "Публичное" или "Приватное" */}
+              <span className="text-muted font-xssss me-1">{challenge.is_public ? t('promiseCreate.form.public') : t('promiseCreate.form.private')}</span>
               <GlobeLock className="w-2 h-2 text-muted" />
             </div>
           )}
           {challenge.frequency && challenge.total_reports && (
             <div className="d-flex justify-content-between align-items-center">
               <div className="text-muted font-xsss mb-1">
-                {frequencyMap[challenge.frequency]} <br />
-                Прогресс: {challenge.completed_reports}/{challenge.total_reports}
+                {/* "Ежедневный/Еженедельный/Ежемесячный" */}
+                {t(`challengeView.frequency.${challenge.frequency}`)} <br />
+                {/* "Прогресс:" */}
+                {t('status.progress')}: {challenge.completed_reports}/{challenge.total_reports}
               </div>
               <div className="d-flex align-items-center align-self-end text-nowrap ms-2">
                 <span className="text-muted font-xssss me-1">{statusText}</span>
@@ -411,7 +415,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
       {/* --- Детали челленджа --- */}
       {isOpen && (
         <div className="mt-3" onClick={e => e.stopPropagation()}>
-          <span className="text-muted small font-xssss mb-2 d-block">Создано: {formatDateTime(challenge.created_at)}</span>
+          {/* "Создано:" */}
+          <span className="text-muted small font-xssss mb-2 d-block">{t('status.created')}: {formatDateTime(challenge.created_at)}</span>
           <p className="text-muted lh-sm small mb-2">{challenge.content}</p>
           {challenge.media_url && (
             <div className="mb-2">
@@ -429,7 +434,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
             <div className="d-flex justify-content-center py-2">
               {!isStarted ? (
                 <>
-                  <button className="btn w-50 btn-outline-primary" onClick={() => setIsCheckModalOpen(true)} disabled={challenge.is_completed}>Начать</button>
+                  {/* "Начать" */}
+                  <button className="btn w-50 btn-outline-primary" onClick={() => setIsCheckModalOpen(true)} disabled={challenge.is_completed}>{t('tracker.dailyCheck')}</button>
                   <ChallengeCheckModal
                     isOpen={isCheckModalOpen}
                     onClose={() => setIsCheckModalOpen(false)}
@@ -443,12 +449,14 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                 <>
                   {!isLastPeriod && (
                     <>
+                      {/* "Чек дня" */}
                       <button
                         className={`btn w-50 ${!currentPeriod || hasReportToday || reportsLoading ? 'btn disabled' : 'btn-outline-primary'}`}
                         onClick={() => setIsCheckModalOpen(true)}
                         disabled={!currentPeriod || hasReportToday || reportsLoading}
                       >
-                        Чек дня
+                        {/* "Чек дня" */}
+                        {t('tracker.dailyCheck')}
                       </button>
                       <ChallengeCheckModal
                         isOpen={isCheckModalOpen}
@@ -457,17 +465,22 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                           await handleCheckSubmit(text, file);
                           setIsCheckModalOpen(false);
                         }}
-                        title="Челлендж продолжается!"
-                        description="Вы на верном пути - сделайте отчет и вы будете еще на один шаг ближе к цели!"
-                        buttonText="Чек дня"
+                        // {/* "Челлендж продолжается!" */}
+                        title={t('challengeProgress.title')}
+                        // {/* "Вы на верном пути — сделайте отчёт и станьте на шаг ближе к цели!" */}
+                        description={t('challengeProgress.subtitle')}
+                        // {/* "Сделать чек дня" */}
+                        buttonText={t('challengeProgress.submitButton')}
                       />
                     </>
                   )}
                   {isLastPeriod && (
                     <>
-                      <button className="btn w-50 btn-outline-primary" onClick={() => setIsCheckModalOpen(true)} disabled={challenge.is_completed}>
-                        Завершить
-                      </button>
+                      {/* "Завершить" */}
+                                              {/* "Завершить" */}
+                        <button className="btn w-50 btn-outline-primary" onClick={() => setIsCheckModalOpen(true)} disabled={challenge.is_completed}>
+                          {t('common.confirm')}
+                        </button>
                       <ChallengeCheckModal
                         isOpen={isCheckModalOpen}
                         onClose={() => setIsCheckModalOpen(false)}
@@ -475,9 +488,9 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                           await handleCheckSubmit(text, file, 'finish');
                           setIsCheckModalOpen(false);
                         }}
-                        title="Финиш!"
-                        description="Поздравляем, вы дошли до конца челленджа. Оставьте финальный отчет!"
-                        buttonText="Завершить"
+                        title={t('challengeProgress.title')}
+                        description={t('challengeProgress.subtitle')}
+                        buttonText={t('common.confirm')}
                       />
                     </>
                   )}
@@ -498,10 +511,10 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                 disabled={isJoiningChallenge}
               >
                 {isJoiningChallenge 
-                  ? 'Обработка...' 
+                  ? t('common.loading')
                   : isSubscribed 
-                    ? 'Подписаны на челлендж' 
-                    : 'Присоединиться'
+                    ? t('subscriptions.mySubscriptions')
+                    : t('tracker.followChallenge')
                 }
               </button>
             </div>
@@ -510,20 +523,24 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
           {/* --- Следующий чек --- */}
           {isStarted && formattedNextPeriod && (
             <div className="d-flex justify-content-center text-muted font-xsss mb-2">
-              Следующий Чек дня: {formattedNextPeriod}
+              {/* "Следующий Чек дня:" */}
+              {t('challengeView.nextCheck')} {formattedNextPeriod}
             </div>
           )}
 
           {/* --- Вкладки --- */}
           <div className="mb-2">
             <div className="d-flex justify-content-around border-bottom">
-              <button className={`btn btn-sm p-2 ${activeTab === 'progress' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('progress')}>Трекер прогресса</button>
-              <button className={`btn btn-sm p-2 ${activeTab === 'participants' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('participants')}>Участники</button>
+              {/* "Трекер прогресса" */}
+              <button className={`btn btn-sm p-2 ${activeTab === 'progress' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('progress')}>{t('tracker.progressTracker')}</button>
+              {/* "Участники" */}
+              <button className={`btn btn-sm p-2 ${activeTab === 'participants' ? 'text-primary' : 'text-muted'}`} onClick={() => setActiveTab('participants')}>{t('subscriptions.observers')}</button>
             </div>
             <div className="p-2">
               {activeTab === 'progress' ? (
                 <div>
-                  {reports.length === 0 && <div className="text-muted font-xsss">Нет отчетов</div>}
+                  {/* "Нет отчетов" */}
+                  {reports.length === 0 && <div className="text-muted font-xsss">{t('challengeView.noReports')}</div>}
                   {[...reports].reverse().map((report, idx) => (
                     <div key={report.id || report.report_date + idx} className="mb-2">
                       <div
@@ -532,7 +549,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                         onClick={() => setExpandedReportId(expandedReportId === (report.id || report.report_date + idx) ? null : (report.id || report.report_date + idx))}
                       >
                         <span className="text-muted">
-                          {report.report_date ? formatDateTime(report.report_date) : 'Без даты'}
+                          {/* "Создано" */}
+                          {report.report_date ? formatDateTime(report.report_date) : t('status.created')}
                         </span>
                         {expandedReportId === (report.id || report.report_date + idx)
                           ? <ChevronUp className="ms-2 text-secondary" />
@@ -553,10 +571,11 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                 </div>
               ) : (
                 <div>
+                  {/* "Загрузка участников..." */}
                   {participantsLoading ? (
-                    <div className="text-muted font-xsss">Загрузка участников...</div>
+                    <div className="text-muted font-xsss">{t('challengeView.loadingParticipants')}</div>
                   ) : participants.length === 0 ? (
-                    <div className="text-muted font-xsss">Нет участников</div>
+                    <div className="text-muted font-xsss">{t('common.error')}</div>
                   ) : (
                     <div>
                       {participants.map((participant) => (
@@ -611,7 +630,8 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
                   background: 'none',
                   cursor: 'pointer'
                 }}
-                title="Поделиться"
+                // {/* "Поделиться" */}
+                title={t('common.share')}
               >
                 <Send size={20} className="text-muted" />
               </button>
@@ -625,14 +645,18 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(({
               <div className="dropdown-menu show p-2 bg-white font-xsss border rounded shadow-sm position-absolute end-0 mt-1">
                 {isList && !isOwnProfile && (
                   <button className="dropdown-item" onClick={() => router.push(isOwnProfile ? `/user/${userId}` : `/profile/${userId}`)}>
-                    Посмотреть профиль
+                    {/* "Посмотреть профиль" */}
+                    {t('navigation.profile')}
                   </button>
                 )}
-                <button className="dropdown-item" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/challenge/${challenge.id}`).then(() => alert('Ссылка скопирована!')); setMenuOpen(false);}}>Скопировать ссылку</button>
-                <button className="dropdown-item" onClick={() => {if (navigator.share) {navigator.share({ title: challenge.title, text: challenge.content, url: `${window.location.origin}/challenge/${challenge.id}` }).catch(console.error);} else alert('Поделиться недоступно'); setMenuOpen(false);}}>Отправить</button>
+                {/* "Скопировать ссылку" */}
+                <button className="dropdown-item" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/challenge/${challenge.id}`).then(() => alert(t('common.copy'))); setMenuOpen(false);}}>{t('common.copy')}</button>
+                {/* "Отправить" */}
+                <button className="dropdown-item" onClick={() => {if (navigator.share) {navigator.share({ title: challenge.title, text: challenge.content, url: `${window.location.origin}/challenge/${challenge.id}` }).catch(console.error);} else alert(t('common.error')); setMenuOpen(false);}}>{t('common.share')}</button>
                 {isOwnProfile && isProfilePage && canDeleteItem(challenge.created_at) && (
                   <button className="dropdown-item text-danger" onClick={handleDelete}>
-                    Удалить челлендж
+                    {/* "Удалить челлендж" */}
+                    {t('challengeView.deleteChallenge')}
                   </button>
                 )}
               </div>

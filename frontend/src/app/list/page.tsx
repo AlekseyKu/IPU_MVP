@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { usePublicPosts } from '@/hooks/usePublicPosts';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header';
@@ -22,13 +23,10 @@ function isChallengeData(post: any): post is ChallengeData {
 
 export default function ListPage() {
   const { telegramId: currentUserId } = useUser();
+  const { t } = useLanguage();
   const { posts, users, subscriptions, isLoading } = usePublicPosts(currentUserId);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [showSubscribedOnly, setShowSubscribedOnly] = useState(false);
-
-  if (isLoading) {
-    return <div className="text-center p-5">Loading...</div>;
-  }
 
   const toggleOpen = (id: string) => {
     setOpenPromiseId((prevId) => (prevId === id ? null : id));
@@ -58,68 +56,78 @@ export default function ListPage() {
                     id="showSubscribedOnly"
                   />
                   <label className="form-check-label ms-1" htmlFor="showSubscribedOnly">
-                    Мои подписки
+                    {/* "Мои подписки" */}
+                    {t('list.mySubscriptions')}
                   </label>
                 </div>
               </div>
               <div className="col-12">
-                <AnimatePresence>
-                  {filteredPosts.map((post) => {
-                    const user = users[post.user_id] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
-                    const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || 'Guest';
-                    const isOwnProfile = currentUserId === post.user_id;
-                    const isPromise = isPromiseData(post); // Используем функцию проверки
+                {isLoading ? (
+                  <div className="text-center py-12">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span className="text-gray-600">{/* "Загрузка постов..." */}{t('list.loadingPosts')}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <AnimatePresence>
+                    {filteredPosts.map((post) => {
+                      const user = users[post.user_id] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
+                      const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username || t('list.guest');
+                      const isOwnProfile = currentUserId === post.user_id;
+                      const isPromise = isPromiseData(post); // Используем функцию проверки
 
-                    // --- Новый блок: получение данных о получателе для обещаний "кому-то" ---
-                    let recipientName = '';
-                    let recipientAvatarUrl = '';
-                    if (isPromise && (post as PromiseData).recipient_id) {
-                      const recipient = users[(post as PromiseData).recipient_id!] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
-                      recipientName = `${recipient.first_name} ${recipient.last_name}`.trim() || recipient.username || 'Guest';
-                      recipientAvatarUrl = recipient.avatar_img_url || '/assets/images/defaultAvatar.png';
-                    }
+                      // --- Новый блок: получение данных о получателе для обещаний "кому-то" ---
+                      let recipientName = '';
+                      let recipientAvatarUrl = '';
+                      if (isPromise && (post as PromiseData).recipient_id) {
+                        const recipient = users[(post as PromiseData).recipient_id!] || { first_name: '', last_name: '', username: '', avatar_img_url: '' };
+                        recipientName = `${recipient.first_name} ${recipient.last_name}`.trim() || recipient.username || t('list.guest');
+                        recipientAvatarUrl = recipient.avatar_img_url || '/assets/images/defaultAvatar.png';
+                      }
 
-                    return (
-                      <motion.div
-                        key={post.id} // Типизация гарантирует наличие id
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                      >
-                        {isPromise ? (
-                          <PromiseView
-                            promise={post as PromiseData}
-                            onToggle={() => toggleOpen(post.id)}
-                            isOpen={openPromiseId === post.id}
-                            onUpdate={noop}
-                            onDelete={noop}
-                            isOwnProfile={isOwnProfile}
-                            isList={true}
-                            avatarUrl={user.avatar_img_url}
-                            userId={post.user_id}
-                            userName={fullName}
-                            recipientName={recipientName}
-                            recipientAvatarUrl={recipientAvatarUrl}
-                          />
-                        ) : (
-                          <ChallengeView
-                            challenge={post as ChallengeData}
-                            onToggle={() => toggleOpen(post.id)}
-                            isOpen={openPromiseId === post.id}
-                            onUpdate={noop}
-                            onDelete={noop}
-                            isOwnProfile={isOwnProfile}
-                            isList={true}
-                            avatarUrl={user.avatar_img_url}
-                            userId={post.user_id}
-                            userName={fullName}
-                          />
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+                      return (
+                        <motion.div
+                          key={post.id} // Типизация гарантирует наличие id
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
+                          {isPromise ? (
+                            <PromiseView
+                              promise={post as PromiseData}
+                              onToggle={() => toggleOpen(post.id)}
+                              isOpen={openPromiseId === post.id}
+                              onUpdate={noop}
+                              onDelete={noop}
+                              isOwnProfile={isOwnProfile}
+                              isList={true}
+                              avatarUrl={user.avatar_img_url}
+                              userId={post.user_id}
+                              userName={fullName}
+                              recipientName={recipientName}
+                              recipientAvatarUrl={recipientAvatarUrl}
+                            />
+                          ) : (
+                            <ChallengeView
+                              challenge={post as ChallengeData}
+                              onToggle={() => toggleOpen(post.id)}
+                              isOpen={openPromiseId === post.id}
+                              onUpdate={noop}
+                              onDelete={noop}
+                              isOwnProfile={isOwnProfile}
+                              isList={true}
+                              avatarUrl={user.avatar_img_url}
+                              userId={post.user_id}
+                              userName={fullName}
+                            />
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                )}
               </div>
             </div>
           </div>

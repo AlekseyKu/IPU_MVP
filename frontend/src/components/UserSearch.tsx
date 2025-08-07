@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserData } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface UserSearchProps {
   onSelect?: (user: UserData) => void;
@@ -12,7 +13,8 @@ interface UserSearchProps {
 const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_DELAY = 300;
 
-const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Поиск пользователей...', myTelegramId }) => {
+const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder, myTelegramId }) => {
+  const { t } = useLanguage(); // "Инициализация перевода"
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,12 +39,12 @@ const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Пои
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Ошибка поиска');
+        if (!res.ok) throw new Error(data.error || t('userSearch.errors.searchError')); // "Ошибка поиска"
         setResults(data.users || []);
         setIsDropdownOpen(true);
         setError(null);
       } catch (e: any) {
-        setError(e.message || 'Ошибка поиска');
+        setError(e.message || t('userSearch.errors.searchError')); // "Ошибка поиска"
         setResults([]);
         setIsDropdownOpen(true);
       } finally {
@@ -52,7 +54,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Пои
     return () => {
       if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     };
-  }, [query]);
+  }, [query, t]);
 
   // Закрытие выпадашки при клике вне (wrapperRef)
   useEffect(() => {
@@ -91,7 +93,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Пои
         ref={inputRef}
         type="text"
         className="form-control"
-        placeholder={placeholder}
+        placeholder={placeholder || t('userSearch.placeholder')} // "Поиск пользователей..."
         value={query}
         onChange={e => setQuery(e.target.value)}
         onFocus={() => { if (results.length > 0) setIsDropdownOpen(true); }}
@@ -100,10 +102,10 @@ const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder = 'Пои
       />
       {isDropdownOpen && (
         <div className="dropdown-menu show w-100 p-0 mt-1" style={{ maxHeight: 320, overflowY: 'auto', zIndex: 9999 }}>
-          {loading && <div className="dropdown-item text-muted">Загрузка...</div>}
+          {loading && <div className="dropdown-item text-muted">{t('userSearch.loading')}</div>} // "Загрузка..."
           {error && <div className="dropdown-item text-danger">{error}</div>}
           {!loading && !error && results.length === 0 && (
-            <div className="dropdown-item text-muted">Ничего не найдено</div>
+            <div className="dropdown-item text-muted">{t('userSearch.noResults')}</div> // "Ничего не найдено"
           )}
           {!loading && !error && results.map(user => (
             <button

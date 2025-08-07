@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Image as ImageIcon } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PromiseCompleteForRecipientModalProps {
   onClose: () => void;
@@ -9,6 +10,7 @@ interface PromiseCompleteForRecipientModalProps {
 }
 
 const PromiseCompleteForRecipientModal: React.FC<PromiseCompleteForRecipientModalProps> = ({ onClose, onSubmit, loading }) => {
+  const { t } = useLanguage(); // "Инициализация перевода"
   const [text, setText] = useState('');
   const [media, setMedia] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -38,13 +40,13 @@ const PromiseCompleteForRecipientModal: React.FC<PromiseCompleteForRecipientModa
         <button
           onClick={onClose}
           style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none' }}
-          aria-label="Закрыть"
+          aria-label={t('common.close')} // "Закрыть"
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Создать отчет о выполнении</h2>
+        <h2 className="fw-bold mb-3">{t('promiseCompleteForRecipient.title')}</h2> {/* "Создать отчет о выполнении" */}
         <p className="text-muted mb-3">
-          Напишите отчет о том, как вы выполнили обещание. После отправки получатель сможет подтвердить выполнение.
+          {t('promiseCompleteForRecipient.description')} {/* "Напишите отчет о том, как вы выполнили обещание. После отправки получатель сможет подтвердить выполнение." */}
         </p>
         {previewUrl && (
           <div className="mb-2 position-relative">
@@ -59,7 +61,7 @@ const PromiseCompleteForRecipientModal: React.FC<PromiseCompleteForRecipientModa
               onClick={handleRemoveMedia}
               className="btn btn-sm btn-danger position-absolute"
               style={{ top: '5px', right: '5px' }}
-              aria-label="Удалить медиа"
+              aria-label={t('common.removeMedia')} // "Удалить медиа"
             >
               <X className="w-4 h-4" />
             </button>
@@ -69,7 +71,7 @@ const PromiseCompleteForRecipientModal: React.FC<PromiseCompleteForRecipientModa
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="Опишите, как вы выполнили обещание..."
+            placeholder={t('promiseCompleteForRecipient.form.placeholder')} // "Опишите, как вы выполнили обещание..."
             className="form-control mb-3 lh-30"
             style={{ height: '200px' }}
             required
@@ -84,15 +86,15 @@ const PromiseCompleteForRecipientModal: React.FC<PromiseCompleteForRecipientModa
                 ref={fileInputRef}
               />
               <ImageIcon className="me-2" />
-              Прикрепить фото/видео
+              {t('promiseCompleteForRecipient.form.attachMedia')} {/* "Прикрепить фото/видео" */}
             </label>
           </div>
           <div className="d-flex justify-content-end gap-2">
             <button type="button" onClick={onClose} className="btn btn-light" disabled={loading}>
-              Отмена
+              {t('common.cancel')} {/* "Отмена" */}
             </button>
             <button type="submit" className="btn btn-outline-primary" disabled={loading}>
-              {loading ? 'Отправка...' : 'Отправить отчет'}
+              {loading ? t('common.sending') : t('promiseCompleteForRecipient.buttons.submit')} {/* "Отправка..." или "Отправить отчет" */}
             </button>
           </div>
         </form>

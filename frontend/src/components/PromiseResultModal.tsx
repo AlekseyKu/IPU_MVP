@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Heart, Share2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PromiseResultModalProps {
   onClose: () => void;
@@ -11,7 +12,7 @@ interface PromiseResultModalProps {
 }
 
 const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result_content, result_media_url, completed_at }) => {
-  
+  const { t } = useLanguage(); // "Инициализация перевода"
   const [mediaType, setMediaType] = useState<string | null>(null);
 
   // Блокируем прокрутку body при открытом модале
@@ -24,12 +25,12 @@ const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result
   const handleShare = () => {
     if (navigator.share && (result_content || result_media_url)) {
       navigator.share({
-        title: 'Результат обещания',
+        title: t('promiseResult.title'), // "Результат обещания"
         text: result_content || '',
         url: result_media_url || undefined,
       }).catch(() => {});
     } else {
-      alert('Поделиться недоступно на этом устройстве');
+      alert(t('common.shareUnavailable')); // "Поделиться недоступно на этом устройстве"
     }
   };
 
@@ -65,13 +66,13 @@ const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result
         <button
           onClick={onClose}
           style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none' }}
-          aria-label="Закрыть"
+          aria-label={t('common.close')} // "Закрыть"
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Результат обещания</h2>
+        <h2 className="fw-bold mb-3">{t('promiseResult.title')}</h2> {/* "Результат обещания" */}
         {completed_at && (
-          <div className="text-muted font-xsss mb-2">Завершено: {new Date(completed_at).toLocaleString('ru-RU')}</div>
+          <div className="text-muted font-xsss mb-2">{t('promiseResult.completedOn')} {new Date(completed_at).toLocaleString('ru-RU')}</div> // "Завершено:"
         )}
         {result_content && (
           <div className="mb-3">
@@ -88,11 +89,11 @@ const PromiseResultModal: React.FC<PromiseResultModalProps> = ({ onClose, result
           </div>
         )}
         <div className="d-flex justify-content-between align-items-center mt-2 gap-2">
-          <button className="btn btn-outline-primary flex-grow-1" onClick={onClose}>Закрыть</button>
-          <button className="btn btn-outline-primary align-items-center" style={{ minWidth: 44 }} title="Лайк">
+          <button className="btn btn-outline-primary flex-grow-1" onClick={onClose}>{t('promiseResult.closeButton')}</button> {/* "Закрыть" */}
+          <button className="btn btn-outline-primary align-items-center" style={{ minWidth: 44 }} title={t('common.like')}> {/* "Лайк" */}
             <Heart className="" size={20} />
           </button>
-          <button className="btn btn-outline-primary align-items-center" style={{ minWidth: 44 }} title="Поделиться" onClick={handleShare}>
+          <button className="btn btn-outline-primary align-items-center" style={{ minWidth: 44 }} title={t('common.share')} onClick={handleShare}> {/* "Поделиться" */}
             <Share2 className="" size={20} />
           </button>
         </div>

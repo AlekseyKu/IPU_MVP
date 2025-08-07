@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useUser } from '@/context/UserContext'
+import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import Header from '@/components/Header'
 import Appfooter from '@/components/Appfooter'
@@ -33,6 +34,7 @@ type ChallengeWithOwner = ChallengeData & { owner?: User };
 export default function UserProfile() {
   const { telegramId: paramId } = useParams()
   const { telegramId: ctxId, setTelegramId } = useUser()
+  const { t } = useLanguage()
   const telegramId = useMemo(
     () => Number(paramId) || ctxId || 0,
     [paramId, ctxId]
@@ -320,45 +322,6 @@ export default function UserProfile() {
     }
   }, [userData?.promises, userData?.promises_done, userData?.challenges, userData?.challenges_done])
 
-  // Удаляем дублирующую подписку - оставляем только в useUserData
-  // useEffect(() => {
-  //   if (!telegramId) return;
-  //   console.log('Setting up user stats subscription for telegramId:', telegramId);
-  //   const channel = supabase
-  //     .channel(`user-stats-${telegramId}`)
-  //     .on(
-  //       'postgres_changes',
-  //       { 
-  //         event: 'UPDATE', 
-  //         schema: 'public', 
-  //         table: 'users', 
-  //         filter: `telegram_id=eq.${telegramId}` 
-  //       },
-  //       (payload) => {
-  //         console.log('User stats updated via subscription:', payload);
-  //         console.log('Old stats:', payload.old);
-  //         console.log('New stats:', payload.new);
-  //         console.log('New data promises:', payload.new.promises);
-  //         console.log('New data promises_done:', payload.new.promises_done);
-  //         console.log('New data challenges:', payload.new.challenges);
-  //         console.log('New data challenges_done:', payload.new.challenges_done);
-  //         
-  //         // Обновляем localUser при изменении статистики
-  //         if (payload.new) {
-  //           console.log('Updating localUser with new data');
-  //           setLocalUser(payload.new as UserData);
-  //         }
-  //       }
-  //     )
-  //     .subscribe((status) => {
-  //       console.log('User stats subscription status:', status);
-  //     });
-  //   return () => {
-  //     console.log('Cleaning up user stats subscription for telegramId:', telegramId);
-  //     supabase.removeChannel(channel);
-  //   };
-  // }, [telegramId]);
-
   useEffect(() => {
     if (!telegramId || isNaN(telegramId)) {
       setError('Invalid telegramId')
@@ -426,64 +389,29 @@ export default function UserProfile() {
     }, 100); // Небольшая задержка для обеспечения загрузки основных данных
   }, [paramId, ctxId])
 
-  // Удаляем старую подписку - теперь используем централизованную систему
-  // useEffect(() => {
-  //   if (!telegramId) return;
-  //   console.log('📝 Setting up promises list subscription for telegramId:', telegramId);
-  //   let retryCount = 0;
-  //   const maxRetries = 3;
-  //   const setupSubscription = () => {
-  //     const channel = supabase
-  //       .channel(`promises-list-${telegramId}-${Date.now()}`)
-  //       .on(
-  //         'postgres_changes',
-  //         {
-  //           event: '*',
-  //           schema: 'public',
-  //           table: 'promises',
-  //           filter: `user_id=eq.${telegramId}`
-  //         },
-  //         (payload) => {
-  //           console.log('📝 Promises list updated:', payload);
-  //           loadUserData();
-  //         }
-  //       )
-  //       .on(
-  //         'postgres_changes',
-  //         {
-  //           event: '*',
-  //           schema: 'public',
-  //           table: 'promises',
-  //           filter: `recipient_id=eq.${telegramId}`
-  //         },
-  //         (payload) => {
-  //           console.log('📝 Promises list updated (recipient):', payload);
-  //           loadUserData();
-  //         }
-  //       )
-  //       .subscribe((status) => {
-  //         console.log('📝 Promises list subscription status:', status);
-  //         if (status === 'CHANNEL_ERROR' && retryCount < maxRetries) {
-  //           console.log(`🔄 Retrying subscription (${retryCount + 1}/${maxRetries})...`);
-  //           retryCount++;
-  //           setTimeout(setupSubscription, 1000);
-  //         }
-  //       });
-  //     return channel;
-  //   };
-  //   const channel = setupSubscription();
-  //   return () => {
-  //     console.log('🧹 Cleaning up promises list subscription for telegramId:', telegramId);
-  //     supabase.removeChannel(channel);
-  //   };
-  // }, [telegramId]);
-
-  // const handleChallengeUpdate = (updated: ChallengeData) => {
-  //   updatePosts(updated, 'UPDATE')
-  // }
-
   if (isLoading || userLoading || !userData) {
-    return <Load />
+    return (
+      <>
+        <Header />
+        <div className="main-content">
+          <div className="middle-sidebar-bottom">
+            <div className="middle-sidebar-left pe-0">
+              <div className="row">
+                <div className="col-12">
+                  <div className="text-center py-12">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span className="text-gray-600">{/* "Загрузка профиля..." */}{t('userProfile.loadingProfile')}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Appfooter />
+      </>
+    );
   }
 
   // клиентская обработка кол-ва обещаний/челленджей и выполненных обещаний/челленджей

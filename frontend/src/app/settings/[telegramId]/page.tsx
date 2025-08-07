@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useUserData } from '@/hooks/useUserData';
 import Header from '@/components/Header';
 import Appfooter from '@/components/Appfooter';
@@ -13,6 +14,7 @@ import Load from '@/components/Load';
 export default function SettingsPage() {
   const { telegramId: paramTelegramId } = useParams();
   const { telegramId: contextTelegramId, initData } = useUser();
+  const { t } = useLanguage();
   const telegramId = parseInt(paramTelegramId as string, 10) || contextTelegramId || 0;
 
   const { userData, isLoading, defaultHeroImg, defaultAvatarImg } = useUserData({ telegramId });
@@ -154,7 +156,28 @@ export default function SettingsPage() {
   };
 
   if (isLoading || !userData) {
-    return <Load />;
+    return (
+      <>
+        <Header />
+        <div className="main-content">
+          <div className="middle-sidebar-bottom">
+            <div className="middle-sidebar-left pe-0">
+              <div className="row">
+                <div className="col-12">
+                  <div className="text-center py-12">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span className="text-gray-600">{/* "Загрузка настроек..." */}{t('settings.loadingSettings')}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Appfooter />
+      </>
+    );
   }
 
   return (
