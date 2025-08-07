@@ -17,6 +17,10 @@ export const ru = {
     no: 'Нет',
     copy: 'Скопировать ссылку',
     share: 'Отправить',
+    removeMedia: 'Удалить медиа',
+    sending: 'Отправка...',
+    like: 'Лайк',
+    shareUnavailable: 'Поделиться недоступно на этом устройстве',
   },
 
   // Навигация
@@ -99,6 +103,20 @@ export const ru = {
     termsOfUse: 'Условия использования',
   },
 
+  // История кармы
+  karmaHistory: {
+    title: 'История кармы',
+    subtitle: 'Просмотр ваших достижений и изменений кармы',
+    loading: 'Загрузка истории кармы...',
+    error: 'Ошибка загрузки',
+    currentKarma: 'Текущая карма',
+    recentChanges: 'Последние изменения',
+    records: 'записей',
+    loadMore: 'Загрузить еще',
+    empty: 'История кармы пуста',
+    emptyDescription: 'Создавайте и выполняйте обещания, чтобы заработать карму!',
+  },
+
   // Профиль
   profile: {
     userInfo: {
@@ -150,28 +168,38 @@ export const ru = {
     observers: 'Наблюдатели',
   },
 
+  // Список постов
+  list: {
+    mySubscriptions: 'Мои подписки',
+    loadingPosts: 'Загрузка постов...',
+    guest: 'Гость',
+  },
+
   // Создание обещаний
   promiseCreate: {
     title: 'Создать обещание',
     subtitle: 'Опишите ваше обещание, выберите тип, и при необходимости — дедлайн.',
     form: {
-      title: 'Введите краткое название',
+      title: 'Название обещания',
       type: 'Тип обещания',
       public: 'Публичное',
       private: 'Личное',
-      recipient: 'Кому вы даёте?',
-      toYourself: 'Себе',
-      toSomeone: 'Кому-то',
+      recipient: 'Кому вы даёте обещание?',
+      toYourself: 'Обещание себе',
+      toSomeone: 'Обещание кому-то',
       deadline: 'Выберите дату выполнения',
-      description: 'Опишите суть обещания подробнее',
+      description: 'Введите текст обещания',
       hashtags: 'Хештеги (до 5)',
       hashtagsPlaceholder: 'Введите хештег и нажмите Enter',
       popularHashtags: 'Популярные хештеги:',
-      media: 'Прикрепите фото или видео',
+      media: 'Прикрепить фото/видео',
     },
     buttons: {
       cancel: 'Отмена',
       create: 'Создать',
+    },
+    errors: {
+      deadlinePast: 'Дедлайн должен быть в будущем.',
     },
   },
 
@@ -196,6 +224,20 @@ export const ru = {
       cancel: 'Отмена',
       create: 'Создать',
     },
+  },
+
+  // Просмотр челленджей
+  challengeView: {
+    frequency: {
+      daily: 'Ежедневный',
+      weekly: 'Еженедельный',
+      monthly: 'Ежемесячный',
+    },
+    noReports: 'Нет отчетов',
+    loadingParticipants: 'Загрузка участников...',
+    nextCheck: 'Следующий Чек дня:',
+    deleteChallenge: 'Удалить челлендж',
+    confirmDelete: 'Вы уверены, что хотите удалить этот челлендж?',
   },
 
   // Челлендж в процессе
@@ -245,5 +287,142 @@ export const ru = {
     dailyCheck: 'Чек дня',
     progressTracker: 'Трекер прогресса',
     followChallenge: 'Следить за челленджем',
+  },
+
+  // Карточка лидера
+  leaderCard: {
+    rank: 'Ранг',
+    karma: 'Карма',
+  },
+
+  // Карточка профиля
+  profileCard: {
+    subscribers: 'Подписчики',
+    promises: 'Обещания',
+    completed: 'Выполнено',
+    karma: 'Карма',
+    saving: 'Сохранение...',
+    save: 'Сохранить',
+    notSpecified: 'Не указано',
+    processing: 'Обработка...',
+    subscribed: 'Вы подписаны',
+    subscribe: 'Подписаться',
+  },
+
+  // Детали профиля
+  profileDetail: {
+    information: 'Информация',
+    firstName: 'Имя',
+    lastName: 'Фамилия',
+    email: 'Email',
+    about: 'О себе',
+    name: 'Имя',
+    notSpecified: 'Не указано',
+    telegramUsername: 'TG Username',
+    telegramUsernameTooltip: 'Telegram username остается неизменным для оптимального поиска и привязки пользователей к аккаунту.',
+  },
+
+  // Просмотр обещаний
+  promiseView: {
+    guest: 'Гость',
+    private: 'Личное',
+    createReport: 'Создать отчет',
+    confirmCompletion: 'Подтвердить выполнение',
+    tooltip: {
+      earlyCompletion: 'Завершить обещание можно не раньше, чем через 3 часа после создания',
+      deadlineOnly: 'Завершить обещание можно только до дедлайна',
+      timeRemaining: 'Осталось',
+    },
+    menu: {
+      viewProfile: 'Посмотреть профиль',
+      deletePromise: 'Удалить обещание',
+    },
+    confirm: {
+      delete: 'Вы уверены, что хотите удалить это обещание?',
+    },
+    success: {
+      linkCopied: 'Ссылка скопирована!',
+    },
+    errors: {
+      completionError: 'Ошибка при завершении обещания',
+      uploadError: 'Ошибка загрузки файла',
+      reportError: 'Ошибка при отправке отчета',
+      shareUnavailable: 'Поделиться недоступно на этом устройстве',
+    },
+  },
+
+  // Отчет о выполнении для получателя
+  promiseCompleteForRecipient: {
+    title: 'Создать отчет о выполнении',
+    description: 'Напишите отчет о том, как вы выполнили обещание. После отправки получатель сможет подтвердить выполнение.',
+    form: {
+      placeholder: 'Опишите, как вы выполнили обещание...',
+      attachMedia: 'Прикрепить фото/видео',
+    },
+    buttons: {
+      submit: 'Отправить отчет',
+    },
+  },
+
+  // Поиск пользователей
+  userSearch: {
+    placeholder: 'Поиск пользователей...',
+    loading: 'Загрузка...',
+    noResults: 'Ничего не найдено',
+    errors: {
+      searchError: 'Ошибка поиска',
+    },
+  },
+
+  // Заголовок
+  header: {
+    notifications: 'Уведомления',
+    user: 'Пользователь',
+    min: 'мин',
+    notificationMessage: 'Это сообщение уведомления.',
+    resources: 'Ресурсы',
+    account: 'Аккаунт',
+  },
+
+  // Страница пользователя
+  userProfile: {
+    loadingProfile: 'Загрузка профиля...',
+  },
+
+  // Страница настроек
+  settings: {
+    loadingSettings: 'Загрузка настроек...',
+  },
+
+  // Магазин
+  shop: {
+    title: 'Магазин IPU',
+    inDevelopment: 'в разработке',
+  },
+
+  // Хэштеги
+  hashtags: {
+    placeholder: 'Введите хештег и нажмите Enter',
+    popular: 'Популярные хештеги',
+    maxReached: 'Максимум 5 хештегов',
+    addHashtag: 'Добавить хештег',
+    removeHashtag: 'Удалить хештег',
+  },
+
+  // Причины кармы
+  karmaReasons: {
+    challengeCreation: 'Создание челленджа',
+    promiseCreation: 'Создание обещания',
+    userSubscription: 'Подписка на пользователя',
+    promiseCompletion: 'Получение выполненного обещания',
+    challengeReport: 'Отчет в челлендже',
+    promiseAccepted: 'Обещание принято',
+    promiseRejected: 'Обещание отклонено',
+    challengeCompleted: 'Челлендж завершен',
+    dailyCheck: 'Ежедневный чек',
+    weeklyCheck: 'Еженедельный чек',
+    monthlyCheck: 'Ежемесячный чек',
+    promiseDeletion: 'Удаление обещания',
+    promiseCompletionForOther: 'Выполнение обещания для другого',
   },
 }; 

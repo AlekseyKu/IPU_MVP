@@ -14,6 +14,7 @@ import PromiseCompleteForRecipientModal from './PromiseCompleteForRecipientModal
 import { usePromiseApi } from '@/hooks/usePromiseApi';
 import PromiseResultModal from './PromiseResultModal';
 import LikeButton from './LikeButton';
+import { useLanguage } from '@/context/LanguageContext';
 
 // --- Типы ---
 interface PostviewProps {
@@ -53,6 +54,7 @@ const PromiseView: React.FC<PostviewProps> = ({
   recipientAvatarUrl
 }) => {
   // --- Состояния и хуки ---
+  const { t } = useLanguage();
   const { id, title, deadline, content, media_url, is_completed, created_at, is_public } = promise;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -71,7 +73,7 @@ const PromiseView: React.FC<PostviewProps> = ({
   const [showTooltip, setShowTooltip] = useState(false);
 
   // --- Логика статуса и иконки ---
-  const statusText = is_completed ? 'Завершено' : 'Активно';
+  const statusText = is_completed ? t('status.completed') : t('status.active'); // "Завершено" или "Активно"
   const Icon = is_completed ? CircleStop : CirclePlay;
   const iconColor = is_completed ? 'text-grey' : 'text-primary';
   // const PublicIcon = is_public ? Globe : GlobeLock;
@@ -145,7 +147,7 @@ const PromiseView: React.FC<PostviewProps> = ({
         // onUpdate(updated); // updatePosts уже вызывает onUpdate
       }
     } catch (error) {
-      alert('Ошибка при завершении обещания');
+      alert(t('promiseView.errors.completionError')); // "Ошибка при завершении обещания"
       console.error(error);
     } finally {
       setCompleteLoading(false);
@@ -164,7 +166,7 @@ const PromiseView: React.FC<PostviewProps> = ({
           method: 'POST',
           body: formData,
         });
-        if (!response.ok) throw new Error('Ошибка загрузки файла');
+        if (!response.ok) throw new Error(t('promiseView.errors.uploadError')); // "Ошибка загрузки файла"
         const data = await response.json();
         result_media_url = data.url;
       }
@@ -189,7 +191,7 @@ const PromiseView: React.FC<PostviewProps> = ({
         setIsCompleteForRecipientModalOpen(false);
       }
     } catch (error) {
-      alert('Ошибка при отправке отчета');
+      alert(t('promiseView.errors.reportError')); // "Ошибка при отправке отчета"
       console.error(error);
     } finally {
       setCompleteLoading(false);
@@ -198,7 +200,7 @@ const PromiseView: React.FC<PostviewProps> = ({
 
   const handleDelete = () => {
     if (!id || !isOwnProfile) return;
-    if (confirm('Вы уверены, что хотите удалить это обещание?')) {
+    if (confirm(t('promiseView.confirm.delete'))) { // "Вы уверены, что хотите удалить это обещание?"
       onDelete(id);
       setMenuOpen(false);
     }
@@ -206,7 +208,7 @@ const PromiseView: React.FC<PostviewProps> = ({
 
   const copyLink = () => {
     const link = `${window.location.origin}/promise/${id}`;
-    navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована!'));
+    navigator.clipboard.writeText(link).then(() => alert(t('promiseView.success.linkCopied'))); // "Ссылка скопирована!"
     setMenuOpen(false);
   };
 
@@ -219,7 +221,7 @@ const PromiseView: React.FC<PostviewProps> = ({
     if (navigator.share) {
       navigator.share(shareData).catch((error) => console.error('Error sharing:', error));
     } else {
-      alert('Поделиться недоступно на этом устройстве');
+      alert(t('promiseView.errors.shareUnavailable')); // "Поделиться недоступно на этом устройстве"
     }
     setMenuOpen(false);
   };
@@ -409,7 +411,7 @@ const PromiseView: React.FC<PostviewProps> = ({
               style={{ objectFit: 'cover' }}
             />
           </Link>
-          <span className="text-dark font-xsss">{userName || 'Guest'}</span>
+          <span className="text-dark font-xsss">{userName || t('promiseView.guest')}</span> {/* "Guest" */}
           
           {/* --- Новый блок: отображение получателя для обещаний "кому-то" --- */}
           {isToSomeone && recipientName && (
@@ -450,7 +452,7 @@ const PromiseView: React.FC<PostviewProps> = ({
              <div className="d-flex justify-content-end align-items-center mb-1">
                {!is_public && (
                  <>
-                   <span className="text-muted font-xssss me-1">Личное</span>
+                   <span className="text-muted font-xssss me-1">{t('promiseView.private')}</span> {/* "Личное" */}
                    <GlobeLock className="w-2 h-2 text-muted" />
                  </>
                )}
@@ -459,7 +461,7 @@ const PromiseView: React.FC<PostviewProps> = ({
         </div>
         <div className="d-flex justify-content-between align-items-center">
           <span className="text-muted font-xssss">
-            Дэдлайн: {formatDateTime(deadline)}
+            {t('status.deadline')}: {formatDateTime(deadline)} {/* "Дэдлайн:" */}
           </span>
           <div className="d-flex align-items-center text-nowrap">
             <span className="text-muted font-xssss me-1">{statusText}</span>
@@ -471,7 +473,7 @@ const PromiseView: React.FC<PostviewProps> = ({
       {/* --- Детали обещания --- */}
       {isOpen && (
         <div className="mt-0" onClick={(e) => e.stopPropagation()}>
-          <span className="text-muted small font-xssss mt-0 mb-2 d-block">Создано: {formatDateTime(created_at)}</span>
+          <span className="text-muted small font-xssss mt-0 mb-2 d-block">{t('status.created')}: {formatDateTime(created_at)}</span> {/* "Создано:" */}
           <p className="text-muted lh-sm small mb-2">{content}</p>
           {media_url && (
             <div className="mb-2">
@@ -495,7 +497,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                       onClick={handleCloseExpiredPromiseForCreator}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? 'Закрываем...' : 'Истек дедлайн'}
+                      {actionLoading ? t('common.loading') : t('status.deadlinePassed')} {/* "Закрываем..." или "Истек дедлайн" */}
                     </button>
                   )}
                   {/* Не просроченное обещание */}
@@ -504,7 +506,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                       {/* Не подтверждено */}
                       {promise.is_accepted === null && !promise.is_completed_by_creator && (
                         <button className="btn btn-outline-secondary mb-2" disabled>
-                          Не подтверждено
+                          {t('status.notConfirmed')} // "Не подтверждено"
                         </button>
                       )}
                       {/* Отказано */}
@@ -520,13 +522,13 @@ const PromiseView: React.FC<PostviewProps> = ({
                           onClick={handleCompleteForRecipient}
                           disabled={actionLoading}
                         >
-                          {actionLoading ? 'Обработка...' : 'Создать отчет'}
+                          {actionLoading ? t('common.loading') : t('promiseView.createReport')} {/* "Обработка..." или "Создать отчет" */}
                         </button>
                       )}
                       {/* Завершено создателем, ждет подтверждения */}
                       {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
                         <button className="btn btn-outline-warning w-50 mb-2" disabled>
-                          Ожидание подтверждения
+                          {t('status.waitingCompletion')} {/* "Ожидание подтверждения" */}
                         </button>
                       )}
                       {/* Обещание полностью выполнено */}
@@ -562,24 +564,24 @@ const PromiseView: React.FC<PostviewProps> = ({
                       {promise.is_accepted === null && !promise.is_completed_by_recipient && (
                         <div className="d-flex gap-2 mb-2">
                           <button className="btn btn-outline-primary" onClick={handleAccept} disabled={actionLoading}>
-                            {actionLoading ? 'Обработка...' : 'Принять'}
+                            {actionLoading ? t('common.loading') : t('promiseActions.accept')} {/* "Обработка..." или "Принять" */}
                           </button>
                           <button className="btn btn-outline-danger" onClick={handleDecline} disabled={actionLoading}>
-                            {actionLoading ? 'Обработка...' : 'Отказать'}
+                            {actionLoading ? t('common.loading') : t('promiseActions.reject')} {/* "Обработка..." или "Отказать" */}
                           </button>
                         </div>
                       )}
                       {/* Принято, ждет завершения создателя */}
                       {promise.is_accepted === true && !promise.is_completed_by_creator && (
                         <button className="btn btn-outline-warning w-50 mb-2" disabled>
-                          Ожидание завершения
+                          {t('status.waitingCompletion')} {/* "Ожидание завершения" */}
                         </button>
                       )}
                       {/* Завершено создателем, ждет подтверждения получателя */}
                       {promise.is_accepted === true && promise.is_completed_by_creator && !promise.is_completed_by_recipient && (
                         <div className="d-flex gap-2 mb-2">
                           <button className="btn btn-outline-success" onClick={handleConfirmComplete} disabled={actionLoading}>
-                            {actionLoading ? 'Обработка...' : 'Подтвердить выполнение'}
+                            {actionLoading ? t('common.loading') : t('promiseView.confirmCompletion')} {/* "Обработка..." или "Подтвердить выполнение" */}
                           </button>
                           {/* Можно добавить кнопку "Отклонить выполнение" при необходимости */}
                         </div>
@@ -616,7 +618,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                       onClick={handleCloseExpiredPromise}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? 'Закрываем...' : 'Истек дедлайн'}
+                      {actionLoading ? t('common.loading') : t('status.deadlinePassed')} {/* "Закрываем..." или "Истек дедлайн" */}
                     </button>
                   ) : (
                     // Обычная кнопка завершения
@@ -624,20 +626,21 @@ const PromiseView: React.FC<PostviewProps> = ({
                       className="btn btn-outline-primary w-50 mb-2"
                       onClick={handleComplete}
                     >
-                      Завершить
+                      {t('promiseComplete.buttons.complete')} {/* "Завершить" */}
                     </button>
                   )}
                   {showTooltip && (!canCompletePromise(created_at) || !isDeadlineActive) && !isExpired && (
                     <div className="position-absolute w-100 bottom-100 start-50 translate-middle-x mb-1 p-2 bg-white text-dark rounded shadow-sm font-xsss tooltip-container text-center border" style={{ zIndex: 1000, minWidth: '200px' }}>
                       <div className="mb-1">
                         {!canCompletePromise(created_at) 
-                          ? 'Завершить обещание можно не раньше, чем через 3 часа после создания'
-                          : 'Завершить обещание можно только до дедлайна'
+                          ? t('promiseView.tooltip.earlyCompletion') // "Завершить обещание можно не раньше, чем через 3 часа после создания"
+                          : t('promiseView.tooltip.deadlineOnly') // "Завершить обещание можно только до дедлайна"
                         }
                       </div>
                       {!canCompletePromise(created_at) && (
                         <div className="text-secondary">
-                            Осталось: {getTimeUntilCompletionAllowed(created_at)}
+                          {t('promiseView.menu.deletePromise')} {/* "Удалить обещание" */}
+                          {t('promiseView.tooltip.timeRemaining')}: {getTimeUntilCompletionAllowed(created_at)} {/* "Осталось:" */}
                         </div>
                       )}
                     </div>
@@ -650,7 +653,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                     className="btn w-50 btn-outline-primary"
                     onClick={() => setIsResultModalOpen(true)}
                   >
-                    Результат
+                    {t('status.result')} {/* "Результат" */}
                   </button>
                 </div>
               )}
@@ -724,7 +727,7 @@ const PromiseView: React.FC<PostviewProps> = ({
                      className="dropdown-item" 
                      onClick={() => router.push(userCtxId === userId ? `/user/${userId}` : `/profile/${userId}`)}
                    >
-                    Посмотреть профиль
+                     {t('promiseView.menu.viewProfile')} {/* "Посмотреть профиль" */}
                   </button>
                 )}
                 {/* {isOwnProfile && isProfilePage && !is_completed && (
@@ -732,11 +735,11 @@ const PromiseView: React.FC<PostviewProps> = ({
                     Завершить обещание
                   </button>
                 )} */}
-                <button className="dropdown-item" onClick={copyLink}>Скопировать ссылку</button>
-                <button className="dropdown-item" onClick={share}>Отправить</button>
+                <button className="dropdown-item" onClick={copyLink}>{t('common.copy')}</button> {/* "Скопировать ссылку" */}
+                <button className="dropdown-item" onClick={share}>{t('common.share')}</button> {/* "Отправить" */}
                 {isOwnProfile && isProfilePage && canDeleteItem(created_at) && (
                   <button className="dropdown-item text-danger" onClick={handleDelete}>
-                    Удалить обещание
+                    {t('promiseView.menu.deletePromise')} {/* "Удалить обещание" */}
                   </button>
                 )}
               </div>

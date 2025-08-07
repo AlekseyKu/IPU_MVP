@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Image as ImageIcon } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PromiseCompleteModalProps {
   onClose: () => void;
@@ -9,6 +10,7 @@ interface PromiseCompleteModalProps {
 }
 
 const PromiseCompleteModal: React.FC<PromiseCompleteModalProps> = ({ onClose, onSubmit, loading }) => {
+  const { t } = useLanguage(); // "Инициализация перевода"
   const [text, setText] = useState('');
   const [media, setMedia] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -38,12 +40,12 @@ const PromiseCompleteModal: React.FC<PromiseCompleteModalProps> = ({ onClose, on
         <button
           onClick={onClose}
           style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none' }}
-          aria-label="Закрыть"
+          aria-label={t('common.close')} // "Закрыть"
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Завершить обещание</h2>
-        <p className="text-muted mb-3">Напишите результат обещания, прикрепите фото/видео при необходимости</p>
+        <h2 className="fw-bold mb-3">{t('promiseComplete.title')}</h2> {/* "Завершить обещание" */}
+        <p className="text-muted mb-3">{t('promiseComplete.subtitle')}</p> {/* "Напишите результат обещания, прикрепите фото/видео при необходимости" */}
         {previewUrl && (
           <div className="mb-2 position-relative">
             {previewUrl.endsWith('.mp4') ? (
@@ -57,7 +59,7 @@ const PromiseCompleteModal: React.FC<PromiseCompleteModalProps> = ({ onClose, on
               onClick={handleRemoveMedia}
               className="btn btn-sm btn-danger position-absolute"
               style={{ top: '5px', right: '5px' }}
-              aria-label="Удалить медиа"
+              aria-label={t('common.removeMedia')} // "Удалить медиа"
             >
               <X className="w-4 h-4" />
             </button>
@@ -67,7 +69,7 @@ const PromiseCompleteModal: React.FC<PromiseCompleteModalProps> = ({ onClose, on
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="Введите результат обещания"
+            placeholder={t('promiseComplete.result')} // "Введите результат обещания"
             className="form-control mb-3 lh-30"
             style={{ height: '200px' }}
             required
@@ -82,15 +84,15 @@ const PromiseCompleteModal: React.FC<PromiseCompleteModalProps> = ({ onClose, on
                 ref={fileInputRef}
               />
               <ImageIcon className="me-2" />
-              Прикрепить фото/видео
+              {t('promiseComplete.media')} {/* "Прикрепить фото/видео" */}
             </label>
           </div>
           <div className="d-flex justify-content-end gap-2">
             <button type="button" onClick={onClose} className="btn btn-light" disabled={loading}>
-              Отмена
+              {t('promiseComplete.buttons.cancel')} {/* "Отмена" */}
             </button>
             <button type="submit" className="btn btn-outline-primary" disabled={loading}>
-              {loading ? 'Сохранение...' : 'Завершить'}
+              {loading ? t('common.loading') : t('promiseComplete.buttons.complete')} {/* "Сохранение..." или "Завершить" */}
             </button>
           </div>
         </form>

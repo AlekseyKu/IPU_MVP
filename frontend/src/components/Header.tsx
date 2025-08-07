@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useUser } from '@/context/UserContext';
 import { useUserData } from '@/hooks/useUserData';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   Video,
   Search,
@@ -25,13 +26,18 @@ import {
   ExternalLink,
   Linkedin,
   Instagram,
-  Facebook,
+  Youtube,
+  HelpCircle,
+  MessageCircle,
+  FileText,
+  Shield,
   X,
 } from 'lucide-react'
 import UserSearch from './UserSearch';
 import LanguageSwitcher from './LanguageSwitcher';
 
 const Header: React.FC = () => {
+  const { t } = useLanguage(); // "Инициализация перевода"
   const [uiState, setUiState] = useState({
     isOpen: false,
     isActive: false,
@@ -80,7 +86,6 @@ const Header: React.FC = () => {
           <span onClick={() => toggleState('isActive')} className="me-2 cursor-pointer">
             <Search className="w-5 h-5 text-grey-900 bg-greylight p-1 rounded-full btn-round-sm" />
           </span>
-          <LanguageSwitcher />
           <button
             onClick={() => toggleState('isOpen')}
             className={`nav-menu ms-2 ${uiState.isOpen ? 'active' : ''}`}
@@ -118,15 +123,15 @@ const Header: React.FC = () => {
       </span>
 
       <div className={`dropdown-menu p-4 right-0 rounded-xxl border-0 shadow-lg ${uiState.isNoti ? 'show' : ''}`}>
-        <h4 className="fw-700 font-xss mb-4">Notification</h4>
+        <h4 className="fw-700 font-xss mb-4">{t('header.notifications')}</h4> {/* "Уведомления" */}
         {[1, 2, 3, 4].map((_, idx) => (
           <div key={idx} className="card bg-transparent-card w-100 border-0 ps-5 mb-3">
             <Image src="/assets/images/user.png" alt="user" width={40} height={40} className="position-absolute left-0 rounded-pill" />
             <h5 className="font-xsss text-grey-900 mb-1 mt-0 fw-700 d-block">
-              User {idx + 1}
-              <span className="text-grey-400 font-xsssss fw-600 float-right mt-1">{idx + 1} min</span>
+              {t('header.user')} {idx + 1} {/* "Пользователь" */}
+              <span className="text-grey-400 font-xsssss fw-600 float-right mt-1">{idx + 1} {t('header.min')}</span> {/* "мин" */}
             </h5>
-            <h6 className="text-grey-500 fw-500 font-xssss lh-4">This is a notification message.</h6>
+            <h6 className="text-grey-500 fw-500 font-xssss lh-4">{t('header.notificationMessage')}</h6> {/* "Это сообщение уведомления." */}
           </div>
         ))}
       </div>
@@ -140,121 +145,91 @@ const Header: React.FC = () => {
       </Link>
 
       {/* nav menu */}
-      <nav className={`navigation scroll-bar ${uiState.isOpen ? 'nav-active' : ''}`}>
-        <div className="container ps-0 pe-0 pt-5">
+      <nav className={`navigation scroll-bar ${uiState.isOpen ? 'nav-active' : ''}`} style={{ width: '320px' }}>
+        <div className="container ps-0 pe-0 pt-4">
+          {/* Language Switcher в верхней части меню */}
+          <div>
+            <LanguageSwitcher />
+          </div>
           <div className="nav-content ">
-            {/* <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2 mt-2 ">
-              <div className="nav-caption fw-600 font-xssss text-grey-500">
-                <span>МЕНЮ</span>
-              </div>
-              <ul className="mb-1 top-content">
-                <li>
-                  <Link href="/" className="nav-content-bttn open-font">
-                    <User className="me-3 w-4 h-4" />
-                    <span>Моя страница</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/list" className="nav-content-bttn open-font">
-                    <List className="me-3 w-4 h-4" />
-                    <span>Лента обещаний</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/" className="nav-content-bttn open-font">
-                    <PlusCircle className="me-3 w-4 h-4" />
-                    <span>Создать обещание</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/leaders" className="nav-content-bttn open-font">
-                    <BarChart2 className="me-3 w-4 h-4" />
-                    <span>Таблица лидеров</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/shop" className="nav-content-bttn open-font">
-                    <ShoppingCart className="me-3 w-4 h-4" />
-                    <span>Маркетплейс IPU</span>
-                  </Link>
-                </li>
-              </ul>
-            </div> */}
 
-            <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2">
-              <div className="nav-caption fw-600 font-xssss text-grey-500 align-items-bottom">
-                <span>Ресурсы  </span>IPU
+            <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-2">
+              <div className="nav-caption fw-600 font-xsss text-primary">
+                {t('header.resources')} IPU {/* "Ресурсы IPU" */}
               </div>
               <ul className="mb-3">
                 <li>
                   <Link href="https://dexstudioapp.site/projects/ipu" target="_blank" className="nav-content-bttn open-font">
-                    <ExternalLink className="me-3 w-5 h-5" />
-                    <span>Наш сайт</span>
-                    {/* <span className="circle-count bg-warning mt-1">584</span> */}
+                    <ExternalLink className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.website')}</span> {/* "Наш сайт" */}
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://telegram.im/@IPU_community" className="nav-content-bttn open-font">
-                    <Send className="me-3 w-5 h-5" />
-                    <span>Telegram</span>
+                  <Link href="https://telegram.im/@IPU_community" target="_blank" className="nav-content-bttn open-font">
+                    <Send className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.telegram')}</span> {/* "Telegram" */}
                   </Link>
                 </li>
                 <li>
                   <Link href="https://www.linkedin.com/company/dexstudioapp/?viewAsMember=true" target="_blank" className="nav-content-bttn open-font">
-                    <Linkedin className="me-3 w-5 h-5" />
-                    <span>LinkedIn</span>
+                    <Linkedin className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.linkedin')}</span> {/* "LinkedIn" */}
                   </Link>
                 </li>
                 <li>
                   <Link href="https://www.instagram.com/dexstudioapp" target="_blank" className="nav-content-bttn open-font">
-                    <Instagram className="me-3 w-5 h-5" />
-                    <span>Instagram</span>
+                    <Instagram className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.instagram')}</span> {/* "Instagram" */}
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://www.facebook.com/profile.php?id=61572373418340" target="_blank" className="nav-content-bttn open-font">
-                    <Facebook className="me-3 w-5 h-5" />
-                    <span>Facebook</span>
-                  </Link>
-                </li>                
-            
-                {/* <li>
-                  <Link href="/defaultevent" className="nav-content-bttn open-font">
-                    <MapPin className="me-3 w-5 h-5" />
-                    <span>Latest Event</span>
+                  <Link href="https://www.youtube.com/@dexstudioapp" target="_blank" className="nav-content-bttn open-font">
+                    <Youtube className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.youtube')}</span> {/* "Youtube" */}
                   </Link>
                 </li>
-                <li>
-                  <Link href="/defaultlive" className="nav-content-bttn open-font">
-                    <Youtube className="me-3 w-5 h-5" />
-                    <span>Live Stream</span>
-                  </Link>
-                </li> */}
               </ul>
             </div>
 
-            <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1">
-              <div className="nav-caption fw-600 font-xssss text-grey-500">Аккаунт</div>
-              <ul className="mb-1">
+            <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-2">
+              <div className="nav-caption fw-600 font-xsss text-primary">{t('header.account')}</div> {/* "Аккаунт" */}
+              <ul className="mb-3">
                 <li>
-                  <Link href={userData?.telegram_id ? `/settings/${userData.telegram_id}` : '/'} className="nav-content-bttn open-font h-auto pt-2 pb-2">
-                    <Settings className="me-3 w-4 h-4 text-grey-500" />
-                    <span>Настройки</span>
+                  <Link href={userData?.telegram_id ? `/settings/${userData.telegram_id}` : '/'} className="nav-content-bttn open-font">
+                    <Settings className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.settings')}</span> {/* "Настройки" */}
                   </Link>
                 </li>
-                {/* <li>
-                  <Link href="/defaultanalytics" className="nav-content-bttn open-font h-auto pt-2 pb-2">
-                    <PieChart className="me-3 w-4 h-4 text-grey-500" />
-                    <span>Analytics</span>
+                <li>
+                  <Link href="/faq" className="nav-content-bttn open-font">
+                    <HelpCircle className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.faq')}</span> {/* "Вопросы и ответы" */}
                   </Link>
-                </li> */}
-                {/* <li>
-                  <Link href="/defaultmessage" className="nav-content-bttn open-font h-auto pt-2 pb-2">
-                    <MessageSquare className="me-3 w-4 h-4 text-grey-500" />
-                    <span>Чат</span>
-                    <span className="circle-count bg-warning mt-0">23</span>
+                </li>
+                <li>
+                  <Link href="https://telegram.im/@dexstudioapp" target="_blank" className="nav-content-bttn open-font">
+                    <MessageCircle className="me-2" style={{ width: '20px', height: '20px' }} />
+                    <span className="font-xsss">{t('menu.support')}</span> {/* "Поддержка" */}
                   </Link>
-                </li> */}
+                </li>
+              </ul>
+            </div>
+
+            <div className="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-2">
+              <div className="nav-caption fw-600 font-xsss text-primary">{t('menu.legal')}</div> {/* "Правовая информация" */}
+              <ul className="mb-1">
+                <li>
+                  <Link href="/privacy-policy" className="nav-content-bttn open-font">
+                    {/* <Shield className="me-2" style={{ width: '20px', height: '20px' }} /> */}
+                    <span className="font-xsss">{t('menu.privacyPolicy')}</span> {/* "Политика конфиденциальности" */}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms-of-use" className="nav-content-bttn open-font">
+                    {/* <FileText className="me-2" style={{ width: '20px', height: '20px' }} /> */}
+                    <span className="font-xsss">{t('menu.termsOfUse')}</span> {/* "Условия использования" */}
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

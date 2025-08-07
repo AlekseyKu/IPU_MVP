@@ -60,14 +60,36 @@ cd IPU_MVP
 ### 3. Установка зависимостей
 
 ```bash
-cd frontend
-npm install
+Для Windows: установить visual studio build tools
 
-cd ../backend
+cd backend
+python -m venv venv
+
+Для Windows:
+venv\Scripts\activate
+Для Linux/Mac:
+source venv/bin/activate
+
 pip install -r requirements.txt
+deactivate
+
+___________
 
 cd ../bot
+python -m venv venv
+
+Для Windows:
+venv\Scripts\activate
+Для Linux/Mac:
+source venv/bin/activate
+
 pip install -r requirements.txt
+deactivate
+___________
+
+cd ../frontend
+npm install
+
 ```
 
 ### 4. Запуск разработки
@@ -80,22 +102,26 @@ pip install -r requirements.txt
   bot/.env > FRONTEND_DEV_URL
   frontend/next.config.mjs > allowedDevOrigins
   ```
+  
+- **Backend:**  
+  ```bash
+  cd backend
+  venv\Scripts\activate
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
+  ```
+
+- **Bot:**  
+  ```bash
+  cd bot
+  venv\Scripts\activate
+  python main.py
+  ```
+
 - **Frontend:**  
   ```bash
   cd frontend
   npm run dev
   ```
-- **Backend:**  
-  ```bash
-  cd backend
-  uvicorn app.main:app --host 0.0.0.0 --port 8000
-  ```
-- **Bot:**  
-  ```bash
-  cd bot
-  python main.py
-  ```
-
 ---
 
 ## Структура frontend
