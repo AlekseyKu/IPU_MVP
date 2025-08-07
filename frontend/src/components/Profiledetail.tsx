@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   username?: string;
@@ -33,6 +34,7 @@ const Profiledetail: React.FC<Props> = ({
   isOwnProfile = false,
   scrollContainerRef,
 }) => {
+  const { t } = useLanguage();
   const [localAbout, setLocalAbout] = useState(about);
   const [localEmail, setLocalEmail] = useState(email);
 
@@ -87,7 +89,7 @@ const Profiledetail: React.FC<Props> = ({
   return (
     <div className="card w-100 shadow-xss rounded-xxl border-0 mb-3">
       <div className="card-body d-block px-3">
-        <h4 className="fw-700 mb-3 font-xsss text-grey-900 ms-1">Информация</h4>
+        <h4 className="fw-700 mb-3 font-xsss text-grey-900 ms-1">{t('profileDetail.information')}</h4> {/* "Информация" */}
 
         {isEditable ? (
           <div className="mb-3">
@@ -104,7 +106,7 @@ const Profiledetail: React.FC<Props> = ({
                     onChangeFullName?.(value, lastName);
                   }}
                   className="form-control font-xsss"
-                  placeholder="Имя"
+                  placeholder={t('profileDetail.firstName')} // {/* "Имя" */}
                 />
               </div>
               <div className="flex-fill">
@@ -119,7 +121,7 @@ const Profiledetail: React.FC<Props> = ({
                     onChangeFullName?.(firstName, value);
                   }}
                   className="form-control font-xsss"
-                  placeholder="Фамилия"
+                  placeholder={t('profileDetail.lastName')} // {/* "Фамилия" */}
                 />
               </div>
             </div>
@@ -134,7 +136,7 @@ const Profiledetail: React.FC<Props> = ({
                   onChangeEmail?.(value);
                 }}
                 className="form-control font-xsss"
-                placeholder="Email"
+                placeholder={t('profileDetail.email')} //{/* "Email" */}
               />
             </div>
 
@@ -148,24 +150,24 @@ const Profiledetail: React.FC<Props> = ({
                 onChangeAbout?.(value);
               }}
               className="form-control lh-24 font-xsss mb-0"
-              placeholder="О себе"
+              placeholder={t('profileDetail.about')} // {/* "О себе" */}
               style={{ height: '180px' }}
             />
           </div>
         ) : (
           <div>
-            {/* Отображение имени и фамилии в режиме просмотра */}
+            {/* "Отображение имени и фамилии в режиме просмотра" */}
             {[firstName, lastName].filter(Boolean).length > 0 && (
               <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
-                Имя: {[firstName, lastName].filter(Boolean).join(' ') || 'Не указано'}
+                {t('profileDetail.name')}: {[firstName, lastName].filter(Boolean).join(' ') || t('profileDetail.notSpecified')} {/* "Имя:" и "Не указано" */}
               </p>
             )}
             <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
-              {localAbout || 'Не указано'}
+              {localAbout || t('profileDetail.notSpecified')} {/* "Не указано" */}
             </p>
             {localEmail && (
               <p className="fw-500 text-grey-500 lh-24 font-xssss mb-2">
-                Email: {localEmail}
+                {t('profileDetail.email')}: {localEmail} {/* "Email:" */}
               </p>
             )}
           </div>
@@ -173,13 +175,13 @@ const Profiledetail: React.FC<Props> = ({
       </div>
 
       <div className="card-body px-4 pt-0 text-center position-relative">
-        <h4
-          className="fw-700 text-grey-900 font-xsss m-0"
+        <span
+          className="font-xssss text-grey-900 font-xsss m-0"
           onClick={() => setShowTooltip(true)}
           style={{ cursor: 'pointer' }}
         >
-          TG Username: {username || 'Не указано'}
-        </h4>
+          {t('profileDetail.telegramUsername')}: {username || t('profileDetail.notSpecified')} {/* "TG Username:" и "Не указано" */}
+        </span>
 
         {showTooltip && (
           <div
@@ -193,8 +195,7 @@ const Profiledetail: React.FC<Props> = ({
               marginBottom: '8px',
             }}
           >
-            Telegram username остается неизменным для оптимального поиска и привязки пользователей к
-            аккаунту.
+            {t('profileDetail.telegramUsernameTooltip')} {/* "Telegram username остается неизменным для оптимального поиска и привязки пользователей к аккаунту." */}
           </div>
         )}
       </div>

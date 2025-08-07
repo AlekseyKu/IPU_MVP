@@ -10,8 +10,10 @@ import { usePromiseApi } from '@/hooks/usePromiseApi'
 import { addHashtag, removeHashtag, getRandomPopularHashtags, MAX_HASHTAGS } from '@/utils/hashtags';
 import UserSearch from './UserSearch';
 import { UserData } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 const PromiseCreate: React.FC = () => {
+  const { t } = useLanguage();
   const { isCreatePostOpen, setIsCreatePostOpen } = useCreatePostModal()
   const { telegramId } = useUser()
   const [title, setTitle] = useState('')
@@ -61,11 +63,13 @@ const PromiseCreate: React.FC = () => {
       });
   }, [previewUrl]);
 
+  const { language } = useLanguage();
+
   useEffect(() => {
     if (isCreatePostOpen) {
-      setRandomPopular(getRandomPopularHashtags([], 6));
+      setRandomPopular(getRandomPopularHashtags([], 6, language));
     }
-  }, [isCreatePostOpen]);
+  }, [isCreatePostOpen, language]);
 
   // Управление плавным появлением/исчезновением поля пользователя
   useEffect(() => {
@@ -109,7 +113,7 @@ const PromiseCreate: React.FC = () => {
 
     const now = new Date()
     if (new Date(deadline) <= now) {
-      setDeadlineError('Дедлайн должен быть в будущем.')
+      setDeadlineError(t('promiseCreate.errors.deadlinePast')) // "Дедлайн должен быть в будущем."
       return
     }
 
@@ -222,8 +226,8 @@ const PromiseCreate: React.FC = () => {
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Создать обещание</h2>
-        <p className="text-muted mb-3">Опишите свое обещание и установите дедлайн при необходимости</p>
+        <h2 className="fw-bold mb-3">{t('promiseCreate.title')}</h2> {/* "Создать обещание" */}
+        <p className="text-muted mb-3">{t('promiseCreate.subtitle')}</p> {/* "Опишите свое обещание и установите дедлайн при необходимости" */}
 
         {previewUrl && (
           <div className="mb-2 position-relative">
@@ -249,7 +253,7 @@ const PromiseCreate: React.FC = () => {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Название обещания"
+            placeholder={t('promiseCreate.form.title')} // "Название обещания"
             className="form-control mb-2"
             required
           />
@@ -263,7 +267,7 @@ const PromiseCreate: React.FC = () => {
               id="isPublic"
             />
             <label className="form-check-label font-xsss" htmlFor="isPublic">
-              {isPublic ? 'Публичное' : 'Личное'}
+              {isPublic ? t('promiseCreate.form.public') : t('promiseCreate.form.private')} {/* "Публичное" или "Личное" */}
             </label>
           </div>
 
@@ -278,14 +282,14 @@ const PromiseCreate: React.FC = () => {
               id="isToSomeone"
             />
             <label className="form-check-label font-xsss" htmlFor="isToSomeone">
-              {isToSomeone ? 'Обещание кому-то' : 'Обещание себе'}
+              {isToSomeone ? t('promiseCreate.form.toSomeone') : t('promiseCreate.form.toYourself')} {/* "Обещание кому-то" или "Обещание себе" */}
             </label>
           </div>
           {isUserToSomeoneVisible && (
             <div className={`mb-2 ${isUserToSomeoneExiting ? 'fade-out' : 'fade-in'}`}>
               <UserSearch
                 onSelect={user => setSelectedUser(user)}
-                placeholder="Кому вы даёте обещание?"
+                placeholder={t('promiseCreate.form.recipient')} // "Кому вы даёте обещание?"
                 myTelegramId={telegramId ?? undefined}
               />
               {selectedUser && (
@@ -318,7 +322,7 @@ const PromiseCreate: React.FC = () => {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Введите текст обещания"
+            placeholder={t('promiseCreate.form.description')}
             className="form-control mb-3 lh-30"
             style={{ height: '200px' }}
             required
@@ -326,7 +330,7 @@ const PromiseCreate: React.FC = () => {
 
           {/* --- Хештеги --- */}
           <div className="mb-2">
-            <label className="text-muted form-label">Хештеги (до {MAX_HASHTAGS}):</label>
+            <label className="text-muted form-label">{t('promiseCreate.form.hashtags')}:</label>
             <div className="mb-1">
               {hashtags.map(tag => (
                 <span key={tag} className="badge bg-primary me-1 mb-1" >
@@ -340,13 +344,16 @@ const PromiseCreate: React.FC = () => {
               value={hashtagInput}
               onChange={handleHashtagInputChange}
               onKeyDown={handleHashtagKeyDown}
-              placeholder="Введите хештег и нажмите Enter"
+              placeholder={t('hashtags.placeholder')}
               className="form-control mb-1"
               disabled={hashtags.length >= MAX_HASHTAGS}
               maxLength={30}
             />
+            {hashtags.length >= MAX_HASHTAGS && (
+              <div className="text-muted font-xsss mb-1">{t('hashtags.maxReached')}</div>
+            )}
             <div className="mt-1">
-              {/* <span className="text-muted font-xsss">Популярные:</span> */}
+              <span className="text-muted font-xsss">{t('hashtags.popular')}:</span>
               {randomPopular.map(tag => (
                 <button
                   key={tag}
@@ -371,16 +378,16 @@ const PromiseCreate: React.FC = () => {
                 ref={fileInputRef}
               />
               <ImageIcon className="me-2" />
-              Прикрепить фото/видео
+              {t('promiseCreate.form.media')}
             </label>
           </div>
 
           <div className="d-flex w-100 gap-2">
             <button type="button" onClick={handleClose} className="btn btn-light w-50" disabled={loading}>
-              Отмена
+              {t('promiseCreate.buttons.cancel')}
             </button>
             <button type="submit" className="btn btn-outline-primary w-50" disabled={loading}>
-              {loading ? 'Сохранение...' : 'Создать'}
+              {loading ? t('common.loading') : t('promiseCreate.buttons.create')}
             </button>
           </div>
         </form>

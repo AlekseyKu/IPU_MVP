@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Image as ImageIcon } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ChallengeCheckModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const ChallengeCheckModal: React.FC<ChallengeCheckModalProps> = ({ isOpen, onClo
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
 
   if (!isOpen || typeof window === 'undefined') return null;
 
@@ -60,20 +62,32 @@ const ChallengeCheckModal: React.FC<ChallengeCheckModalProps> = ({ isOpen, onClo
       padding: '1rem',
     }}>
       <div className="card shadow-xss rounded-xxl border-0 p-4 bg-white w-100" style={{ maxWidth: 500, position: 'relative', maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto' }}>
-        <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none' }} aria-label="Закрыть">
+        {/* Кнопка закрытия модального окна */}
+        <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none' }} aria-label={t('common.close')}>
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">{title || 'Вы начинаете челлендж!'}</h2>
-        <p className="text-muted mb-3">{description || 'Это ваш первый отчетный день — опишите его и дайте старт новым свершениям!'}</p>
+        
+        {/* Заголовок модального окна */}
+        {/* "Челлендж продолжается!" */}
+        <h2 className="fw-bold mb-3">{title || t('challengeProgress.title')}</h2>
+        
+        {/* Описание модального окна */}
+        {/* "Вы на верном пути — сделайте отчёт и станьте на шаг ближе к цели!" */}
+        <p className="text-muted mb-3">{description || t('challengeProgress.subtitle')}</p>
+        
         <form onSubmit={handleSubmit}>
+          {/* Поле для ввода отчета */}
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="Ваш отчет..."
+            // {/* "Ваш отчёт" */}
+            placeholder={t('challengeProgress.report')}
             required
             className="form-control mb-2 lh-30"
             style={{ height: 200 }}
           />
+          
+          {/* Предварительный просмотр медиафайла */}
           {previewUrl && (
             <div className="mb-2 position-relative">
               {previewUrl.endsWith('.mp4') ? (
@@ -81,15 +95,22 @@ const ChallengeCheckModal: React.FC<ChallengeCheckModalProps> = ({ isOpen, onClo
               ) : (
                 <img src={previewUrl} alt="preview" className="w-100 rounded" style={{ maxHeight: 200 }} />
               )}
+              {/* Кнопка удаления медиафайла */}
               <button type="button" onClick={handleRemoveMedia} className="btn btn-danger position-absolute" style={{ top: 5, right: 5 }}><X /></button>
             </div>
           )}
+          
+          {/* Кнопка прикрепления медиафайла */}
           <label className="btn btn-outline-secondary w-100 mb-2">
             <input type="file" accept="image/*,video/*" onChange={handleFileChange} className="d-none" ref={fileInputRef} />
-            <ImageIcon className="me-2" /> Прикрепить фото/видео
+            <ImageIcon className="me-2" /> 
+            {/* "Прикрепить фото/видео" */}
+            {t('challengeProgress.media')}
           </label>
+          
+          {/* Кнопка отправки отчета */}
           <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-            {loading ? 'Сохраняем...' : (buttonText || 'Старт')}
+            {loading ? t('common.loading') : (buttonText || t('challengeProgress.submitButton'))}
           </button>
         </form>
       </div>

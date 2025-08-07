@@ -4,8 +4,10 @@
 import { motion } from 'framer-motion'
 import Header from '@/components/Header'
 import Appfooter from '@/components/Appfooter'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function Leaders() {
+  const { t } = useLanguage()
   return (
     <>
       <Header />
@@ -15,7 +17,7 @@ export default function Leaders() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="fw-400 font-xs" style={{ textAlign: 'center' }}>Магазин IPU <br/> в разработке</h2>
+          <h2 className="fw-400 font-xs" style={{ textAlign: 'center' }}>{t('shop.title')} <br/> {t('shop.inDevelopment')}</h2> {/* "Магазин IPU в разработке" */}
         </motion.div>
       </div>
       <Appfooter />

@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import KarmaHistory from './KarmaHistory';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   onToggleDetail?: () => void;
@@ -56,6 +57,7 @@ const ProfilecardThree: React.FC<Props> = ({
   firstName,
   lastName,
 }) => {
+  const { t } = useLanguage();
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [showKarmaHistory, setShowKarmaHistory] = useState(false);
   const isLoading = isSavingImage || isSavingText || isSubscribing;
@@ -81,10 +83,10 @@ const ProfilecardThree: React.FC<Props> = ({
 
 
   const tabs = [
-    { label: 'Подписчики', count: subscribers, onClick: undefined },
-    { label: 'Обещания', count: promises, onClick: undefined },
-    { label: 'Выполнено', count: promisesDone, onClick: undefined },
-    { label: 'Карма', count: karma_points, onClick: () => setShowKarmaHistory(true) },
+    { label: t('profileCard.subscribers'), count: subscribers, onClick: undefined }, // "Подписчики"
+    { label: t('profileCard.promises'), count: promises, onClick: undefined }, // "Обещания"
+    { label: t('profileCard.completed'), count: promisesDone, onClick: undefined }, // "Выполнено"
+    { label: t('profileCard.karma'), count: karma_points, onClick: () => setShowKarmaHistory(true) }, // "Карма"
   ];
 
   // Безопасное формирование полного имени
@@ -126,7 +128,7 @@ const ProfilecardThree: React.FC<Props> = ({
               className={`btn btn-primary ${!isDirty ? 'opacity-50' : ''}`}
               disabled={!isDirty || isSavingText || isSavingImage}
             >
-              {(isSavingText || isSavingImage) ? 'Сохранение...' : 'Сохранить'}
+              {(isSavingText || isSavingImage) ? t('profileCard.saving') : t('profileCard.save')} {/* "Сохранение..." или "Сохранить" */}
             </button>
           </div>
         )}
@@ -135,8 +137,8 @@ const ProfilecardThree: React.FC<Props> = ({
           <div className="d-flex align-items-center justify-content-between pe-3">
             <div className="mt-0" style={{ paddingLeft: '140px' }}>
               <h4 className="fw-500 font-sm mt-0 mb-0">
-                {fullName || 'Не указано'}
-                <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || 'Не указано'}</span>
+                {fullName || t('profileCard.notSpecified')} {/* "Не указано" */}
+                <span className="fw-500 font-xssss text-grey-500 mt-1 mb-3 d-block">@{username || t('profileCard.notSpecified')}</span> {/* "Не указано" */}
               </h4>
             </div>
             {onToggleDetail && (
@@ -178,7 +180,7 @@ const ProfilecardThree: React.FC<Props> = ({
                   className="btn btn-outline-primary"
                   disabled={isLoading}
                 >
-                  {isSubscribing ? 'Обработка...' : isSubscribed ? 'Вы подписаны' : 'Подписаться'}
+                  {isSubscribing ? t('profileCard.processing') : isSubscribed ? t('profileCard.subscribed') : t('profileCard.subscribe')} {/* "Обработка..." или "Вы подписаны" или "Подписаться" */}
                 </button>
               </div>
             )}
@@ -186,7 +188,7 @@ const ProfilecardThree: React.FC<Props> = ({
         )}
       </div>
       
-      {/* Модальное окно истории кармы */}
+      {/* "Модальное окно истории кармы" */}
       <KarmaHistory
         userId={telegramId}
         isVisible={showKarmaHistory}

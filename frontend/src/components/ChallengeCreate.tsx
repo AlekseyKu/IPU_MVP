@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { useUser, useCreateChallengeModal } from '@/context/UserContext'
+import { useLanguage } from '@/context/LanguageContext'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useChallengeApi } from '@/hooks/useChallengeApi';
@@ -12,6 +13,7 @@ import { addHashtag, removeHashtag, getRandomPopularHashtags, MAX_HASHTAGS } fro
 const ChallengeCreate: React.FC = () => {
   const { isCreateChallengeOpen, setIsCreateChallengeOpen } = useCreateChallengeModal()
   const { telegramId } = useUser()
+  const { t } = useLanguage()
 
   const [title, setTitle] = useState('')
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
@@ -62,11 +64,13 @@ const ChallengeCreate: React.FC = () => {
     }
   }, [isCreateChallengeOpen])
 
+  const { language } = useLanguage();
+
   useEffect(() => {
     if (isCreateChallengeOpen) {
-      setRandomPopular(getRandomPopularHashtags([], 6));
+      setRandomPopular(getRandomPopularHashtags([], 6, language));
     }
-  }, [isCreateChallengeOpen]);
+  }, [isCreateChallengeOpen, language]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -178,6 +182,7 @@ const ChallengeCreate: React.FC = () => {
           animation: 'popupSlideIn 0.3s ease-out',
         }}
       >
+        {/* Кнопка закрытия модального окна */}
         <button
           onClick={handleClose}
           style={{
@@ -186,14 +191,22 @@ const ChallengeCreate: React.FC = () => {
             right: '1rem',
             background: 'none',
             border: 'none',
-          }}
-          aria-label="Закрыть"
+                      }}
+          // "Закрыть"
+          aria-label={t('common.close')}
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="fw-bold mb-3">Создать челлендж</h2>
-        <p className="text-muted mb-3">Опишите свой челлендж, установите частоту и количество отчетов</p>
+        
+        {/* Заголовок модального окна */}
+        {/* "Создать челендж" */}
+        <h2 className="fw-bold mb-3">{t('challengeCreate.title')}</h2>
+        
+        {/* Описание модального окна */}
+        {/* "Опишите ваш челендж, выберите частоту и количество отчётных действий." */}
+        <p className="text-muted mb-3">{t('challengeCreate.subtitle')}</p>
 
+        {/* Предварительный просмотр медиафайла */}
         {previewUrl && (
           <div className="mb-2 position-relative">
             {previewUrl.endsWith('.mp4') ? (
@@ -203,11 +216,13 @@ const ChallengeCreate: React.FC = () => {
             ) : (
               <img src={previewUrl} alt="Preview" className="w-100 rounded" style={{ maxHeight: '200px', objectFit: 'cover' }} />
             )}
+            {/* Кнопка удаления медиафайла */}
             <button
               onClick={handleRemoveMedia}
               className="btn btn-sm btn-danger position-absolute"
               style={{ top: '5px', right: '5px' }}
-              aria-label="Удалить медиа"
+              // "Удалить"
+              aria-label={t('common.delete')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -215,16 +230,19 @@ const ChallengeCreate: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Поле для названия челленджа */}
           <input
             id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Название челленджа"
+            // "Введите краткое название"
+            placeholder={t('challengeCreate.form.title')}
             className="form-control mb-2"
             required
           />
 
+          {/* Селект для выбора частоты */}
           <select
             id="frequency"
             value={frequency}
@@ -232,13 +250,13 @@ const ChallengeCreate: React.FC = () => {
             className="form-control mb-2"
             required
             style={{ lineHeight: 1.5 }}
-            // style={{ height: '48px', display: 'flex', alignItems: 'center' }}
           >
-            <option value="daily">Ежедневно</option>
-            <option value="weekly">Еженедельно</option>
-            <option value="monthly">Ежемесячно</option>
+            <option value="daily">{t('challengeCreate.form.daily')}</option>
+            <option value="weekly">{t('challengeCreate.form.weekly')}</option>
+            <option value="monthly">{t('challengeCreate.form.monthly')}</option>
           </select>
 
+          {/* Поле для количества отчетов */}
           <input
             id="quantity-report"
             type="number"
@@ -253,7 +271,8 @@ const ChallengeCreate: React.FC = () => {
                 }
               }
             }}
-            placeholder="Количество отчетов (1-100)"
+            // "Количество отчётов (от 1-100)"
+            placeholder={t('challengeCreate.form.reportsCount')}
             className="form-control mb-2"
             min="1"
             required
@@ -262,19 +281,21 @@ const ChallengeCreate: React.FC = () => {
             <div className="text-danger font-xsss mb-2">{totalReportsError}</div>
           )}
 
+          {/* Поле для описания челленджа */}
           <textarea
             id="description"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Введите описание челленджа"
+            // "Опишите челендж, в чём суть и цель"
+            placeholder={t('challengeCreate.form.description')}
             className="form-control mb-2 lh-30"
             style={{ height: '200px' }}
             required
           />
 
-          {/* --- Хештеги --- */}
+          {/* Секция хештегов */}
           <div className="mb-2">
-            <label className="text-muted form-label">Хештеги (до {MAX_HASHTAGS}):</label>
+            <label className="text-muted form-label">{t('challengeCreate.form.hashtags')}:</label>
             <div className="mb-1">
               {hashtags.map(tag => (
                 <span key={tag} className="badge bg-primary me-1 mb-1">
@@ -288,13 +309,16 @@ const ChallengeCreate: React.FC = () => {
               value={hashtagInput}
               onChange={handleHashtagInputChange}
               onKeyDown={handleHashtagKeyDown}
-              placeholder="Введите хештег и нажмите Enter"
+              placeholder={t('hashtags.placeholder')}
               className="form-control mb-1"
               disabled={hashtags.length >= MAX_HASHTAGS}
               maxLength={30}
             />
+            {hashtags.length >= MAX_HASHTAGS && (
+              <div className="text-muted font-xsss mb-1">{t('hashtags.maxReached')}</div>
+            )}
             <div className="mt-1">
-              {/* <span className="text-muted font-xsss">Популярные хештеги:</span> */}
+              <span className="text-muted font-xsss">{t('hashtags.popular')}:</span>
               {randomPopular.map(tag => (
                 <button
                   key={tag}
@@ -309,6 +333,7 @@ const ChallengeCreate: React.FC = () => {
             </div>
           </div>
 
+          {/* Кнопка прикрепления медиафайла */}
           <div className="mb-3">
             <label htmlFor="media-upload" className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
               <input
@@ -319,17 +344,20 @@ const ChallengeCreate: React.FC = () => {
                 className="d-none"
                 ref={fileInputRef}
               />
-              <ImageIcon className="me-2" />
-              Прикрепить фото/видео
+              <ImageIcon className="me-2" /> 
+              {/* "Прикрепить фото/видео" */}
+              {t('challengeCreate.form.media')}
             </label>
           </div>
 
+          {/* Кнопки действий */}
           <div className="d-flex w-100 gap-2">
             <button type="button" onClick={handleClose} className="btn btn-light w-50" disabled={loading}>
-              Отмена
+              {/* "Отмена" */}
+              {t('challengeCreate.buttons.cancel')}
             </button>
             <button type="submit" className="btn btn-outline-primary w-50" disabled={loading}>
-              {loading ? 'Сохранение...' : 'Создать'}
+              {loading ? t('common.loading') : t('challengeCreate.buttons.create')}
             </button>
           </div>
         </form>

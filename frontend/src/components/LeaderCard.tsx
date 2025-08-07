@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Trophy, HeartHandshake } from 'lucide-react';
 import { LeaderData } from '@/hooks/useLeaders';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface LeaderCardProps {
   leader: LeaderData;
@@ -11,6 +12,7 @@ interface LeaderCardProps {
 }
 
 const LeaderCard: React.FC<LeaderCardProps> = ({ leader, index }) => {
+  const { t } = useLanguage();
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -31,10 +33,10 @@ const LeaderCard: React.FC<LeaderCardProps> = ({ leader, index }) => {
       transition={{ duration: 0.3, delay: index * 0.05 }}
       className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-2 position-relative"
     >
-      {/* Заголовок и аватар в стиле PromiseView */}
+      {/* "Заголовок и аватар" */}
       <div className="d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center">
-          {/* Ранг перед аватаром */}
+          {/* "Ранг перед аватаром" */}
           <div className="me-2">
             {getRankIcon(leader.rank)}
           </div>
@@ -56,10 +58,10 @@ const LeaderCard: React.FC<LeaderCardProps> = ({ leader, index }) => {
           <span className="text-dark font-xsss">{leader.display_name}</span>
         </div>
         
-        {/* Карма */}
+        {/* "Карма" */}
         <div className="d-flex align-items-center">
-          <HeartHandshake className="text-primary me-1" size={14} />
-          <span className="text-primary font-xsss fw-bold">{leader.karma_points}</span>
+          <HeartHandshake className="text-primary me-1" size={20} />
+          <span className="text-primary font-xss fw-bold">{leader.karma_points}</span>
         </div>
       </div>
     </motion.div>

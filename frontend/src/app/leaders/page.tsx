@@ -7,16 +7,18 @@ import Header from '@/components/Header'
 import Appfooter from '@/components/Appfooter'
 import LeaderCard from '@/components/LeaderCard'
 import { useLeaders, PeriodType } from '@/hooks/useLeaders'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function Leaders() {
+  const { t } = useLanguage();
   const { leaders, isLoading, error, period, changePeriod } = useLeaders();
 
   const getPeriodLabel = (period: PeriodType) => {
     switch (period) {
-      case 'day': return 'День';
-      case 'week': return 'Неделя';
-      case 'all': return 'За все время';
-      default: return 'За все время';
+      case 'day': return t('leaders.periods.day');
+      case 'week': return t('leaders.periods.week');
+      case 'all': return t('leaders.periods.all');
+      default: return t('leaders.periods.all');
     }
   };
 
@@ -30,7 +32,7 @@ export default function Leaders() {
     <>
       <Header />
       <div className="min-h-screen bg-gray-50 pt-10">
-        <div className="container mx-auto px-4 max-w-2xl">
+        <div className="container mx-auto px-3 max-w-2xl">
           {/* Заголовок */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -40,7 +42,8 @@ export default function Leaders() {
           >
             <div className="flex items-center justify-center space-x-3 mb-3">
               <Trophy className="text-secondary" size={24} />
-              <h1 className="font-md text-gray-600 my-3">Топ-30 пользователей</h1>
+              {/* "Топ-30 пользователей" */}
+              <h1 className="font-md text-gray-600 my-3">{t('leaders.title')}</h1>
             </div>
             {/* <p className="text-gray-600">
               {getPeriodLabel(period)}
@@ -61,7 +64,8 @@ export default function Leaders() {
                 className={`btn ${getActiveButtonClass('day')}`}
                 style={{ flex: 1 }}
               >
-                День
+                {/* "День" */}
+                {t('leaders.periods.day')}
               </button>
               <button
                 onClick={() => changePeriod('week')}
@@ -69,7 +73,8 @@ export default function Leaders() {
                 className={`btn ${getActiveButtonClass('week')}`}
                 style={{ flex: 1 }}
               >
-                Неделя
+                {/* "Неделя" */}
+                {t('leaders.periods.week')}
               </button>
               <button
                 onClick={() => changePeriod('all')}
@@ -77,7 +82,8 @@ export default function Leaders() {
                 className={`btn ${getActiveButtonClass('all')}`}
                 style={{ flex: 2 }}
               >
-                За все время
+                {/* "За все время" */}
+                {t('leaders.periods.all')}
               </button>
             </div>
           </motion.div>
@@ -90,12 +96,14 @@ export default function Leaders() {
                 animate={{ opacity: 1 }}
                 className="bg-red-50 border border-red-200 rounded-lg p-4 text-center"
               >
-                <p className="text-red-600">Ошибка загрузки: {error}</p>
+                {/* "Ошибка загрузки" */}
+                <p className="text-red-600">{t('leaders.error.loading')}: {error}</p>
                 <button
                   onClick={() => changePeriod(period)}
                   className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                 >
-                  Попробовать снова
+                  {/* "Попробовать снова" */}
+                  {t('leaders.error.retry')}
                 </button>
               </motion.div>
             )}
@@ -108,7 +116,8 @@ export default function Leaders() {
               >
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                  <span className="text-gray-600 font-xsss">Загрузка...</span>
+                  {/* "Загрузка..." */}
+                  <span className="text-gray-600 font-xsss">{t('leaders.loading')}</span>
                 </div>
               </motion.div>
             )}
@@ -120,7 +129,8 @@ export default function Leaders() {
                 className="text-center py-12"
               >
                 <Trophy className="mx-auto text-gray" size={24} />
-                <p className="text-gray-600 mt-4">Пока нет лидеров</p>
+                {/* "Пока нет лидеров" */}
+                <p className="text-gray-600 mt-4">{t('leaders.empty')}</p>
               </motion.div>
             )}
 

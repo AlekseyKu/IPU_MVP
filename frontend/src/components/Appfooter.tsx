@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser, useCreatePostModal, useCreateChallengeModal } from '@/context/UserContext'
+import { useLanguage } from '@/context/LanguageContext'
 import {
   House,
   User,
@@ -20,8 +21,9 @@ const Appfooter: React.FC = () => {
   const { setIsCreatePostOpen } = useCreatePostModal()
   const { setIsCreateChallengeOpen } = useCreateChallengeModal()
   const [showModal, setShowModal] = useState(false)
+  const { t } = useLanguage()
 
-  // 👇 Ref на модальное тело
+  // Ref на модальное тело
   const modalContentRef = useRef<HTMLDivElement | null>(null)
 
   const links = [
@@ -99,24 +101,9 @@ const Appfooter: React.FC = () => {
                 setShowModal(false)
               }}
             >
-              Создать обещание
+              {/* "Создать обещание" */}
+              {t('create.promise')}
             </Button>
-            {/* <OverlayTrigger
-              placement="top"
-              trigger={['hover', 'click']}
-              containerPadding={20}
-              container={modalContentRef.current ?? undefined}
-              rootClose
-              overlay={
-                <CustomPopover id="popover-create-post">
-                  Создайте личное обещание, чтобы делиться прогрессом.
-                </CustomPopover>
-              }
-            >
-              <div className="d-inline-block">
-                <Info className="w-4 h-4 text-muted cursor-pointer" />
-              </div>
-            </OverlayTrigger> */}
           </div>
 
           <div className="d-flex align-items-center">
@@ -128,22 +115,9 @@ const Appfooter: React.FC = () => {
                 setShowModal(false)
               }}
             >
-              Создать челлендж
+              {/* "Создать челлендж" */}
+              {t('create.challenge')}
             </Button>
-            {/* <OverlayTrigger
-              // placement="top"
-              trigger={['hover', 'click']}
-              // containerPadding={20}
-              // container={modalContentRef.current ?? undefined}
-              rootClose
-              overlay={
-                <CustomPopover id="popover-create-challenge">
-                  Создайте публичный челлендж с отчетами и участниками.
-                </CustomPopover>
-              }
-            >
-              <Info className="w-4 h-4 text-muted cursor-pointer" />
-            </OverlayTrigger> */}
           </div>
         </Modal.Body>
       </Modal>
