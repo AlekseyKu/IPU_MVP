@@ -121,7 +121,28 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
       renderCount.current += 1;
       // console.log(`Render #${renderCount.current} with challenge id: ${challenge.id}, completed_reports: ${challenge.completed_reports}`);
     }, [challenge.id, challenge.completed_reports]);
+    // --- Эффекты ---
+    useEffect(() => {
+      renderCount.current += 1;
+      // console.log(`Render #${renderCount.current} with challenge id: ${challenge.id}, completed_reports: ${challenge.completed_reports}`);
+    }, [challenge.id, challenge.completed_reports]);
 
+    // --- Закрытие меню при клике вне него ---
+    useEffect(() => {
+      if (!menuOpen) return;
+      function handleClickOutside(event: MouseEvent) {
+        if (
+          menuRef.current &&
+          !menuRef.current.contains(event.target as Node)
+        ) {
+          setMenuOpen(false);
+        }
+      }
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [menuOpen]);
     // --- Закрытие меню при клике вне него ---
     useEffect(() => {
       if (!menuOpen) return;
@@ -161,7 +182,41 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
     //     supabase.removeChannel(subscription);
     //   };
     // }, [challenge.id, onUpdate]);
+    // Realtime подписка на обновления челленджа - ОТКЛЮЧЕНО
+    // useEffect(() => {
+    //   const subscription = supabase
+    //     .channel(`challenge-update-${challenge.id}`)
+    //     .on(
+    //       "postgres_changes",
+    //       {
+    //         event: "UPDATE",
+    //         schema: "public",
+    //         table: "challenges",
+    //         filter: `id=eq.${challenge.id}`,
+    //       },
+    //       (payload) => {
+    //         // Убираем дублирующий вызов onUpdate - обновление уже происходит через API
+    //         // onUpdate(updated);
+    //       }
+    //     )
+    //     .subscribe();
+    //   return () => {
+    //     supabase.removeChannel(subscription);
+    //   };
+    // }, [challenge.id, onUpdate]);
 
+    // Определение типа медиа
+    useEffect(() => {
+      if (!challenge.media_url) return;
+      fetch(challenge.media_url, { method: "HEAD" })
+        .then((res) => {
+          const type = res.headers.get("Content-Type");
+          if (type) setMediaType(type);
+        })
+        .catch((err) => {
+          console.error("Error determining media type:", err);
+        });
+    }, [challenge.media_url]);
     // Определение типа медиа
     useEffect(() => {
       if (!challenge.media_url) return;
@@ -179,6 +234,10 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
     useEffect(() => {
       setShowVideo(false);
     }, [challenge.media_url]);
+    // Сброс предпросмотра видео при смене медиа
+    useEffect(() => {
+      setShowVideo(false);
+    }, [challenge.media_url]);
 
     // Загрузка отчетов при открытии деталей челленджа
     useEffect(() => {
@@ -192,7 +251,32 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
         .catch(() => setReports([]))
         .finally(() => setReportsLoading(false));
     }, [isOpen, challenge.id, userId]);
+    // Загрузка отчетов при открытии деталей челленджа
+    useEffect(() => {
+      if (!isOpen || !userId) return;
+      setReportsLoading(true);
+      fetch(
+        `/api/challenges/reports?challenge_id=${challenge.id}&user_id=${userId}`
+      )
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => setReports(data))
+        .catch(() => setReports([]))
+        .finally(() => setReportsLoading(false));
+    }, [isOpen, challenge.id, userId]);
 
+    // Загрузка участников при открытии деталей челленджа
+    useEffect(() => {
+      if (!isOpen) return;
+      fetchParticipants(challenge.id);
+    }, [isOpen, challenge.id, fetchParticipants]);
+
+    // Эффект для отслеживания завершения челленджа - ОТКЛЮЧЕНО
+    // useEffect(() => {
+    //   if (challenge.is_completed && !isModalShown(challenge.id)) {
+    //     setIsCompleteModalOpen(true);
+    //     addShownModal(challenge.id);
+    //   }
+    // }, [challenge.is_completed, challenge.id]);
     // Загрузка участников при открытии деталей челленджа
     useEffect(() => {
       if (!isOpen) return;
@@ -504,6 +588,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
     const isOwner = telegramId === challenge.user_id;
 
     // --- JSX ---
+
     return (
       <div
         className="card w-100 shadow-sm rounded-xxl border-0 p-3 mb-3 position-relative"
@@ -555,9 +640,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
             {challenge.frequency && challenge.total_reports && (
               <div className="d-flex justify-content-between align-items-center">
                 <div className="text-muted font-xsss mb-1">
-                  {/* "Ежедневный/Еженедельный/Ежемесячный" */}
                   {t(`challengeView.frequency.${challenge.frequency}`)} <br />
-                  {/* "Прогресс:" */}
                   {t("status.progress")}: {challenge.completed_reports}/
                   {challenge.total_reports}
                 </div>
@@ -575,6 +658,11 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
         {/* --- Детали челленджа --- */}
         {isOpen && (
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+            {/* Создано */}
+            <span className="text-muted small font-xssss mb-2 d-block">
+              {t("status.created")}: {formatDateTime(challenge.created_at)}
+            </span>
+
             <p className="text-muted lh-sm small mb-2">{challenge.content}</p>
             {challenge.media_url && (
               <div className="mb-2">
@@ -595,8 +683,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
               </div>
             )}
 
-            {/* --- Кнопки управления --- */}
-            {/* Кнопки для владельца челленджа */}
+            {/* --- Кнопки управления (для владельца) --- */}
             {isOwnProfile && isProfilePage && !is_completed && (
               <div className="d-flex justify-content-center py-2">
                 {!isStarted ? (
@@ -621,7 +708,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                   <>
                     {!isLastPeriod && (
                       <>
-                        {/* "Чек дня" */}
                         <button
                           className={`btn w-50 ${!currentPeriod || hasReportToday || reportsLoading ? "btn disabled" : "btn-outline-primary"}`}
                           onClick={() => setIsCheckModalOpen(true)}
@@ -629,7 +715,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                             !currentPeriod || hasReportToday || reportsLoading
                           }
                         >
-                          {/* "Чек дня" */}
                           {t("tracker.dailyCheck")}
                         </button>
                         <ChallengeCheckModal
@@ -639,19 +724,14 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                             await handleCheckSubmit(text, file);
                             setIsCheckModalOpen(false);
                           }}
-                          // {/* "Челлендж продолжается!" */}
                           title={t("challengeProgress.title")}
-                          // {/* "Вы на верном пути — сделайте отчёт и станьте на шаг ближе к цели!" */}
                           description={t("challengeProgress.subtitle")}
-                          // {/* "Сделать чек дня" */}
                           buttonText={t("challengeProgress.submitButton")}
                         />
                       </>
                     )}
                     {isLastPeriod && (
                       <>
-                        {/* "Завершить" */}
-                        {/* "Завершить" */}
                         <button
                           className="btn w-50 btn-outline-primary"
                           onClick={() => setIsCheckModalOpen(true)}
@@ -715,7 +795,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
             {/* --- Следующий чек --- */}
             {isStarted && formattedNextPeriod && (
               <div className="d-flex justify-content-center text-muted font-xsss mb-2">
-                {/* "Следующий Чек дня:" */}
                 {t("challengeView.nextCheck")} {formattedNextPeriod}
               </div>
             )}
@@ -723,14 +802,12 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
             {/* --- Вкладки --- */}
             <div className="mb-2">
               <div className="d-flex justify-content-around border-bottom">
-                {/* "Трекер прогресса" */}
                 <button
                   className={`btn btn-sm p-2 ${activeTab === "progress" ? "text-primary" : "text-muted"}`}
                   onClick={() => setActiveTab("progress")}
                 >
                   {t("tracker.progressTracker")}
                 </button>
-                {/* "Участники" */}
                 <button
                   className={`btn btn-sm p-2 ${activeTab === "participants" ? "text-primary" : "text-muted"}`}
                   onClick={() => setActiveTab("participants")}
@@ -741,7 +818,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
               <div className="p-2">
                 {activeTab === "progress" ? (
                   <div>
-                    {/* "Нет отчетов" */}
                     {reports.length === 0 && (
                       <div className="text-muted font-xsss">
                         {t("challengeView.noReports")}
@@ -765,7 +841,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                           }
                         >
                           <span className="text-muted">
-                            {/* "Создано" */}
                             {report.report_date
                               ? formatDateTime(report.report_date)
                               : t("status.created")}
@@ -806,7 +881,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                   </div>
                 ) : (
                   <div>
-                    {/* "Загрузка участников..." */}
                     {participantsLoading ? (
                       <div className="text-muted font-xsss">
                         {t("challengeView.loadingParticipants")}
@@ -858,10 +932,35 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
               </div>
             </div>
 
-            {/* --- Дата создания и меню --- */}
-            <span className="text-muted small">
-              Создано: {formatDateTime(challenge.created_at)}
-            </span>
+            {/* --- Кнопки лайка и поделиться внизу --- */}
+            <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+              <div className="w-50 d-flex justify-content-center">
+                <LikeButton
+                  postId={challenge.id}
+                  postType="challenge"
+                  size={20}
+                />
+              </div>
+              <div className="w-50 d-flex justify-content-center">
+                <button
+                  className="btn btn-link p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    share();
+                  }}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    cursor: "pointer",
+                  }}
+                  title={t("common.share")}
+                >
+                  <Send size={20} className="text-muted" />
+                </button>
+              </div>
+            </div>
+
+            {/* --- Меню --- */}
             <div
               ref={menuRef}
               className="position-absolute top-0 end-0 mt-3 me-3"
@@ -887,11 +986,9 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                         )
                       }
                     >
-                      {/* "Посмотреть профиль" */}
                       {t("navigation.profile")}
                     </button>
                   )}
-                  {/* "Скопировать ссылку" */}
                   <button
                     className="dropdown-item"
                     onClick={() => {
@@ -905,7 +1002,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                   >
                     {t("common.copy")}
                   </button>
-                  {/* "Отправить" */}
                   <button
                     className="dropdown-item"
                     onClick={() => {
@@ -930,7 +1026,6 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                         className="dropdown-item text-danger"
                         onClick={handleDelete}
                       >
-                        {/* "Удалить челлендж" */}
                         {t("challengeView.deleteChallenge")}
                       </button>
                     )}
@@ -939,7 +1034,17 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
             </div>
           </div>
         )}
-        {/* Модалка статистики завершённого челленджа */}
+
+        {/* Модалка завершения челленджа (для владельца сразу после finish) */}
+        <ChallengeCompleteModal
+          isOpen={isCompleteModalOpen}
+          onClose={() => setIsCompleteModalOpen(false)}
+          challenge={challenge}
+          isOwner={isOwner}
+          ownerName={userName}
+        />
+
+        {/* Модалка статистики завершённого челленджа (данные из completed_challenges) */}
         {completedChallengeData && (
           <ChallengeCompleteModal
             isOpen={isStatsModalOpen}
