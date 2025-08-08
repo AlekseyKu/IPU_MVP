@@ -19,7 +19,6 @@ import {
   Send,
 } from "lucide-react";
 import { ChallengeData } from "@/types";
-import { supabase } from "@/lib/supabaseClient";
 import { canDeleteItem } from "@/utils/postRules";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatDateTime } from "@/utils/formatDate";
@@ -31,7 +30,6 @@ import { useChallengeParticipants } from "@/hooks/useChallengeParticipants";
 import ChallengeCheckModal from "./ChallengeCheckModal";
 import LikeButton from "./LikeButton";
 import ChallengeCompleteModal from "./ChallengeCompleteModal";
-import { isModalShown, addShownModal } from "@/utils/challengeModalStorage";
 
 // --- Константы ---
 // frequencyMap теперь используется через переводы
@@ -695,6 +693,21 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                     : isSubscribed
                       ? t("subscriptions.mySubscriptions")
                       : t("tracker.followChallenge")}
+                </button>
+              </div>
+            )}
+
+            {/* Кнопка "Результат" для завершённых челленджей */}
+            {is_completed && (
+              <div className="d-flex justify-content-center py-2">
+                <button
+                  className="btn w-50 btn-outline-primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewCompletedChallenge();
+                  }}
+                >
+                  {t("status.result")}
                 </button>
               </div>
             )}
