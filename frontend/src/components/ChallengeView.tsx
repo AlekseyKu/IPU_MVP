@@ -771,7 +771,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = React.memo(
                   {isJoiningChallenge
                     ? t("common.loading")
                     : isSubscribed
-                      ? t("subscriptions.mySubscriptions")
+                      ? t("tracker.followedChallenge")
                       : t("tracker.followChallenge")}
                 </button>
               </div>

@@ -287,6 +287,7 @@ export const ru = {
     dailyCheck: 'Чек дня',
     progressTracker: 'Трекер прогресса',
     followChallenge: 'Следить за челленджем',
+    followedChallenge: 'Вы подписаны',
   },
 
   // Карточка лидера
