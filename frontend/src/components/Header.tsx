@@ -64,6 +64,8 @@ const Header: React.FC = () => {
     }
   }
 
+
+
   if (!isMounted) return null
 
   return (
@@ -159,13 +161,13 @@ const Header: React.FC = () => {
               </div>
               <ul className="mb-3">
                 <li>
-                  <Link href="https://dexstudioapp.site/projects/ipu" target="_blank" className="nav-content-bttn open-font">
+                  <Link href="https://dexsa.site/projects/ipu" target="_blank" className="nav-content-bttn open-font">
                     <ExternalLink className="me-2" style={{ width: '20px', height: '20px' }} />
                     <span className="font-xsss">{t('menu.website')}</span> {/* "Наш сайт" */}
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://telegram.im/@IPU_community" target="_blank" className="nav-content-bttn open-font">
+                  <Link href="https://t.me/IPU_community" target="_blank" className="nav-content-bttn open-font">
                     <Send className="me-2" style={{ width: '20px', height: '20px' }} />
                     <span className="font-xsss">{t('menu.telegram')}</span> {/* "Telegram" */}
                   </Link>
@@ -207,7 +209,7 @@ const Header: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://telegram.im/@dexstudioapp" target="_blank" className="nav-content-bttn open-font">
+                  <Link href="https://t.me/dexstudioapp" target="_blank" className="nav-content-bttn open-font">
                     <MessageCircle className="me-2" style={{ width: '20px', height: '20px' }} />
                     <span className="font-xsss">{t('menu.support')}</span> {/* "Поддержка" */}
                   </Link>
