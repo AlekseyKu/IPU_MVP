@@ -25,7 +25,7 @@ export default function ProfilePage() {
   const [openChallengeId, setOpenChallengeId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const { userData, promises, challenges, isSubscribed, isLoading, error, setUserData, setIsSubscribed, setError, recipients } = useUserProfileData(telegramId, currentUserId);
+  const { userData, promises, challenges, isSubscribed, isLoading, error, setUserData, setIsSubscribed, setError, recipients, displayedPosts, hasMore, loadMorePosts } = useUserProfileData(telegramId, currentUserId);
 
   const noop = () => {};
   
@@ -140,70 +140,97 @@ export default function ProfilePage() {
               </div>
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <AnimatePresence>
-                  {promises.filter(p => p.is_public).map((promise) => {
-                    // --- Новый блок: получение данных о получателе для обещаний "кому-то" ---
-                    let recipientName = '';
-                    let recipientAvatarUrl = '';
-                    if (promise.recipient_id) {
-                      // Если получатель - это владелец профиля
-                      if (promise.recipient_id === telegramId) {
-                        recipientName = fullName;
-                        recipientAvatarUrl = userData?.avatar_img_url || '/assets/images/defaultAvatar.png';
-                      } else {
-                        // Для других получателей используем загруженные данные
-                        const recipient = recipients[promise.recipient_id];
-                        if (recipient) {
-                          recipientName = `${recipient.first_name} ${recipient.last_name}`.trim() || recipient.username || `@${promise.recipient_id}`;
-                          recipientAvatarUrl = recipient.avatar_img_url || '/assets/images/defaultAvatar.png';
+                  {displayedPosts.map((post) => {
+                    // Проверяем тип поста
+                    const isPromise = 'is_completed' in post && 'deadline' in post;
+                    
+                    if (isPromise) {
+                      const promise = post as any;
+                      // --- Новый блок: получение данных о получателе для обещаний "кому-то" ---
+                      let recipientName = '';
+                      let recipientAvatarUrl = '';
+                      if (promise.recipient_id) {
+                        // Если получатель - это владелец профиля
+                        if (promise.recipient_id === telegramId) {
+                          recipientName = fullName;
+                          recipientAvatarUrl = userData?.avatar_img_url || '/assets/images/defaultAvatar.png';
                         } else {
-                          // Если данные еще не загружены, показываем ID
-                          recipientName = `@${promise.recipient_id}`;
-                          recipientAvatarUrl = '/assets/images/defaultAvatar.png';
+                          // Для других получателей используем загруженные данные
+                          const recipient = recipients[promise.recipient_id];
+                          if (recipient) {
+                            recipientName = `${recipient.first_name} ${recipient.last_name}`.trim() || recipient.username || `@${promise.recipient_id}`;
+                            recipientAvatarUrl = recipient.avatar_img_url || '/assets/images/defaultAvatar.png';
+                          } else {
+                            // Если данные еще не загружены, показываем ID
+                            recipientName = `@${promise.recipient_id}`;
+                            recipientAvatarUrl = '/assets/images/defaultAvatar.png';
+                          }
                         }
                       }
-                    }
 
-                    return (
-                      <motion.div
-                        key={promise.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                      >
-                        <PromiseView
-                          promise={promise}
-                          onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
-                          isOpen={openPromiseId === promise.id}
-                          onUpdate={noop}
-                          onDelete={noop}
-                          isOwnProfile={isOwnProfile}
-                          recipientName={recipientName}
-                          recipientAvatarUrl={recipientAvatarUrl}
-                        />
-                      </motion.div>
-                    );
+                      return (
+                        <motion.div
+                          key={promise.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
+                          <PromiseView
+                            promise={promise}
+                            onToggle={() => setOpenPromiseId(openPromiseId === promise.id ? null : promise.id)}
+                            isOpen={openPromiseId === promise.id}
+                            onUpdate={noop}
+                            onDelete={noop}
+                            isOwnProfile={isOwnProfile}
+                            recipientName={recipientName}
+                            recipientAvatarUrl={recipientAvatarUrl}
+                          />
+                        </motion.div>
+                      );
+                    } else {
+                      const challenge = post as any;
+                      return (
+                        <motion.div
+                          key={challenge.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
+                          <ChallengeView
+                            challenge={challenge}
+                            onToggle={() => setOpenChallengeId(openChallengeId === challenge.id ? null : challenge.id)}
+                            isOpen={openChallengeId === challenge.id}
+                            onUpdate={noop}
+                            onDelete={noop}
+                            isOwnProfile={isOwnProfile}
+                            isProfilePage={true}
+                          />
+                        </motion.div>
+                      );
+                    }
                   })}
-                  {challenges.map((challenge) => (
-                    <motion.div
-                      key={challenge.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3, ease: 'easeOut' }}
-                    >
-                      <ChallengeView
-                        challenge={challenge}
-                        onToggle={() => setOpenChallengeId(openChallengeId === challenge.id ? null : challenge.id)}
-                        isOpen={openChallengeId === challenge.id}
-                        onUpdate={noop}
-                        onDelete={noop}
-                        isOwnProfile={isOwnProfile}
-                        isProfilePage={true}
-                      />
-                    </motion.div>
-                  ))}
                 </AnimatePresence>
+                
+                {/* Кнопка "Загрузить еще" */}
+                {!isLoading && hasMore && (
+                  <div className="text-center my-4 pb-2">
+                    <button
+                      onClick={loadMorePosts}
+                      className="btn btn-outline-primary px-4 py-2"
+                    >
+                      Загрузить еще
+                    </button>
+                  </div>
+                )}
+                
+                {/* Сообщение когда больше постов нет */}
+                {/* {!isLoading && !hasMore && displayedPosts.length > 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-muted font-xsss">Больше постов нет</p>
+                  </div>
+                )} */}
               </div>
             </div>
           </div>

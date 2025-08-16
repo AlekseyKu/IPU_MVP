@@ -168,12 +168,14 @@ export const en = {
     observers: 'Observers',
   },
 
-  // Posts list
-  list: {
-    mySubscriptions: 'My subscriptions',
-    loadingPosts: 'Loading posts...',
-    guest: 'Guest',
-  },
+     // Posts list
+   list: {
+     mySubscriptions: 'My subscriptions',
+     loadingPosts: 'Loading posts...',
+     guest: 'Guest',
+     loadMore: 'Load more',
+     noMorePosts: 'No more posts',
+   },
 
   // Create promises
   promiseCreate: {
@@ -384,10 +386,12 @@ export const en = {
     account: 'Account',
   },
 
-  // User profile page
-  userProfile: {
-    loadingProfile: 'Loading profile...',
-  },
+     // User profile page
+   userProfile: {
+     loadingProfile: 'Loading profile...',
+     loadMore: 'Load more',
+     noMorePosts: 'No more posts',
+   },
 
   // Settings page
   settings: {
@@ -425,4 +429,268 @@ export const en = {
     promiseDeletion: 'Promise deletion',
     promiseCompletionForOther: 'Promise completion for another person',
   },
+
+  // Privacy Policy
+  privacyPolicy: {
+    title: 'Privacy Policy',
+    description: 'This Privacy Policy explains how DexStudioApp Inc collects, uses, and protects your data when you use the IPU Telegram Mini App.',
+    effectiveDate: 'Effective Date: August 14, 2025',
+    lastUpdated: 'Last Updated: August 14, 2025',
+    entity: 'Effective entity: DexStudioApp Inc',
+    address: 'Registered Address: 8 The Green, Dover, DE 19901, Delaware, USA',
+    contactEmail: 'Contact email: info@dexsa.site',
+    intro: 'DexStudioApp Inc ("DexStudioApp", "we", "us", or "our") values your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal data when you use our IPU application, available as a Telegram Mini App.',
+    sections: {
+      whatWeCollect: {
+        title: '1. What We Collect',
+        items: [
+          'Telegram user ID, username, and profile picture.',
+          'Actions within the app (promises, challenges, referrals, etc.).',
+          'Device data for diagnostics (OS, browser).',
+          'Referral and gamification activity.',
+          'Operational data stored in our database (Supabase/PostgreSQL) for app functionality.'
+        ]
+      },
+      whyWeCollect: {
+        title: '2. Why We Collect It',
+        items: [
+          'Enable core features (e.g., progress tracking, social interactions).',
+          'Improve user experience and app performance.',
+          'Detect abuse and ensure fair use.',
+          'Provide customer support.'
+        ]
+      },
+      legalBasis: {
+        title: '3. Legal Basis & Consent',
+        text: 'By using our app, you consent to the collection and processing of your data in accordance with this Privacy Policy. If you do not agree, please stop using the app and request data deletion.'
+      },
+      dataSharing: {
+        title: '4. Data Sharing',
+        text: 'We do not share your data with anyone, except trusted service providers (e.g., Supabase for hosting and database, analytics tools) strictly to operate app features. If required by law, we may disclose your data to authorities.'
+      },
+      dataStorage: {
+        title: '5. Data Storage & Retention',
+        items: [
+          'Data is stored securely using encryption and access controls.',
+          'Retention period: 3 months after your last activity. After this period, data is permanently deleted.'
+        ]
+      },
+      internationalTransfers: {
+        title: '6. International Data Transfers',
+        text: 'Our services may transfer and store your data outside your country, including in the United States, where our hosting and service providers operate. We take reasonable measures to ensure data protection in compliance with applicable laws.'
+      },
+      cookies: {
+        title: '7. Cookies & Local Storage',
+        text: 'We use local storage within your browser to save session information and improve performance. We do not use third-party tracking cookies.'
+      },
+      yourRights: {
+        title: '8. Your Rights',
+        items: [
+          'Request a copy of your data.',
+          'Request correction or deletion of your data.',
+          'Withdraw consent at any time by contacting info@dexsa.site.'
+        ]
+      },
+      changes: {
+        title: '9. Changes to this Policy',
+        text: 'We may update this Privacy Policy from time to time. Changes will be posted in the app and on our website. Continued use of the app after changes constitutes acceptance of the updated policy.'
+      },
+             contact: 'Contact: info@dexsa.site'
+     }
+   },
+
+   // Terms of Use
+   termsOfUse: {
+     title: 'Terms of Use',
+     description: 'By using our services (the "Service"), including the IPU Telegram Mini App, you agree to these Terms.',
+     effectiveDate: 'Effective Date: August 16, 2025',
+     entity: 'Entity: DexStudioApp Inc, 8 The Green, Dover, DE 19901, USA',
+     contact: 'Contact: info@dexsa.site',
+     sections: {
+       eligibility: {
+         title: '1. Eligibility & Account',
+         text: 'You must comply with Telegram\'s Terms of Service and all applicable laws. You are responsible for all activity performed under your Telegram account while using the Service.'
+       },
+       fairUse: {
+         title: '2. Fair Use & Prohibited Conduct',
+         text: 'You agree not to: (a) spam, scam, harass, or abuse others; (b) upload or share illegal, harmful, or misleading content; (c) hack, probe, or disrupt the Service; (d) scrape or reverse-engineer without written permission; (e) impersonate others; (f) infringe IP or privacy rights.'
+       },
+       content: {
+         title: '3. Content & License',
+         text: 'You retain rights to content you submit. You grant DexStudioApp a non-exclusive, worldwide, royalty-free license to host, display, and operate your content within the Service to provide its features. You represent you have the rights to grant this license.'
+       },
+       rewards: {
+         title: '4. Rewards & Virtual Items (incl. Telegram Stars)',
+         text: 'Points, badges, and Telegram Stars are virtual items with no monetary value, unless expressly stated by us. Availability, balances, and rules may change or be revoked (e.g., for abuse). For Stars, Telegram\'s policies and refund rules apply.'
+       },
+       privacy: {
+         title: '5) Privacy',
+         text: 'Our data processing is described in the Privacy Policy: /projects/ipu/privacy-policy. By using the Service, you acknowledge that policy.'
+       },
+       termination: {
+         title: '6. Termination',
+         text: 'We may suspend or terminate access for violations of these Terms or applicable law. You may stop using the Service anytime and request data deletion per the Privacy Policy.'
+       },
+       disclaimer: {
+         title: '7. Disclaimer; Limitation of Liability (short)',
+         text: 'The Service is provided "as is" and "as available." To the maximum extent permitted by law, DexStudioApp is not liable for indirect, incidental, special, or consequential damages, or loss of data or profits. Nothing here limits liability where it cannot be limited by law. Your mandatory consumer rights remain unaffected.'
+       },
+       changes: {
+         title: '8. Changes',
+         text: 'We may update the Service and these Terms. Material changes will be announced in-app. Continued use after changes take effect means you accept the updated Terms.'
+       }
+     }
+   },
+
+   // FAQ
+   faq: {
+     title: 'Frequently Asked Questions (FAQ)',
+     sections: {
+       general: {
+         title: 'General',
+         questions: [
+           {
+             question: 'What is IPU?',
+             answer: 'IPU (I Promise You) is an app where your promises become actions. It\'s a personal growth tool and social network built on integrity, responsibility, and truth.'
+           },
+           {
+             question: 'Who created IPU?',
+             answer: 'IPU is a product of DEXSTUDIOAPP Inc. We\'re a Delaware-based startup with an international team building tools for the future.'
+           },
+           {
+             question: 'Why does this app exist?',
+             answer: 'To help people become better by standing behind their words. Here, your intentions turn into progress and social validation.'
+           }
+         ]
+       },
+       promises: {
+         title: 'Promises',
+         questions: [
+           {
+             question: 'What is a promise in IPU?',
+             answer: 'A promise is a commitment — to yourself or someone else. You can make it private or public, add a deadline, description, media, and hashtags.'
+           },
+           {
+             question: 'How to create a promise?',
+             answer: '1. Tap "Create Promise"\n2. Set title, type (private/public)\n3. Choose who it\'s for: yourself or an IPU user\n4. If the person is not yet in IPU, invite them via referral link\n5. Set deadline\n6. Add description, tags, and media\n7. Tap "Create"'
+           },
+           {
+             question: 'Can I complete a promise early?',
+             answer: 'Yes, but not sooner than 3 hours after it\'s created.'
+           },
+           {
+             question: 'Can I delete a promise?',
+             answer: 'Yes, but only within 6 hours of creation.'
+           },
+           {
+             question: 'How do I earn karma for promises?',
+             answer: '• Completing a personal promise = karma\n• Completing a promise to someone else = more karma\n• Inviting a user via referral = extra karma'
+           },
+           {
+             question: 'What happens when I give a promise to another user?',
+             answer: 'They must accept or decline it. Once accepted, it becomes active. After completion, they validate or reject the result.'
+           }
+         ]
+       },
+       challenges: {
+         title: 'Challenges',
+         questions: [
+           {
+             question: 'What is a challenge?',
+             answer: 'A recurring activity you commit to (e.g. daily journaling). You define frequency and number of reports.'
+           },
+           {
+             question: 'How to create a challenge?',
+             answer: '1. Set name\n2. Choose frequency (daily/weekly/monthly)\n3. Set number of reports\n4. Add description, tags, and media\n5. Create and start'
+           },
+           {
+             question: 'How to begin a challenge?',
+             answer: 'Press "Start", add your first report with text and media.'
+           },
+           {
+             question: 'Can I delete a challenge?',
+             answer: 'Yes, within 6 hours of creation.'
+           }
+         ]
+       },
+       following: {
+         title: 'Following Other Challenges',
+         questions: [
+           {
+             question: 'Can I join someone else\'s challenge?',
+             answer: 'Not yet. Currently, you can only follow their progress as an Observer.'
+           },
+           {
+             question: 'What is this feature called?',
+             answer: 'The button might say "Follow Challenge". Observers track the challenge and support the creator.'
+           }
+         ]
+       },
+       karma: {
+         title: 'Karma & Rewards',
+         questions: [
+           {
+             question: 'What is Karma?',
+             answer: 'Karma is the internal points system. You earn it by:\n• Completing promises\n• Fulfilling challenges\n• Inviting users\n• Supporting others'
+           },
+           {
+             question: 'What can I do with Karma?',
+             answer: 'A Marketplace is coming soon. You\'ll be able to trade karma for:\n• Visual rewards\n• Skins & upgrades\n• Access to special features'
+           }
+         ]
+       },
+       leaderboard: {
+         title: 'Leaderboard',
+         questions: [
+           {
+             question: 'Where can I see my progress?',
+             answer: 'Our Leaderboard is already live. You\'ll see:\n• Top promise keepers\n• Top challenge finishers\n• Most karma earned this week/month'
+           }
+         ]
+       },
+       profile: {
+         title: 'Profile & Settings',
+         questions: [
+           {
+             question: 'What can I change?',
+             answer: '• First name, last name, email\n• Profile picture & background\n• "About me" section'
+           },
+           {
+             question: 'Why do I need an email?',
+             answer: 'It will be used for login in our main app and account recovery.'
+           }
+         ]
+       },
+       invites: {
+         title: 'Invites & Social',
+         questions: [
+           {
+             question: 'How to invite a friend?',
+             answer: 'When creating a promise to someone, enter their Telegram @username. They\'ll receive a referral link.'
+           },
+           {
+             question: 'Do I get Karma for referrals?',
+             answer: 'Yes. Successful invites bring bonus karma.'
+           },
+           {
+             question: 'Where to follow updates?',
+             answer: 'Stay connected:\n• Telegram-channel IPU'
+           }
+         ]
+       },
+       support: {
+         title: 'Support',
+         questions: [
+           {
+             question: 'Something\'s broken. What now?',
+             answer: 'Go to Support in the menu. We\'ll reply ASAP.'
+           },
+           {
+             question: 'Where are the rules?',
+             answer: 'In the app menu:\n• Privacy Policy\n• Terms of Use'
+           }
+         ]
+       }
+     }
+   },
 }; 

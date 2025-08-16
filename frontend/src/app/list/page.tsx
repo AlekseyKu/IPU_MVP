@@ -24,7 +24,7 @@ function isChallengeData(post: any): post is ChallengeData {
 export default function ListPage() {
   const { telegramId: currentUserId } = useUser();
   const { t } = useLanguage();
-  const { posts, users, subscriptions, isLoading } = usePublicPosts(currentUserId);
+  const { posts, users, subscriptions, isLoading, hasMore, loadMorePosts } = usePublicPosts(currentUserId);
   const [openPromiseId, setOpenPromiseId] = useState<string | null>(null);
   const [showSubscribedOnly, setShowSubscribedOnly] = useState(false);
 
@@ -128,6 +128,21 @@ export default function ListPage() {
                     })}
                   </AnimatePresence>
                 )}
+                
+                {/* Кнопка "Загрузить еще" */}
+                {!isLoading && hasMore && (
+                  <div className="text-center my-4 pb-2">
+                    <button
+                      onClick={loadMorePosts}
+                      className="btn btn-outline-primary px-4 py-2"
+                      
+                    >
+                      {t('list.loadMore')}
+                    </button>
+                  </div>
+                )}
+                
+
               </div>
             </div>
           </div>

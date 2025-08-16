@@ -13,6 +13,12 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
   // --- Новый блок: состояние для получателей обещаний ---
   const [recipients, setRecipients] = useState<Record<number, UserData>>({});
   const isOwnProfile = telegramId === currentUserId;
+  
+  // Пагинация
+  const [displayedPosts, setDisplayedPosts] = useState<(PromiseData | ChallengeData)[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const postsPerPage = 10;
 
   useEffect(() => {
     async function fetchData() {
@@ -73,6 +79,17 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
         if (!challengesRes.error) {
           setChallenges(challengesRes.data || []);
         }
+
+        // Инициализируем отображаемые посты
+        const allPosts = [
+          ...(promisesRes.data || []),
+          ...(challengesRes.data || []),
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        const initialPosts = allPosts.slice(0, postsPerPage);
+        setDisplayedPosts(initialPosts);
+        setHasMore(allPosts.length > postsPerPage);
+        setCurrentPage(1);
 
         if (currentUserId && !isOwnProfile) {
           const subRes = await fetch(`/api/subscriptions?follower_id=${currentUserId}&followed_id=${telegramId}`);
@@ -192,5 +209,35 @@ export function useUserProfileData(telegramId: number, currentUserId?: number | 
     };
   }, [telegramId]);
 
-  return { userData, promises, challenges, isSubscribed, isLoading, error, setUserData, setIsSubscribed, setError, recipients };
+  const loadMorePosts = () => {
+    const nextPage = currentPage + 1;
+    const startIndex = (nextPage - 1) * postsPerPage;
+    const endIndex = startIndex + postsPerPage;
+    const allPosts = [
+      ...promises,
+      ...challenges,
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    const newPosts = allPosts.slice(startIndex, endIndex);
+    
+    setDisplayedPosts(prev => [...prev, ...newPosts]);
+    setCurrentPage(nextPage);
+    setHasMore(endIndex < allPosts.length);
+  };
+
+  return { 
+    userData, 
+    promises, 
+    challenges, 
+    isSubscribed, 
+    isLoading, 
+    error, 
+    setUserData, 
+    setIsSubscribed, 
+    setError, 
+    recipients,
+    displayedPosts,
+    hasMore,
+    loadMorePosts
+  };
 }
