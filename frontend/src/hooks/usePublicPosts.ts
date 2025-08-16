@@ -8,6 +8,10 @@ export function usePublicPosts(currentUserId: number | null) {
   const [users, setUsers] = useState<Record<number, User>>({});
   const [subscriptions, setSubscriptions] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [displayedPosts, setDisplayedPosts] = useState<(PromiseData | ChallengeData)[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const postsPerPage = 10;
 
   useEffect(() => {
     let mounted = true;
@@ -37,6 +41,12 @@ export function usePublicPosts(currentUserId: number | null) {
             ...(challengeData || []),
           ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           setPosts(allPosts);
+          
+          // Инициализируем отображаемые посты
+          const initialPosts = allPosts.slice(0, postsPerPage);
+          setDisplayedPosts(initialPosts);
+          setHasMore(allPosts.length > postsPerPage);
+          setCurrentPage(1);
         }
         if (!uErr) {
           const mapped = (userData || []).reduce((acc, u) => {
@@ -82,7 +92,14 @@ export function usePublicPosts(currentUserId: number | null) {
             case 'DELETE':
               return newPosts.filter((p) => p.id !== payload.old?.id);
           }
-          return newPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          const sortedPosts = newPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          
+          // Обновляем отображаемые посты
+          const newDisplayedPosts = sortedPosts.slice(0, currentPage * postsPerPage);
+          setDisplayedPosts(newDisplayedPosts);
+          setHasMore(sortedPosts.length > newDisplayedPosts.length);
+          
+          return sortedPosts;
         });
       })
       .subscribe();
@@ -104,7 +121,14 @@ export function usePublicPosts(currentUserId: number | null) {
             case 'DELETE':
               return newPosts.filter((p) => p.id !== payload.old?.id);
           }
-          return newPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          const sortedPosts = newPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          
+          // Обновляем отображаемые посты
+          const newDisplayedPosts = sortedPosts.slice(0, currentPage * postsPerPage);
+          setDisplayedPosts(newDisplayedPosts);
+          setHasMore(sortedPosts.length > newDisplayedPosts.length);
+          
+          return sortedPosts;
         });
       })
       .subscribe();
@@ -141,5 +165,23 @@ export function usePublicPosts(currentUserId: number | null) {
     };
   }, [currentUserId]);
 
-  return { posts, users, subscriptions, isLoading };
+  const loadMorePosts = () => {
+    const nextPage = currentPage + 1;
+    const startIndex = (nextPage - 1) * postsPerPage;
+    const endIndex = startIndex + postsPerPage;
+    const newPosts = posts.slice(startIndex, endIndex);
+    
+    setDisplayedPosts(prev => [...prev, ...newPosts]);
+    setCurrentPage(nextPage);
+    setHasMore(endIndex < posts.length);
+  };
+
+  return { 
+    posts: displayedPosts, 
+    users, 
+    subscriptions, 
+    isLoading, 
+    hasMore, 
+    loadMorePosts 
+  };
 }

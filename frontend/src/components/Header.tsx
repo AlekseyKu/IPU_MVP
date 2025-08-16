@@ -7,6 +7,9 @@ import Image from 'next/image'
 import { useUser } from '@/context/UserContext';
 import { useUserData } from '@/hooks/useUserData';
 import { useLanguage } from '@/context/LanguageContext';
+import PrivacyModal from './PrivacyModal';
+import TermsModal from './TermsModal';
+import FaqModal from './FaqModal';
 import {
   Video,
   Search,
@@ -43,6 +46,9 @@ const Header: React.FC = () => {
     isActive: false,
     isNoti: false,
   })
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [showFaqModal, setShowFaqModal] = useState(false)
 
   const { telegramId } = useUser();
   const { userData } = useUserData({ telegramId: telegramId || 0 });
@@ -62,6 +68,24 @@ const Header: React.FC = () => {
     if (e.target === e.currentTarget) {
       setUiState((prev) => ({ ...prev, isOpen: false }))
     }
+  }
+
+  // Обработчик открытия политики конфиденциальности
+  const handlePrivacyClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowPrivacyModal(true)
+  }
+
+  // Обработчик открытия условий использования
+  const handleTermsClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowTermsModal(true)
+  }
+
+  // Обработчик открытия FAQ
+  const handleFaqClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowFaqModal(true)
   }
 
 
@@ -203,10 +227,10 @@ const Header: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faq" className="nav-content-bttn open-font">
+                  <a href="#" onClick={handleFaqClick} className="nav-content-bttn open-font">
                     <HelpCircle className="me-2" style={{ width: '20px', height: '20px' }} />
                     <span className="font-xsss">{t('menu.faq')}</span> {/* "Вопросы и ответы" */}
-                  </Link>
+                  </a>
                 </li>
                 <li>
                   <Link href="https://t.me/dexstudioapp" target="_blank" className="nav-content-bttn open-font">
@@ -221,16 +245,16 @@ const Header: React.FC = () => {
               <div className="nav-caption fw-600 font-xsss text-primary">{t('menu.legal')}</div> {/* "Правовая информация" */}
               <ul className="mb-1">
                 <li>
-                  <Link href="/privacy-policy" className="nav-content-bttn open-font">
+                  <a href="#" onClick={handlePrivacyClick} className="nav-content-bttn open-font">
                     {/* <Shield className="me-2" style={{ width: '20px', height: '20px' }} /> */}
                     <span className="font-xsss">{t('menu.privacyPolicy')}</span> {/* "Политика конфиденциальности" */}
-                  </Link>
+                  </a>
                 </li>
                 <li>
-                  <Link href="/terms-of-use" className="nav-content-bttn open-font">
+                  <a href="#" onClick={handleTermsClick} className="nav-content-bttn open-font">
                     {/* <FileText className="me-2" style={{ width: '20px', height: '20px' }} /> */}
                     <span className="font-xsss">{t('menu.termsOfUse')}</span> {/* "Условия использования" */}
-                  </Link>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -273,6 +297,21 @@ const Header: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Модальное окно политики конфиденциальности */}
+      {showPrivacyModal && (
+        <PrivacyModal onClose={() => setShowPrivacyModal(false)} />
+      )}
+
+      {/* Модальное окно условий использования */}
+      {showTermsModal && (
+        <TermsModal onClose={() => setShowTermsModal(false)} />
+      )}
+
+      {/* Модальное окно FAQ */}
+      {showFaqModal && (
+        <FaqModal onClose={() => setShowFaqModal(false)} />
+      )}
     </div>
   )
 }

@@ -3,12 +3,20 @@
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { X } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { en } from '@/locales/en';
+import { ru } from '@/locales/ru';
 
 interface PrivacyModalProps {
   onClose: () => void;
 }
 
 const PrivacyModal: React.FC<PrivacyModalProps> = ({ onClose }) => {
+  const { t, language } = useLanguage();
+  
+  // Получаем правильные переводы в зависимости от языка
+  const translations = language === 'ru' ? ru.privacyPolicy : en.privacyPolicy;
+  
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -23,7 +31,7 @@ const PrivacyModal: React.FC<PrivacyModalProps> = ({ onClose }) => {
       pointerEvents: 'auto',
     }}>
       <div
-        className="card shadow-xss rounded-xxl border-0 p-4 bg-white w-100 d-flex flex-column"
+        className="card shadow-xss rounded-xxl border-0 p-3 bg-white w-100 d-flex flex-column"
         style={{
           maxWidth: '600px', position: 'relative', maxHeight: 'calc(100vh - 2rem)',
           overflowY: 'auto', pointerEvents: 'auto',
@@ -38,46 +46,66 @@ const PrivacyModal: React.FC<PrivacyModalProps> = ({ onClose }) => {
           <X className="w-6 h-6" />
         </button>
         
-        <h2 className="font-lg mb-3">Политика конфиденциальности</h2>
+        <h2 className="font-lg mb-3">{translations.title}</h2>
         
         <div className="privacy-content">
-          <h4>1. Сбор информации</h4>
-          <p>Мы собираем информацию, которую вы предоставляете при использовании приложения IPU, включая:</p>
+          <p className="mb-3">{translations.description}</p>
+          
+          <div className="mb-3">
+            <p className="text-muted font-xsss">{translations.effectiveDate}</p>
+            <p className="text-muted font-xsss">{translations.lastUpdated}</p>
+            <p className="text-muted font-xsss">{translations.entity}</p>
+            <p className="text-muted font-xsss">{translations.address}</p>
+            <p className="text-muted font-xsss">{translations.contactEmail}</p>
+          </div>
+
+          <p className="mb-4">{translations.intro}</p>
+
+          <h4>{translations.sections.whatWeCollect.title}</h4>
           <ul>
-            <li>Данные профиля (имя, фото профиля)</li>
-            <li>Информацию о созданных обещаниях и челленджах</li>
-            <li>Данные о взаимодействии с другими пользователями</li>
+            {translations.sections.whatWeCollect.items.map((item: string, index: number) => (
+              <li key={index}>{item}</li>
+            ))}
           </ul>
 
-          <h4>2. Использование информации</h4>
-          <p>Собранная информация используется для:</p>
+          <h4>{translations.sections.whyWeCollect.title}</h4>
           <ul>
-            <li>Предоставления и улучшения сервисов приложения</li>
-            <li>Персонализации пользовательского опыта</li>
-            <li>Обеспечения безопасности аккаунта</li>
-            <li>Отправки уведомлений о важных событиях</li>
+            {translations.sections.whyWeCollect.items.map((item: string, index: number) => (
+              <li key={index}>{item}</li>
+            ))}
           </ul>
 
-          <h4>3. Защита данных</h4>
-          <p>Мы принимаем все необходимые меры для защиты ваших персональных данных от несанкционированного доступа, изменения, раскрытия или уничтожения.</p>
+          <h4>{translations.sections.legalBasis.title}</h4>
+          <p>{translations.sections.legalBasis.text}</p>
 
-          <h4>4. Передача данных</h4>
-          <p>Мы не продаем, не обмениваем и не передаем ваши персональные данные третьим лицам без вашего согласия, за исключением случаев, предусмотренных законодательством.</p>
+          <h4>{translations.sections.dataSharing.title}</h4>
+          <p>{translations.sections.dataSharing.text}</p>
 
-          <h4>5. Ваши права</h4>
-          <p>Вы имеете право:</p>
+          <h4>{translations.sections.dataStorage.title}</h4>
           <ul>
-            <li>Получить доступ к своим персональным данным</li>
-            <li>Исправить неточные данные</li>
-            <li>Удалить свои данные</li>
-            <li>Отозвать согласие на обработку данных</li>
+            {translations.sections.dataStorage.items.map((item: string, index: number) => (
+              <li key={index}>{item}</li>
+            ))}
           </ul>
 
-          <h4>6. Контакты</h4>
-          <p>По вопросам, связанным с обработкой персональных данных, обращайтесь к нам по адресу: info@dexsa.site</p>
+          <h4>{translations.sections.internationalTransfers.title}</h4>
+          <p>{translations.sections.internationalTransfers.text}</p>
+
+          <h4>{translations.sections.cookies.title}</h4>
+          <p>{translations.sections.cookies.text}</p>
+
+          <h4>{translations.sections.yourRights.title}</h4>
+          <ul>
+            {translations.sections.yourRights.items.map((item: string, index: number) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+
+          <h4>{translations.sections.changes.title}</h4>
+          <p>{translations.sections.changes.text}</p>
 
           <p className="text-muted mt-4">
-            <small>Последнее обновление: {new Date().toLocaleDateString('ru-RU')}</small>
+            <strong>{translations.sections.contact}</strong>
           </p>
         </div>
       </div>

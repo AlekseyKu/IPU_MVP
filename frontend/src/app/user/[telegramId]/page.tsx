@@ -48,6 +48,12 @@ export default function UserProfile() {
   // Убираем localUser - используем напрямую userData
   // const [localUser, setLocalUser] = useState<UserData | null>(null)
   const [subscribedChallenges, setSubscribedChallenges] = useState<ChallengeData[]>([])
+  
+  // Пагинация
+  const [displayedPosts, setDisplayedPosts] = useState<(PromiseData | ChallengeData)[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const postsPerPage = 10
 
   const isOwn = ctxId === telegramId
 
@@ -89,6 +95,13 @@ export default function UserProfile() {
       );
       
       setAllPosts(merged);
+      
+      // Инициализируем отображаемые посты
+      const initialPosts = merged.slice(0, postsPerPage);
+      setDisplayedPosts(initialPosts);
+      setHasMore(merged.length > postsPerPage);
+      setCurrentPage(1);
+      
       console.log('📝 Posts list reloaded');
     } catch (error) {
       console.error('Error reloading posts:', error);
@@ -138,6 +151,26 @@ export default function UserProfile() {
     });
   }, [allPosts, isOwn, ctxId]);
   // --- конец блока фильтрации ---
+
+  // Обновляем отображаемые посты при изменении filteredPosts
+  useEffect(() => {
+    const initialPosts = filteredPosts.slice(0, postsPerPage);
+    setDisplayedPosts(initialPosts);
+    setHasMore(filteredPosts.length > postsPerPage);
+    setCurrentPage(1);
+  }, [filteredPosts, postsPerPage]);
+
+  // Функция для загрузки дополнительных постов
+  const loadMorePosts = () => {
+    const nextPage = currentPage + 1;
+    const startIndex = (nextPage - 1) * postsPerPage;
+    const endIndex = startIndex + postsPerPage;
+    const newPosts = filteredPosts.slice(startIndex, endIndex);
+    
+    setDisplayedPosts(prev => [...prev, ...newPosts]);
+    setCurrentPage(nextPage);
+    setHasMore(endIndex < filteredPosts.length);
+  };
 
   const updatePosts = (
     post: PromiseData | ChallengeData,
@@ -367,6 +400,12 @@ export default function UserProfile() {
         )
         setAllPosts(merged)
         
+        // Инициализируем отображаемые посты
+        const initialPosts = merged.slice(0, postsPerPage);
+        setDisplayedPosts(initialPosts);
+        setHasMore(merged.length > postsPerPage);
+        setCurrentPage(1);
+        
         // --- Загружаем информацию о создателях обещаний ---
         const allPromises = [
           ...(ownPromisesRes.data || []),
@@ -483,11 +522,25 @@ export default function UserProfile() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+                
+                {/* Кнопка "Загрузить еще" */}
+                {!isLoading && hasMore && (
+                  <div className="text-center my-4 pb-2">
+                    <button
+                      onClick={loadMorePosts}
+                      className="btn btn-outline-primary px-4 py-2"
+                    >
+                      {t('userProfile.loadMore')}
+                    </button>
+                  </div>
+                )}
+                
+
               </div>
               <div className="col-xl-8 col-xxl-9 col-lg-8">
                 <AnimatePresence>
-                  {/* --- Изменено: используем filteredPosts вместо allPosts --- */}
-                  {filteredPosts.map((post) =>
+                  {/* --- Изменено: используем displayedPosts вместо filteredPosts --- */}
+                  {displayedPosts.map((post) =>
                     isPromiseData(post) ? (
                       <motion.div
                         key={post.id}

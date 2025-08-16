@@ -102,7 +102,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ onSelect, placeholder, myTelegr
       />
       {isDropdownOpen && (
         <div className="dropdown-menu show w-100 p-0 mt-1" style={{ maxHeight: 320, overflowY: 'auto', zIndex: 9999 }}>
-          {loading && <div className="dropdown-item text-muted">{t('userSearch.loading')}</div>} // "Загрузка..."
+          {loading && <div className="dropdown-item text-muted">{t('userSearch.loading')}</div>} {/* "Загрузка..." */}
           {error && <div className="dropdown-item text-danger">{error}</div>}
           {!loading && !error && results.length === 0 && (
             <div className="dropdown-item text-muted">{t('userSearch.noResults')}</div> // "Ничего не найдено"
