@@ -50,13 +50,14 @@ async def start_command(msg: Message):
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🚀 Открыть платформу",
+                    text="Open IPU App",
                     web_app=WebAppInfo(url=frontend_url)
                 )
             ]
         ]
     )
     await msg.answer(
-        f"Привет, {msg.from_user.full_name}! Добро пожаловать 👋\n{status_message}",
+        # f"Hello, {msg.from_user.full_name}! Welcome to the IPU App 👋\n{status_message}",
+        f"Hello, {msg.from_user.full_name}! Welcome to the IPU App 👋",
         reply_markup=kb
     )
