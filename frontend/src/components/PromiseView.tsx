@@ -207,8 +207,8 @@ const PromiseView: React.FC<PostviewProps> = ({
   };
 
   const copyLink = () => {
-    // const botUsername = 'ipu_promise_bot';
-    const botUsername = 'I_P_U_bot';
+    const botUsername = 'ipu_promise_bot';
+    // const botUsername = 'I_P_U_bot';
     const link = `https://t.me/${botUsername}?startapp=promise_${id}`;
     navigator.clipboard.writeText(link).then(() => alert(t('promiseView.success.linkCopied'))); // "Ссылка скопирована!"
     setMenuOpen(false);
