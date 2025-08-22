@@ -69,3 +69,15 @@ export interface ChallengeData extends PostData {
   report_periods?: string[];   // Добавлено, массив строк вроде ["2025-01-01/2025-01-07"]
   deadline_period?: string;    // Добавлено, строка вроде "2025-01-21/2025-01-21"
 }
+
+// --- Типы для TG Analytics ---
+declare global {
+  interface Window {
+    telegramAnalytics: {
+      init: (config: {
+        token: string;
+        appName: string;
+      }) => void;
+    };
+  }
+}
