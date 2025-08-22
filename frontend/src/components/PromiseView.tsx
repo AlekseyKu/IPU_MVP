@@ -207,16 +207,20 @@ const PromiseView: React.FC<PostviewProps> = ({
   };
 
   const copyLink = () => {
-    const link = `${window.location.origin}/promise/${id}`;
+    const botUsername = 'ipu_promise_bot';
+    // const botUsername = 'I_P_U_bot';
+    const link = `https://t.me/${botUsername}?startapp=promise_${id}`;
     navigator.clipboard.writeText(link).then(() => alert(t('promiseView.success.linkCopied'))); // "Ссылка скопирована!"
     setMenuOpen(false);
   };
 
   const share = () => {
+    const botUsername = 'ipu_promise_bot';
+    const shareUrl = `https://t.me/${botUsername}?startapp=promise_${id}`;
     const shareData = {
       title: promise.title,
       text: promise.content,
-      url: `${window.location.origin}/promise/${id}`,
+      url: shareUrl,
     };
     if (navigator.share) {
       navigator.share(shareData).catch((error) => console.error('Error sharing:', error));
