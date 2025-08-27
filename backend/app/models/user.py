@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, BigInteger, String, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -12,5 +13,9 @@ class User(Base):
     username = Column(String(255))
     first_name = Column(String(255))
     last_name = Column(String(255))
+    balance = Column(Integer, default=0)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Связь с платежами
+    payments = relationship("Payment", back_populates="user")

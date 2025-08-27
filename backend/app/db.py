@@ -16,16 +16,23 @@ CA_CERT_PATH = BASE_DIR / "supabase-ca.crt"
 
 ssl_context = ssl.create_default_context(cafile=str(CA_CERT_PATH))
 
+# Ожидается: postgresql+asyncpg://user:password@host:port/dbname (для init_pool заменим на обычный DSN)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Модульная переменная для пула
+# -----------------------------
+# asyncpg pool only
+# -----------------------------
 pool = None
 
 async def init_pool():
     global pool
     try:
+        dsn = DATABASE_URL or ""
+        # asyncpg не понимает префикс +asyncpg в DSN, уберём его для подключения пула
+        if "+asyncpg" in dsn:
+            dsn = dsn.replace("+asyncpg", "")
         pool = await asyncpg.create_pool(
-            dsn=DATABASE_URL,
+            dsn=dsn,
             ssl=ssl_context,
             statement_cache_size=0,
             min_size=5,

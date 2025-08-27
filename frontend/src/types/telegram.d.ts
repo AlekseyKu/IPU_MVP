@@ -34,6 +34,8 @@ declare global {
       hide: () => void;
       onClick: (cb: () => void) => void;
     };
+    // Методы для платежей
+    openInvoice: (invoiceLink: string, callback: (status: string) => void) => void;
   }
 
   interface Window {

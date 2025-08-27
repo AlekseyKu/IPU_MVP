@@ -4,6 +4,8 @@ from app.routers import users
 from contextlib import asynccontextmanager
 import logging
 
+from app.routers import payments_minimal
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -19,5 +21,6 @@ async def lifespan(app: FastAPI):
 app.router.lifespan_context = lifespan  # Установка lifespan контекста
 
 app.include_router(users.router)
+app.include_router(payments_minimal.router)
 
 from app.db import init_pool, close_pool  # Импорт для использования в lifespan
