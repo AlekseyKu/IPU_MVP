@@ -38,7 +38,7 @@ async def create_user(user: dict, db: asyncpg.Connection = Depends(get_db)):
             }
 
         await db.execute(
-            "INSERT INTO users (telegram_id, username, first_name, last_name) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO users (telegram_id, username, first_name, last_name, balance) VALUES ($1, $2, $3, $4, 0)",
             telegram_id, username, first_name, last_name
         )
         logger.info(f"User created: telegram_id={telegram_id}")
@@ -57,7 +57,7 @@ async def create_user(user: dict, db: asyncpg.Connection = Depends(get_db)):
 async def get_user(telegram_id: int, db: asyncpg.Connection = Depends(get_db)):
     try:
         user = await db.fetchrow(
-            "SELECT telegram_id, username, first_name, last_name FROM users WHERE telegram_id = $1",
+            "SELECT telegram_id, username, first_name, last_name, balance FROM users WHERE telegram_id = $1",
             telegram_id
         )
         if not user:
@@ -67,7 +67,8 @@ async def get_user(telegram_id: int, db: asyncpg.Connection = Depends(get_db)):
             "telegram_id": user["telegram_id"],
             "username": user["username"],
             "first_name": user["first_name"],
-            "last_name": user["last_name"]
+            "last_name": user["last_name"],
+            "balance": user["balance"]
         }
     except Exception as e:
         logger.error(f"Error in get_user: {str(e)}")

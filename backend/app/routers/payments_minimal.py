@@ -6,6 +6,7 @@ import os
 import logging
 import json
 from typing import Optional
+from app.db import get_user_balance, update_user_balance, create_user_if_not_exists
 
 router = APIRouter(prefix="/api", tags=["payments"])
 logger = logging.getLogger(__name__)
@@ -32,12 +33,14 @@ async def get_balance(x_telegram_user_id: Optional[str] = Header(None)):
     
     try:
         telegram_id = int(x_telegram_user_id)
-        # TODO: Здесь будет запрос к БД для получения баланса
-        # Пока возвращаем заглушку
-        logger.info(f"Getting balance for user {telegram_id}")
-        return BalanceResponse(balance=0)
+        balance = await get_user_balance(telegram_id)
+        logger.info(f"Getting balance for user {telegram_id}: {balance}")
+        return BalanceResponse(balance=balance)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid telegram user ID")
+    except Exception as e:
+        logger.error(f"Error getting balance: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
 
 @router.post("/payments/create", response_model=InvoiceResponse)
 async def create_payment(
@@ -113,9 +116,17 @@ async def process_payment_webhook(webhook_data: WebhookData):
             logger.error(f"Error parsing payload: {e}")
             raise HTTPException(status_code=400, detail="Invalid payload format")
         
-        # TODO: Здесь будет логика обновления баланса пользователя в БД
-        # Пока просто логируем успешную обработку
-        logger.info(f"✅ Payment processed successfully: {amount} stars for user {telegram_id}")
+        # Обновляем баланс пользователя в БД
+        try:
+            success = await update_user_balance(telegram_id, amount)
+            if success:
+                logger.info(f"✅ Payment processed successfully: {amount} stars for user {telegram_id}")
+            else:
+                logger.error(f"❌ Failed to update balance for user {telegram_id}")
+                raise HTTPException(status_code=500, detail="Failed to update user balance")
+        except Exception as e:
+            logger.error(f"Database error updating balance: {e}")
+            raise HTTPException(status_code=500, detail="Database error")
         
         return {
             "status": "success",
