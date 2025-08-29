@@ -89,14 +89,14 @@ async def create_payment(
 async def process_payment_webhook(webhook_data: WebhookData):
     """Обработка webhook'а от бота при успешном платеже"""
     try:
-        logger.info(f"Received webhook data: {webhook_data}")
+        logger.info(f"🔔 WEBHOOK RECEIVED: {webhook_data}")
         
         # Извлекаем данные платежа
         message = webhook_data.message
         successful_payment = message.get("successful_payment")
         
         if not successful_payment:
-            logger.error("No successful_payment data in webhook")
+            logger.error("❌ No successful_payment data in webhook")
             raise HTTPException(status_code=400, detail="Invalid webhook data")
         
         # Получаем данные платежа
@@ -104,7 +104,7 @@ async def process_payment_webhook(webhook_data: WebhookData):
         amount = successful_payment.get("total_amount")
         telegram_payment_charge_id = successful_payment.get("telegram_payment_charge_id")
         
-        logger.info(f"Processing payment: payload={payload}, amount={amount}, charge_id={telegram_payment_charge_id}")
+        logger.info(f"💰 Processing payment: payload={payload}, amount={amount}, charge_id={telegram_payment_charge_id}")
         
         # Парсим payload для получения telegram_id
         try:
@@ -112,8 +112,9 @@ async def process_payment_webhook(webhook_data: WebhookData):
             telegram_id = payload_data.get("telegram_id")
             if not telegram_id:
                 raise ValueError("No telegram_id in payload")
+            logger.info(f"👤 Extracted telegram_id: {telegram_id}")
         except (json.JSONDecodeError, ValueError) as e:
-            logger.error(f"Error parsing payload: {e}")
+            logger.error(f"❌ Error parsing payload: {e}")
             raise HTTPException(status_code=400, detail="Invalid payload format")
         
         # Обновляем баланс пользователя в БД
@@ -125,7 +126,7 @@ async def process_payment_webhook(webhook_data: WebhookData):
                 logger.error(f"❌ Failed to update balance for user {telegram_id}")
                 raise HTTPException(status_code=500, detail="Failed to update user balance")
         except Exception as e:
-            logger.error(f"Database error updating balance: {e}")
+            logger.error(f"❌ Database error updating balance: {e}")
             raise HTTPException(status_code=500, detail="Database error")
         
         return {
@@ -137,5 +138,5 @@ async def process_payment_webhook(webhook_data: WebhookData):
         }
         
     except Exception as e:
-        logger.error(f"Error processing webhook: {e}")
+        logger.error(f"❌ Error processing webhook: {e}")
         raise HTTPException(status_code=500, detail=f"Webhook processing error: {str(e)}")

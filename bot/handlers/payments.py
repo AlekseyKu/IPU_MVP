@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 async def process_pre_checkout_query(pre_checkout_q: PreCheckoutQuery):
     """Обработка pre-checkout запроса"""
     try:
+        logger.info(f"🔍 Pre-checkout query received: {pre_checkout_q}")
         await pre_checkout_q.bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
-        logger.info(f"Pre-checkout approved for user {pre_checkout_q.from_user.id}")
+        logger.info(f"✅ Pre-checkout approved for user {pre_checkout_q.from_user.id}")
     except Exception as e:
-        logger.error(f"Error in pre-checkout: {e}")
+        logger.error(f"❌ Error in pre-checkout: {e}")
         await pre_checkout_q.bot.answer_pre_checkout_query(pre_checkout_q.id, ok=False, error_message="Ошибка проверки платежа")
 
 # Успешная оплата
@@ -25,20 +26,24 @@ async def process_pre_checkout_query(pre_checkout_q: PreCheckoutQuery):
 async def successful_payment(message: Message):
     """Обработка успешного платежа"""
     try:
+        logger.info(f"🎉 SUCCESSFUL PAYMENT RECEIVED: {message}")
         payment = message.successful_payment
-        logger.info(f"✅ Successful payment: {payment}")
+        logger.info(f"✅ Payment details: {payment}")
         
         # Получаем payload (tx_id) и сумму
         payload = payment.invoice_payload
         amount = payment.total_amount
         
         if not payload:
-            logger.error("No invoice_payload in successful payment")
+            logger.error("❌ No invoice_payload in successful payment")
             await message.answer("❌ Ошибка обработки платежа: отсутствует payload")
             return
         
+        logger.info(f"💰 Processing payment: payload={payload}, amount={amount}")
+        
         # Отправляем webhook на backend
         backend_url = os.getenv('BACKEND_URL', 'http://localhost:8000')
+        logger.info(f"🌐 Sending webhook to: {backend_url}")
         
         async with httpx.AsyncClient() as client:
             webhook_data = {
@@ -50,6 +55,8 @@ async def successful_payment(message: Message):
                     }
                 }
             }
+            
+            logger.info(f"📤 Webhook data: {webhook_data}")
             
             try:
                 response = await client.post(f"{backend_url}/api/payments/webhook", json=webhook_data, timeout=10.0)
@@ -72,5 +79,5 @@ async def successful_payment(message: Message):
                 await message.answer("⚠️ Платеж прошел, но возникла ошибка при обновлении баланса. Обратитесь в поддержку.")
                 
     except Exception as e:
-        logger.error(f"Error processing successful payment: {e}")
+        logger.error(f"❌ Error processing successful payment: {e}")
         await message.answer("❌ Ошибка обработки платежа")

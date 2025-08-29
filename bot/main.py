@@ -7,6 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 from dotenv import load_dotenv
 
 from handlers import user_private
+from handlers import payments
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ bot = Bot(
 
 dp = Dispatcher()
 dp.include_router(user_private.router)
+dp.include_router(payments.router)
 
 async def main():
     await dp.start_polling(bot)
