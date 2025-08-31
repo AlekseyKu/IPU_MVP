@@ -296,7 +296,7 @@ const PromiseCreate: React.FC = () => {
             </label>
             <button
               type="button"
-              className="btn btn-link p-0 ms-2 d-flex align-items-center"
+              className="btn btn-link p-0 d-flex align-items-center"
               aria-label={t("promiseCreate.info.aria.openInfo")}
               onClick={() => setShowInfoPublic(true)}
             >
@@ -321,7 +321,7 @@ const PromiseCreate: React.FC = () => {
             </label>
             <button
               type="button"
-              className="btn btn-link p-0 ms-2 d-flex align-items-center"
+              className="btn btn-link p-0 d-flex align-items-center"
               aria-label={t("promiseCreate.info.aria.openInfo")}
               onClick={() => setShowInfoToSomeone(true)}
             >
