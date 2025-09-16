@@ -53,6 +53,12 @@ async def start_command(msg: Message):
                     text="Open IPU App",
                     web_app=WebAppInfo(url=frontend_url)
                 )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="👥 Перейти в IPU-communityы",
+                    url="https://t.me/IPU_community"
+                )
             ]
         ]
     )
