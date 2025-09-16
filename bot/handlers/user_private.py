@@ -62,6 +62,7 @@ async def start_command(msg: Message):
             ]
         ]
     )
+
     await msg.answer(
         # f"Hello, {msg.from_user.full_name}! Welcome to the IPU App 👋\n{status_message}",
         f"Hello, {msg.from_user.full_name}! Welcome to the IPU App 👋",
