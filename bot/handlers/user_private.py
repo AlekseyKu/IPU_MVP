@@ -56,7 +56,7 @@ async def start_command(msg: Message):
             ],
             [
                 InlineKeyboardButton(
-                    text="👥 Перейти в IPU-communityы",
+                    text="👥 Перейти в IPU-community",
                     url="https://t.me/IPU_community"
                 )
             ]
