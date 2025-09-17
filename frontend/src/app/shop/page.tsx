@@ -5,158 +5,155 @@ import { motion } from 'framer-motion'
 import Header from '@/components/Header'
 import Appfooter from '@/components/Appfooter'
 import { useLanguage } from '@/context/LanguageContext'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-export default function Leaders() {
+export default function Shop() {
   const { t } = useLanguage()
-
-  const [balance, setBalance] = useState(0)
-  const [amount, setAmount] = useState(100)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchBalance = async () => {
-    try {
-      setError(null)
-      const headers: Record<string, string> = {}
-      const initData = typeof window !== 'undefined' && window.Telegram?.WebApp ? (window.Telegram.WebApp.initData || '') : ''
-      headers['x-telegram-init-data'] = initData
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user) {
-        const user = window.Telegram.WebApp.initDataUnsafe.user
-        headers['x-telegram-user-id'] = user.id.toString()
-      }
-      const res = await fetch('/api/balance', { headers })
-      if (!res.ok) throw new Error('Failed to fetch balance')
-      const data = await res.json()
-      setBalance(data.balance)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch balance')
+  const shopItems = [
+    {
+      id: 'boost',
+      title: 'Boost',
+      description: 'Подними обещание в общем списке',
+      price: 200,
+      icon: '🚀'
+    },
+    {
+      id: 'premium',
+      title: 'Premium',
+      description: 'Ежемесячная подписка',
+      price: 1000,
+      icon: '⭐'
+    },
+    {
+      id: 'donate',
+      title: 'Donate',
+      description: 'Поддержать проект',
+      price: 500,
+      icon: '💝'
     }
-  }
+  ]
 
-  useEffect(() => {
-    fetchBalance()
-  }, [])
-
-  const topUp = async () => {
-    if (!amount || amount <= 0) {
-      setError('Please enter a valid amount')
-      return
-    }
-    setLoading(true)
+  const handlePurchase = async (itemId: string) => {
+    setLoading(itemId)
     setError(null)
+
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      const initData = typeof window !== 'undefined' && window.Telegram?.WebApp ? (window.Telegram.WebApp.initData || '') : ''
-      headers['x-telegram-init-data'] = initData
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user) {
-        const user = window.Telegram.WebApp.initDataUnsafe.user
-        headers['x-telegram-user-id'] = user.id.toString()
-      }
-      const res = await fetch('/api/payments/create', {
+      // Запрос к нашему Next API (прокси)
+      const res = await fetch('/api/shop/buy-product', {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ amount })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ product: itemId })
       })
+
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to create payment')
+        const err = await res.json()
+        throw new Error(err.error || 'Не удалось создать покупку')
       }
+
       const data = await res.json()
+      console.log('✅ Checkout URL:', data.checkoutUrl)
 
-      const invoiceLink: string = data.invoice_link
-      const isMockInvoice = typeof invoiceLink === 'string' && invoiceLink.includes('mock-invoice')
-
-      if (isMockInvoice) {
-        // Мок: пропускаем openInvoice, сразу дергаем webhook и обновляем баланс
-        const webhookRes = await fetch('/api/payments/webhook', { method: 'POST' })
-        if (!webhookRes.ok) {
-          throw new Error('Mock webhook failed')
-        }
-        await fetchBalance()
-        setError(null)
-        setLoading(false)
-        return
-      }
-      
+      // Проверяем, находимся ли мы в Telegram WebApp
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        window.Telegram.WebApp.openInvoice(invoiceLink, async (status: string) => {
+        // Используем Telegram WebApp API для открытия платежа внутри приложения
+        window.Telegram.WebApp.openInvoice(data.checkoutUrl, async (status: string) => {
           console.log('openInvoice status:', status)
           if (status === 'paid') {
-            await fetchBalance()
-            setError(null)
+            console.log('✅ Payment successful!')
+            // Здесь можно добавить логику после успешной оплаты
           } else if (status === 'cancelled') {
-            setError('Payment was cancelled')
+            setError('Платеж был отменен')
           } else {
-            setError(`Payment status: ${status}`)
+            setError(`Статус платежа: ${status}`)
           }
         })
       } else {
-        throw new Error('This app must be opened in Telegram WebApp')
+        // Fallback для браузера - открываем в новой вкладке
+        window.open(data.checkoutUrl, '_blank')
       }
+
     } catch (e: any) {
-      setError(e.message || 'Failed to create payment')
+      console.error('❌ Ошибка покупки:', e)
+      setError(e.message || 'Ошибка при создании платежа')
     } finally {
-      setLoading(false)
+      setLoading(null)
     }
   }
 
   return (
     <>
       <Header />
-      <div style={{ marginTop: '100px', minHeight: 'calc(100vh - 200px)' }}>
+      <div style={{ marginTop: '100px', paddingBottom: '100px' }}>
         <div className="container">
           <div className="row justify-content-center">
-            <div className="col-lg-8">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="card bg-white border-0 shadow-sm rounded-xxl mb-4"
-              >
-                <div className="card-body p-4">
-                  <h4 className="fw-700 mb-2" style={{ textAlign: 'center' }}>{t('shop.title')}</h4>
-                  <p className="text-grey-500 mb-4" style={{ textAlign: 'center' }}>{t('shop.inDevelopment')}</p>
+            <div className="col-lg-6">
+              {/* Logo and Title */}
+              <div className="text-center mb-4">
+                <h2 className="fw-bold mb-0">Магазин IPU</h2>
+              </div>
 
-                  <div className="border-top pt-4 mt-2"></div>
-
-                  <h5 className="fw-600 mb-3" style={{ textAlign: 'center' }}>Balance</h5>
-                  <div className="text-center mb-4">
-                    <span className="fw-700 text-primary" style={{ fontSize: 24 }}>{balance} ⭐</span>
-                  </div>
-
-                  <div className="row g-3 align-items-end">
-                    <div className="col-8">
-                      <label className="form-label small text-grey-600">Amount (Stars)</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={10000}
-                        className="form-control"
-                        value={amount}
-                        onChange={(e) => setAmount(Number(e.target.value))}
-                        placeholder="Enter amount"
-                      />
-                      <div className="form-text">Min: 1 ⭐, Max: 10000 ⭐</div>
+              {/* Shop Items */}
+              <div className="d-flex flex-column gap-4">
+                {shopItems.map((item, index) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    className="card bg-white border-0 shadow-sm rounded-3"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    <div className="card-body p-4">
+                      <div className="d-flex align-items-center justify-content-between">
+                        <div className="d-flex align-items-center">
+                          <div 
+                            className="me-3 d-flex align-items-center justify-content-center"
+                            style={{ 
+                              width: '48px', 
+                              height: '48px', 
+                              borderRadius: '12px',
+                              backgroundColor: '#f8f9fa',
+                              fontSize: '24px'
+                            }}
+                          >
+                            {item.icon}
+                          </div>
+                          <div>
+                            <h5 className="fw-bold mb-1">{item.title}</h5>
+                            <p className="text-muted mb-0 small">{item.description}</p>
+                          </div>
+                        </div>
+                        <div className="text-end">
+                          <div className="fw-bold text-primary mb-1">{item.price} ⭐</div>
+                          <button
+                            onClick={() => handlePurchase(item.id)}
+                            disabled={loading === item.id}
+                            className="btn btn-primary btn-sm"
+                            style={{ 
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              padding: '6px 16px'
+                            }}
+                          >
+                            {loading === item.id ? 'Загрузка...' : 'Купить'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="col-4 d-grid">
-                      <button
-                        onClick={topUp}
-                        disabled={loading}
-                        className="btn btn-primary"
-                      >
-                        {loading ? 'Processing...' : 'Top Up'}
-                      </button>
-                    </div>
-                  </div>
+                  </motion.div>
+                ))}
+              </div>
 
-                  {error && (
-                    <div className="alert alert-danger mt-3 mb-0" role="alert">
-                      {error}
-                    </div>
-                  )}
+              {error && (
+                <div className="alert alert-danger mt-4 mb-0" role="alert">
+                  {error}
                 </div>
-              </motion.div>
+              )}
             </div>
           </div>
         </div>
