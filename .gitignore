@@ -101,6 +101,7 @@ temp/
 **/temp/
 .cache/
 **/.cache/
+**/todo/
 
 # backup
 backup/
