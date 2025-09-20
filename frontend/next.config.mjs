@@ -1,17 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   sassOptions: {
-    includePaths: ['src/styles', 'public/assets/scss'],
+    includePaths: ["src/styles", "public/assets/scss"],
     logger: {
       warn: () => {},
       debug: () => {},
     },
   },
+
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'fonts.googleapis.com',
+        protocol: "https",
+        hostname: "fonts.googleapis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "ipu-mvp.vercel.app",
+      },
+      {
+        protocol: "https",
+        hostname: "www.ipu-mvp.vercel.app",
       },
     ],
   },
@@ -27,7 +36,10 @@ const nextConfig = {
   //     },
   //   ]
   // },
-  allowedDevOrigins: ['https://d49a9ec76746.ngrok-free.app', '*.local-origin.dev'],
-}
+  allowedDevOrigins: [
+    "https://d49a9ec76746.ngrok-free.app",
+    "*.local-origin.dev",
+  ],
+};
 
 export default nextConfig;
